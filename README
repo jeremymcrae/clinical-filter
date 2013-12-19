@@ -1,0 +1,15 @@
+EVAR (Exome Variant Analysis Report) for trios
+
+Given three VCF files of a trio, return child variants under autosomal recessive (AR), autosomal 
+recessive with compound heterozygotes (AR_dbHET), and autosomal dominant (AD) models of inheritance.
+
+step 1) create search space by using filters from filters.txt
+step 2) create trees based on user defined hierarchy and boundaries in hierarchy.txt
+step 3) print report
+        a) basic information (data, input files, filters, hierarchies, etc )
+        b) Counts of each group under AR, AR_dbHET and AD models
+        c) Under each model (AR, AR_dbHET and AD) for each group , print its
+           variants (only column defined by the user in output.txt)
+
+
+
