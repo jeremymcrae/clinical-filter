@@ -1,0 +1,34 @@
+
+version 0.7 lean (13 Aug 2013)
+    - Reduced RAM usage. (< 100 Mb when looking for rare coding variants in exome)
+    - This is done by adding function vcf2tsvLean in vcf.py to exclude lines instead of adding them 
+      to TSV object
+
+version 0.7 (12 Aug 2013)
+    - Fixed a bug from the order of genotypes  'child/mother/father'
+    Details: Python was sorting the dictionary keys and  hence father used to appear before mother 
+    (F letter before M). The error was in the last two lines of "createMatrix" function.
+    
+version 0.5 (28 Jan 2013)
+    - Change the genotype order from (child/father/mother) to (child / mother / father)
+    
+version 0.4 (29 Nov 2012)
+    - Accept gender information (male or female child) to process X-chr appropriately.
+    - Add explict inheritance  model for
+        * Autosomal chromosomes and PAR regions on X chr
+        * X-chr in males
+        * X-chr in females
+    - Define PAR regions
+    - Previously we had summary table for AR, AD, and AR_CompHet for autosomal chromosomes including
+     Y and X. Now, we will add another table for X-chr (either female or male child)
+
+version 0.3 (10 Jan 2012)
+    - Move many functions to Parser.py and use it as superclass for Trio class
+    - Add optional output for child/mother/father genotype. option -g
+
+version 0.2 (22 Dec 2011)
+    - Add support for R output (AR = 1, AR_dbHET = 2 and AD = 3) at first column.
+    - Correct compund HET function (remove if all comes from one parent or
+      if both has all HETs in child)
+
+version 0.1 (16 Dec 2011)

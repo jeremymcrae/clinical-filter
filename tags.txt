@@ -1,0 +1,9 @@
+# EVA_report need to know what the genotype and gene tags are called in your file. The GT is 
+# expected in the 9th column and its value in the 10th column. The gene ID (GN) is expected in INFO 
+# column (7th column).
+# symbol	identifiers
+gene	HGNC,VGN,GN
+consequence	VCQ,CQ
+genotype	GT
+MAX_MAF	AF_MAX,MAF_AF,1000G_AF,1KG_AF,AF_AFR,AF_AMR,AF_ASN,AF_EUR,UK10K_cohort_AF,ESP_AF,DDD_AF,ASN_AF,AFR_AF,EUR_AF,AMR_AF
+transcript	ENSEMBL_TRANSCRIPT,ENST

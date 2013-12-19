@@ -1,0 +1,16 @@
+#VCQ	list	ESSENTIAL_SPLICE_SITE,STOP_GAINED,COMPLEX_INDEL,FRAMESHIFT_CODING	2	LOF
+#VCQ	list	NON_SYNONYMOUS_CODING,STOP_LOST	1	FUNC
+VCQ	list	ESSENTIAL_SPLICE_SITE,STOP_GAINED,COMPLEX_INDEL,FRAMESHIFT_CODING,NON_SYNONYMOUS_CODING,STOP_LOST,transcript_ablation,splice_donor_variant,splice_acceptor_variant,frameshift_variant,initiator_codon_variant,inframe_insertion,inframe_deletion,missense_variant,transcript_amplification,stop_gained,stop_lost,coding_sequence_variant	1	LOF&FUNC
+#VCQ	list	SYNONYMOUS_CODING	0	SILN
+#GERP	greater_than	2.0	1	CNSRV
+#GERP	smaller_than	2.0	0	N_CNSRV
+#1000G_AF	smaller_than	0.01	1	RARE_1KG
+#1000G_AF	greater_than	0.01	0	COMN_1KG
+#UK10KtwinsMAF	smaller_than	0.01	1	RARE_UK10Ktwin
+#UK10KtwinsMAF	greater_than	0.01	0	COMN_UK10Ktwin
+MAX_MAF	smaller_than	0.01	1	RARE_1KG
+MAX_MAF	greater_than	0.01	0	COMN_1KGK
+Condel	startswith	deleterious	1	CND_DEL
+Condel	startswith	neutral	0	CND_NUT
+#PolyPhen	startswith	p	1	Pphen_DEL
+#PolyPhen	startswith	b	0	Pphen_NUT

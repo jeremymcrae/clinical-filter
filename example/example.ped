@@ -1,0 +1,3 @@
+family_01	child	father	mother	2	2	/Volumes/jm33/code/EVAR/example/child.vcf.gz
+family_01	father	0	0	2	1	/Volumes/jm33/code/EVAR/example/father.vcf.gz
+family_01	mother	0	0	1	1	/Volumes/jm33/code/EVAR/example/mother.vcf.gz
