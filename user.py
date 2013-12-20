@@ -76,12 +76,6 @@ def parseGenes(path='DDGP-reportable.txt'):
             known_genes[gene_ID].add("Monoallelic")
             known_genes[gene_ID].add("Biallelic")
         
-        # # currently only report mono and biallelic genes
-        # if gene_inheritance == 'Biallelic':
-        #     known_genes[gene_ID] = 2
-        # elif gene_inheritance == "Monoallelic":
-        #     known_genes[gene_ID] = 1
-    
     if len(known_genes) == 0:
         raise ValueError("No genes found in the file, check the line endings")
     
@@ -180,145 +174,6 @@ def parseFilters(path):
     f.close()
     return mydict
 
-def parseWeights(path, order=False):
-    """Opens user-defined heirarchy of weights for prioritising variants.
-
-    Opens a tab-separated text file with user-defined weights, which are used to prioritise 
-    candidate variants for further examination. 
-
-    Args:
-        path: path to the text file containing the weights.
-        order: whether to return the weights as a list from parseOrders().
-
-    Returns:
-        A dictionary of VFC INFO categories with corresponding criteria. For example: 
-
-        {'AF_MAX': {'smaller_than': [(0.01, 1, 'RARE_1KG')]}, 
-        'VCQ': {'list': [('ESSENTIAL_SPLICE_SITE,STOP_GAINED', 1, 'LOF&FUNC'), 
-        ('SYNONYMOUS_CODING', 0, 'SILN')]}}
-
-    Raises:
-        IOError: An error when the weights file is not specified correctly.
-
-    NOTE: This function appears similar to parseFilters(). Why is it necessary? Is it because there 
-    are more criteria listed her, or that we get to specify an order for the weight list?
-    """
-
-    # check that the weights file exists
-    if not os.path.exists(path):
-        raise IOError("path to weights file does not exist")
-
-    if order == False:
-        mydict = {}
-        f = open(path,'r')
-        for line in f:
-            if not line.startswith("#"):
-                line = line.strip().split("\t")
-                tag = line[0]
-                condition = line[1]
-                weight = float(line[3])
-                label = line[4]
-
-                values = line[2]
-                # sometimes the values are a comma-separated list, split them into a list
-                if values.count(",") > 0:
-                    values = values.split(",")
-                
-                # convert numeric values to floats
-                if condition in set(["greater_than", "smaller_than", "equal"]):
-                    try:
-                        values = float(values)
-                    except ValueError:
-                        print "Please check your filter file or correct this value. Here is the full record:"
-                        print line
-                        raise ValueError("One of these values couldn't be converted to float. Filter (%s) VCF value (%s)" % (condition, values))
-
-                # convert numeric lists to lists of floats
-                if condition == 'range':
-                    try:
-                        values = [float(x) for x in values]
-                    except ValueError:
-                        print "Please check your filter file or correct this value. Here is the full record:"
-                        print line
-                        raise ValueError("One of these values couldn't be converted to float. Filter (%s) VCF value (%s)" % (condition, values))
-               
-                # multiple conditions can apply to the same tag, account for those as sub-dictionaries
-                if not mydict.has_key(tag):
-                    mydict[tag] = {condition:[(values, weight, label)]}
-                else:
-                    if not mydict[tag].has_key(condition):
-                        mydict[tag][condition] = [(values, weight, label)]
-                    else:
-                        mydict[tag][condition].append((values, weight, label))
-        f.close()
-        #mydict = addEmptyClasses(mydict)
-        return mydict
-    else:
-        # the parseOrders function gets a list of the tags used in the weights file.
-        # This might be simpler as:
-        # if order == True:
-        #     return list(mydict.keys())
-        # or even passing this list from earlier in EVAR_trios.py For instance, changing:
-        # self.orders  = user.parseOrders(columns_path, weights_path))
-        # to:
-        # self.orders  = user.parseOrders(columns_path, list(self.weights.keys()))
-        weightsOrders = []
-        f = open(path,'r')
-        for line in f:
-            if not line.startswith("#"):
-                line = line.strip().split("\t")
-                if line[0] not in weightsOrders:
-                    weightsOrders.append(line[0])
-        f.close()
-        return weightsOrders
-
-
-def parseOrders(orderPath, weightsPath):
-    """Gets a list of which VCF attributes to include in the output.
-
-    Opens a tab-separated text file (typically named output.txt) and obtains a dictionary of the 
-    attributes listed in there. The primary bit seems to be a line starting with 'output', which 
-    has a comma-separated list of attributes. Also includes the weights file attributes (which 
-    should be included in the output file, so I don't understand why this is needed yet).
-
-    Args:
-        orderPath: path to the text file containing the output attributes
-        weightsPath: path to the weights path, for additional attributes
-
-    Returns:
-        A dictionary of VCF attributes included in the output and weights: For example:
-
-        {'output': ['CHROM', 'POS', 'ID', 'REF'...], 
-        'weights': ['AF_MAX', 'VCQ']}
-
-    Raises:
-        IOError: An error when the orderPath is not specified correctly.
-    """
-
-    if not os.path.exists(orderPath):
-        raise IOError("path to output file does not exist")
-
-    mydict = {}
-    f = open(orderPath,'r')
-    for line in f:
-        if not line.startswith("#"):
-            line = line.strip().split("\t")
-            key = line[0]
-            
-            # split the comma-separated values into a list if they exist
-            try:
-                values = line[1].split(",")
-            except:
-                values = line[1]
-            mydict[key] = values
-    f.close()
-    
-    # it may be easier to pass the weights dict keys to this function, rather than generating from
-    # the weights file
-    mydict["weights"] = parseWeights(weightsPath, True)
-    
-    return mydict
-
 def parseTags(path):
     """Opens alternate identifiers for values in nonstandard VCF files.
 
@@ -376,19 +231,3 @@ def printFileContent(path):
         if not line.startswith('#'):
             logging.info("#" + line.strip())
     f.close()
-
-def getFileContent(path):
-    """Returns the text content of a file.
-    """
-    f = open(path, 'r')
-    text = f.read()
-    f.close()
-    return text
-
-def checkUserInput(path, type):
-    '''
-    Check if filters.txt , hierarchy.txt , output.txt and tags.txt 
-    have the right format otherwise exit and warn the user.
-    '''
-    pass
-    #TODO

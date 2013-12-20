@@ -28,82 +28,12 @@ class report(object):
         logging.info(title.upper())
         logging.info(75 * "*")
     
-    # def getLabels(self):
-    #     """creates a set of labels. I'm not sure why or how this is needed, it's fairly obscure.
-        
-    #     NOTE: The function was called by printStatsTable(), printResults() and save2R(), but the 
-    #     results aren't actually used by those functions, so I have commented out those lines. 
-    #     Possibly remove this function?
-    #     """
-    #     return self.construct_holder(type='labels')
-    
-    def translate_label(self, num_key):
-        """ translates a list of weight values into a string of labels.
-        
-        Args:
-            num_key: a list of weight values for a variant
-            
-        Returns:
-            a string showing which weights corresponded to the given num_key,
-            eg ('LOF&FUNC | RARE_1KG | CND_NUT')
-        """
-        
-        translated_key  = []
-        for index, weight in enumerate(num_key):
-            wt_class = self.orders['weights'][index]
-            has_rest_class = False
-            for condition in self.weights[wt_class]:
-                for lst in self.weights[wt_class][condition]:
-                    if weight == lst[1]:
-                        label = lst[2]
-                        translated_key.append(label)
-                        has_rest_class = True
-            if has_rest_class == False:
-                translated_key.append("RST")
-        return ' | '.join(translated_key)
-    
-    def printStatsTable(self):
-        """tabulates the number of variants found under the different inheritance models.
-        """
-        models = ["AR", "AR_dbHet", "AD"]
-        header = []
-        table = {}
-        for results_dict, model in [(self.AR_results, "AR"),
-                                     (self.AR_dbHET_results, "AR_dbHet"),
-                                     (self.AD_results, "AD")]:
-            header.append(model + "_genes")
-            header.append(model + "_variants")
-            #labels = self.getLabels()
-            
-            for key in sorted(results_dict):
-                if key not in table:
-                    table[key] = {}
-                
-                table[key][model] = {"genes_counts": 0, 'variants_count': 0}
-                for gene in sorted(results_dict[key]):
-                    if len(results_dict[key][gene]) > 0:
-                        table[key][model]['genes_counts'] += 1
-                        table[key][model]['variants_count'] += len(results_dict[key][gene])
-        
-        print "#" + 74 * "-"
-        print "# Summary Table"
-        print "#" + 74 * "-"
-        print "CLASS\t", "\t".join(header)
-        for key in sorted(table.keys()):
-            row = []
-            for model in models:
-                row.append(str(table[key][model]["genes_counts"]))
-                row.append(str(table[key][model]['variants_count']))
-            print self.translate_label(key), "\t", "\t".join(row)
-            #print key , "\t", "\t".join(row)
-    
     def printReportInputInfo(self, title):
         """report the parameters used to run the script, such as python version, script version, 
         filters and weights, as well as which columns were chosen for output. 
         """
         
         python_version = "%s %s %s" % (platform.python_version(), platform.python_build(), platform.python_compiler())
-        python_script = "%s, version %s, last modified on %s" % (sys.argv[0], self.VERSION, self.VERSION_TIMESTAMP)
         
         # capture the program title
         logging.info(75 * "#")
@@ -116,7 +46,6 @@ class report(object):
         # capture some information about the progam version, and when and what ran
         logging.info("# Date/Time : " + str(datetime.datetime.now()))
         logging.info("# Python    : " + python_version)
-        logging.info("# Script    : " + python_script)
         logging.info("#")
         logging.info("#" + 74 * "-")
         
@@ -136,14 +65,6 @@ class report(object):
         logging.info("# Filters")
         logging.info("#" + 74 * "-")
         user.printFileContent(self.filters_path)
-        logging.info("#" + 74 * "-")
-        logging.info("# Hierarchies")
-        logging.info("#" + 74 * "-")
-        user.printFileContent(self.weights_path)
-        logging.info("#" + 74 * "-")
-        logging.info("# Output columns")
-        logging.info("#" + 74 * "-")
-        user.printFileContent(self.columns_path)
         logging.info(75 * "#")
     
     def save_results(self):
@@ -200,7 +121,7 @@ class report(object):
         child_lines.insert(-1, '##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="The inheritance of the variant in the trio (biparental, paternal, maternal, deNovo).">\n')
         
         ClinicalFilterRunDate = ",ClinicalFilterRunDate=" + str(datetime.date.today())
-        ClinicalFilterVersion = ",ClinicalFilterVersion=" + self.VERSION
+        ClinicalFilterVersion = ",ClinicalFilterVersion=XXX"
         
         results_dict = self.found_variants
         for gene in sorted(results_dict):
@@ -236,42 +157,3 @@ class report(object):
         child_lines = "".join(child_lines)
         with gzip.open(self.pedTrio.child.get_ID() + ".vcf.gz", 'wb') as f:
             f.write(child_lines)
-    
-    def printResults(self):
-        """formats details of candidate variants
-        """
-        header = user.getFileContent(self.columns_path).strip().split("\t")[1]
-        print self.AR_results
-        for results_dict, title in [(self.AR_results, "Autosomal Recessive HOM"),
-                                     (self.AR_dbHET_results, "Autosomal Recessive Double HET"),
-                                     (self.AD_results, "Autosomal Dominant")]:
-            
-            self.printSectionTitle(title)
-            print "#Class\t", "\t".join(header.split(",")) # the header for each section
-            #labels = self.getLabels()
-            for key in sorted(results_dict):
-                for gene in sorted(results_dict[key]):
-                    for pos in sorted(results_dict[key][gene]):
-                        print results_dict[key][gene][pos]
-                        #print self.translate_label(key), "\t", "\t".join(results_dict[key][gene][pos])
-    
-    
-    def save2R(self):
-        for results_dict, model in [(self.AR_results, "1"),
-                                     (self.AR_dbHET_results, "2"),
-                                     (self.AD_results, "3")]:
-            
-            #labels = self.getLabels()
-            for key in sorted(results_dict):
-                for gene in sorted(results_dict[key]):
-                    for pos in sorted(results_dict[key][gene]):
-                        print model, "\t", self.translate_label(key), "\t", "\t".join(results_dict[key][gene][pos])
-    
-    def save2Excel(self):
-        try:
-            import xlwt
-        except:
-            print "xlwt modele doesn't seem to be installed. Please install xlwt and try again."
-            exit(0)
-        
-        #TODO

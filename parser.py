@@ -199,7 +199,7 @@ class Parser(object):
         
         return str(max_allele_frequency)
     
-    def extractUserFields(self, raw_record, raw_header):
+    def extractUserFields(self, raw_record):
         '''Selects the data to report as output.
         
         If the user requested certain fields for the output , then extract them. If not, print 
@@ -214,22 +214,15 @@ class Parser(object):
         Returns:
             user_record: 
         '''
-        user_record = {}
-        if self.orders['output'] != "" and self.orders['output'] != None or self.orders['output'] == "*":
-            for label in self.orders["output"]: 
-                # allow for VCF files with different IDs, and make sure we still catch the right
-                # data, by checking the different tags in self.tags_dict
-                if label in self.tags_dict:
-                    for alternate_label in self.tags_dict[label]:
-                        try:
-                            user_record[label] = raw_record[alternate_label]
-                        except KeyError:
-                            continue
-                else:  
-                    user_record[label] = raw_record[label]
-        else:
-            for label in raw_header:
-                user_record[label] = raw_record[label]
+        user_record = raw_record
+        
+        for label in self.tags_dict:
+            for alternate_label in self.tags_dict[label]:
+                try:
+                    user_record[label] = raw_record[alternate_label]
+                except KeyError:
+                    continue
+        
         return user_record
     
     def make_genes_dict(self, vcf, family_member):
@@ -274,133 +267,5 @@ class Parser(object):
             
             # add the VCF record to the individuals entry
             self.genes_dict[gene_ID]["positions"][position_key][family_member] = record
-    
-    # def getWeights(self, record):
-    #     """Gets the weights recorded for a single variant entry for an individual.
-        
-    #     Args:
-    #         record: a VCF dictionary record for an individual for a single variant
-        
-    #     Returns:
-    #         results: a list of weight values, sorted by the same order as in self.orders['weights']
-    #     """
-
-    #     weights_dict = {}
-    #     # fill the weights_dict by default with zero weights, this covers all the possible weight
-    #     # keys, even if they don't exist in the VCF variant record that is being processed
-    #     for key in self.weights:
-    #         weights_dict[key] = 0.0
-        
-    #     for tag_name in self.weights:
-    #         # ignore weights that aren't listed in the VCF record
-    #         if tag_name not in record:
-    #             continue
-            
-    #         tag_value = record[tag_name]
-    #         for condition in self.weights[tag_name]:
-    #             if condition == "list":
-    #                 for lst in self.weights[tag_name]["list"]:
-    #                     if tag_value in lst[0]:
-    #                         weights_dict[tag_name] = float(lst[1])
-    #             elif condition in ["greater_than","smaller_than", "equal"]:
-    #                 try:
-    #                     tag_value = float(tag_value)
-    #                     cutoff = self.weights[tag_name][condition][0][0]
-    #                     wt = self.weights[tag_name][condition][0][1]
-    #                 except:
-    #                     print tag_name, condition, self.weights[tag_name][condition]
-    #                     print "Either filter cutoff %s of VCF file %s is not numerical."  % (cutoff,tag_value)
-    #                     print "Please correct your filters or / and VCF file. The program will stop now."
-    #                     sys.exit(0)
-    #                 if condition == "greater_than":
-    #                     if tag_value > cutoff:
-    #                         weights_dict[tag_name] = wt
-    #                 elif condition == "smaller_than":
-    #                     if tag_value < cutoff:
-    #                         weights_dict[tag_name] = wt
-    #                 elif condition == "equal":
-    #                     if tag_value == cutoff:
-    #                         weights_dict[tag_name] = wt
-    #             elif condition in ["startswith","endswith"]:
-    #                 cutoff = self.weights[tag_name][condition][0][0]
-    #                 wt = self.weights[tag_name][condition][0][1]
-    #                 if condition == "startswith":
-    #                     if tag_value.startswith(cutoff):
-    #                         weights_dict[tag_name] = wt
-    #                 elif condition == "endswith":
-    #                     if tag_value.endswith(cutoff):
-    #                             weights_dict[tag_name] = wt
-    #             elif condition == "range":
-    #                 start, end = self.weights[tag_name][condition][0][0]
-    #                 wt = self.weights[tag_name][condition][0][1]
-    #                 tag_value = float(tag_value)
-    #                 if tag_value  > start and tag_value < end:
-    #                     weights_dict[tag_name] = wt
-        
-    #     # and standardise the weight values to the list found in self.orders['weights']
-    #     weights = []
-    #     for k in self.orders["weights"]:
-    #         weights.append(weights_dict[k])
-    #     return weights
-    
-    def construct_holder(self, type="numerical"):
-        '''
-        Construct a holder dictionary where keys are either numeric or strings.
-        Numerical keys will be used for filtering.
-        String keys will be used to print results and for the sunburst chart labels.
-        
-        I don't really understand what this is doing, or why. Currently it's used in two places, in 
-        get_var_under_models(), and later in getLabels(), which is called by printStatsTable(), 
-        printResults() and save2R(), but the results aren't actually used by those functions, so I 
-        have commented out those lines. 
-        '''
-        
-        # do we want to use names or not
-        type_dict = {"numerical": False, "labels": True}
-        names = type_dict[type]
-        mydict = self.get_tree_lvls(names)
-        
-        # I believe this extracts all the levels from the weights filtering criteria
-        lvls_lst = []
-        for lvl in sorted(mydict.keys()):
-            lvls_lst.append(sorted(mydict[lvl]))
-        
-        keys =  tuple(itertools.product(*lvls_lst)) # make permutation of all possible keys
-        holder = {}
-        for key in keys:
-            if key not in holder:
-                holder[key] = {}
-        
-        return holder
-    
-    def get_tree_lvls(self, names=False):
-        ''' Creates a dictionary of entries from the weight filter criteria.
-        
-        Example self.AR_results = {LOF:GERP:CONDEL:"empty_space_for_raw_VCF_line"}
-        where LOF, GERP, CONDEL are int (0,1,2,..,n)
-        
-        NOTE: I don't really understand this function, the how and why.
-        '''
-        
-        levels = {}
-        # get the weight from each weight class and all its conditions
-        for i, wt_class in enumerate(self.orders["weights"]):
-            for condition in self.weights[wt_class]:
-                for lst in self.weights[wt_class][condition]:
-                    
-                    # change the values depending on whether we include names or not
-                    if names == True:
-                        name = lst[2] # the weight value
-                        weight = wt_class
-                    else:
-                        name = lst[1]
-                        weight = i
-                    
-                    if weight not in levels:
-                        levels[weight] = []
-                    levels[weight].append(name)
-                        
-        return levels
-
 
 

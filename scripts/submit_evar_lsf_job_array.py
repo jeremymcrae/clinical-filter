@@ -11,14 +11,11 @@ import glob
 import optparse
 
 home_folder = "/nfs/users/nfs_j/jm33/"
-evar_folder = os.path.join(home_folder, "apps", "evar")
+app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
-evar_code = os.path.join(evar_folder, "EVAR_trio.py")
-inh_model = os.path.join(evar_folder, "models", "trio_complete_penetrance.txt")
-filters = os.path.join(evar_folder, "filters.txt")
-hierarchy = os.path.join(evar_folder, "hierarchy.txt")
-columns_format = os.path.join(evar_folder, "columns.txt")
-tag_names = os.path.join(evar_folder, "tags.txt")
+evar_code = os.path.join(app_folder, "EVAR_trio.py")
+filters = os.path.join(app_folder, "config", "filters.txt")
+tag_names = os.path.join(app_folder, "config", "tags.txt")
 
 datafreeze = "/nfs/ddd0/Data/datafreeze/1139trios_20131030/"
 known_genes = os.path.join(datafreeze, "DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv")
@@ -152,7 +149,7 @@ def run_evar_array(hash_string, trio_counter, temp_name, output_name, known_gene
     
     bjob_output_name = temp_name + "bjob_output"
     
-    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python", evar_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "-M", inh_model, "-l", filters, "-r", hierarchy, "--columns", columns_format, "-t", tag_names, "--known-genes", known_genes_path, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt"] + log_options
+    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python", evar_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--known-genes", known_genes_path, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt"] + log_options
     
     sh_file = write_sh_file(hash_string, command)
     subprocess.Popen(["sh", sh_file])
@@ -162,27 +159,20 @@ def run_cleanup(hash_string, output_name, temp_name):
     """ runs a lsf job to clean up the files
     """
     
-    # and then set up a job to run after the array finishes, to combine the array output
+    # merge the array output after the array finishes
     command = ['bsub -J "merge1_' + hash_string + '" -w "done(' + hash_string + ')"', "-o", temp_name + ".bjob_output.var_merge.txt", "bash", "-c", "\"head", "-n", "1", output_name + "1.txt", ">", "clinical_reporting.txt", "; tail", "-q", "-n", "+2", output_name + "*", ">>", "clinical_reporting.txt\""]
     sh_file = write_sh_file(hash_string, command)
-    
-    # merge the output files
-    sh_file = write_sh_file(hash_string, command)
     subprocess.Popen(["sh", sh_file])
     remove_sh_file(sh_file)
     
-    # and then set up a job to run after the array finishes, to combine the array output
+    # merge the log files after the array finishes
     command = ['bsub -J "merge2_' + hash_string + '" -w "done(' + hash_string + ')"', "-o", temp_name + ".bjob_output.log_merge.txt", "bash", "-c", "\"cat", temp_name + "*.log", ">", "evar_logfile.log\""]
     sh_file = write_sh_file(hash_string, command)
-    
-    # merge the output files
-    sh_file = write_sh_file(hash_string, command)
     subprocess.Popen(["sh", sh_file])
     remove_sh_file(sh_file)
-
-    command = ['bsub -J "cleanup" -w "merge2_' + hash_string + '"', "-o", "evar_output.concatenate.txt", "bash", "-c", "\"rm", temp_name + "*\""]
     
     # submit a cleanup job to the cluster
+    command = ['bsub -J "cleanup" -w "merge2_' + hash_string + '"', "-o", "evar_output.concatenate.txt", "bash", "-c", "\"rm", temp_name + "*\""]
     sh_file = write_sh_file(hash_string, command)
     subprocess.Popen(["sh", sh_file])
     remove_sh_file(sh_file)
@@ -209,7 +199,7 @@ def main():
         log_options = []
     
     if opts.ped_path is None:
-        ped_path = os.path.join(evar_folder, "exome_reporting.ped")
+        ped_path = os.path.join(app_folder, "exome_reporting.ped")
         make_ped(ped_path)
     else:
         ped_path = opts.ped_path

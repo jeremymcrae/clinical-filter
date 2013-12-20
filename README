@@ -1,15 +1,20 @@
-EVAR (Exome Variant Analysis Report) for trios
+Clinical filtering for trios
 
-Given three VCF files of a trio, return child variants under autosomal recessive (AR), autosomal 
-recessive with compound heterozygotes (AR_dbHET), and autosomal dominant (AD) models of inheritance.
+Find variants in affected children that might contribute to their disorder. We
+load VCF files (either named on the command line, or listed in a PED file) for
+members of a family, filter for rare, functionally disruptive variants, and
+assess whether each variant might affect the child's disorder. We take into 
+account the parents genotypes (if available) and whether the parents are also
+affected with a (the?) disorder. For variants in known disease causative genes
+we check whether the inheritance patterns matches one expected for the  
+inheritance models of the gene.
 
-step 1) create search space by using filters from filters.txt
-step 2) create trees based on user defined hierarchy and boundaries in hierarchy.txt
-step 3) print report
-        a) basic information (data, input files, filters, hierarchies, etc )
-        b) Counts of each group under AR, AR_dbHET and AD models
-        c) Under each model (AR, AR_dbHET and AD) for each group , print its
-           variants (only column defined by the user in output.txt)
+Usage:
 
-
-
+python EVAR_trio.py \
+    --ped temp_name.ped \
+    -l filters.txt \
+    -t tags.txt \
+    --known-genes known_genes.txt \
+    --alternate-ids alternate_ids.txt \
+    --output output_name.txt

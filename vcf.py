@@ -264,20 +264,4 @@ def vcf2tsv(path, isPassUserFilters=None, child_variants=None):
     
     return vcf
 
-# def isSorted(path):
-#     ''' Check if vcf file is compressed with bgzip,indexed with tabix and
-#     sorted.
-
-#     NOTE: This function does not appear to be used. Remove?
-#     '''
-#     if path.endswith(".gz"):
-#         tbi = os.path.join(path,".tbi")
-#         if os.path.isfile(tbi):
-#             pass
-#         else:
-#             return False
-#     else:
-#         return False
-
-
 

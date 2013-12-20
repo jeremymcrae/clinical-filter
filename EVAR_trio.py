@@ -1,4 +1,4 @@
-''' EVAR (Exome Variant Analysis Report) for trios
+''' Clinical filtering for trios
 
 Find variants in affected children that might contribute to their disorder. We
 load VCF files (either named on the command line, or listed in a PED file) for
@@ -9,15 +9,12 @@ affected with a (the?) disorder. For variants in known disease causative genes
 we check whether the inheritance patterns matches one expected for the  
 inheritance models of the gene.
 
-Usage :
+Usage:
 
 python EVAR_trio.py \
     --ped temp_name.ped \
-    -M inheritance_model.txt \
-    -l filters.txt \
-    -r hierarchy.txt \
-    --columns columns.txt \
-    -t tags.txt \
+    --filter filters.txt \
+    --tags tags.txt \
     --known-genes known_genes.txt \
     --alternate-ids alternate_ids.txt \
     --output output_name.txt
@@ -36,24 +33,18 @@ import optparse
 import itertools
 import os
 import logging
-# import multiprocessing
 
-from settings import pseudoautosomal_regions, getTrioModel
 import user
 import vcf
 import parser
 import inheritance
-import version
 import ped
 import reporting
 
+pseudoautosomal_regions = [(1,2699520), (154930290,155260560), (88456802,92375509)]
 
 class Trio(parser.Parser, reporting.report):
     def __init__(self, defs):
-        
-        # include the current version, so we can log it
-        self.VERSION = version.VERSION
-        self.VERSION_TIMESTAMP = version.TIMESTAMP
         
         # set some definitions
         self.setDefinitions(defs)
@@ -108,7 +99,7 @@ class Trio(parser.Parser, reporting.report):
         # create numpy matrices of variants and genotypes in each gene, then find variants that fit
         # different inheritance models
         self.create_gene_matrix()
-        self.found_variants = self.construct_holder()
+        self.found_variants = {}
         for gene in self.genes_dict:
             chrom = self.get_chr(self.genes_dict[gene]["positions"])
             positions = self.get_sorted_positions(self.genes_dict[gene]["positions"].keys())
@@ -171,17 +162,11 @@ class Trio(parser.Parser, reporting.report):
         loadDefinitions class.
         """
         
-        self.trio_inheritance_table = defs.trio_inheritance_table
-        
-        self.weights_path = defs.weights_path
         self.filters_path = defs.filters_path
-        self.columns_path = defs.columns_path
         self.output_path = defs.output_path
         self.export_vcf = defs.export_vcf
         
-        self.weights = defs.weights
         self.filters = defs.filters
-        self.orders = defs.orders
         self.tags_dict = defs.tags_dict
         
         self.known_genes = defs.known_genes
@@ -319,9 +304,10 @@ class Trio(parser.Parser, reporting.report):
         position = candidate[1]
         check_type = candidate[2]
         inheritance_type = candidate[3]
-        record = variant["child"]
-        record = self.extractUserFields(variant["child"], self.child_vcf["header"])
+        record = self.extractUserFields(variant["child"])
         record["MAX_MAF"] = self.find_max_allele_frequency(variant["child"])
+        
+        variant["child"]["genotype"] = vcf.translateGT(variant["child"]["genotype"])
         
         trio_genotype = "%d/%d/%d" % (variant["child"]["genotype"], variant["mother"]["genotype"], variant["father"]["genotype"])
         record['trio_genotype'] = trio_genotype
@@ -471,10 +457,7 @@ class loadDefinitions:
         
         self.options = opts
         
-        self.trio_inheritance_table = getTrioModel(self.options.inheritance_models_path)
-        self.weights_path = self.options.weights_path
         self.filters_path = self.options.filters_path
-        self.columns_path = self.options.columns_path
         self.output_path = self.options.output_path
         self.tags_path = self.options.tags_path
         self.export_vcf = self.options.export_vcf
@@ -485,9 +468,7 @@ class loadDefinitions:
     def load_definitions_files(self):
         """loads all the definition filters for the script (eg filters, weights, gene IDs)
         """
-        self.weights = user.parseWeights(self.weights_path)
         self.filters = user.parseFilters(self.filters_path)
-        self.orders = user.parseOrders(self.columns_path, self.weights_path)
         self.tags_dict = user.parseTags(self.tags_path)
         
         # make sure we cover all the possible ways that maximum minor allele frequencies can be
@@ -554,21 +535,25 @@ def get_options():
     parser.add_option('-m', '--mother', dest='mother_path', help='path to mother\'s VCF file')
     parser.add_option('-f', '--father', dest='father_path', help='path to father\'s VCF file')
     parser.add_option('-G', '--gender', dest='child_gender', help='The child gender (male or female)')
-    parser.add_option('-M', '--model', dest='inheritance_models_path', help='path to trio inheritance model')
     parser.add_option('--mom_aff_status', dest='mother_affected', help='affected status of the mother (1 = unaffacted, or 2 = affected)')
     parser.add_option('--dad_aff_status', dest='father_affected', help='affected status of the father (1 = unaffacted, or 2 = affected)')
     
-    parser.add_option('-l', '--filter', dest='filters_path', help='path to filters.txt', default="filters.txt")
-    parser.add_option('-r', '--hierarchy', dest='weights_path', help='path to hierarchy.txt', default="hierarchy.txt")
-    parser.add_option('--columns', dest='columns_path', help='path to columns.txt, that defines some data to export', default="columns.txt")
-    parser.add_option('-t', '--tags', dest='tags_path', help='path to tags.txt', default="tags.txt")
-    parser.add_option('--known-genes', dest='genes_path', default=None, help='path to list of known disease causative genes, eg DDG2P-reportable.txt')
-    parser.add_option('--alternate-ids', dest='alternate_ids_path', default=None, help='path to list of alternate IDs, eg personid_decipher_id_sangerid.txt')
-    parser.add_option('-o', '--output', dest='output_path', default='evar_output.txt', help='filename to output variant data to')
+    parser.add_option('-l', '--filter', dest='filters_path', help='path to filter file (eg filters.txt)')
+    parser.add_option('-t', '--tags', dest='tags_path', help='path to tags.txt (eg tags.txt)')
+    parser.add_option('--known-genes', dest='genes_path', help='path to list of known disease causative genes, eg DDG2P-reportable.txt')
+    parser.add_option('--alternate-ids', dest='alternate_ids_path', help='path to list of alternate IDs, eg personid_decipher_id_sangerid.txt')
+    parser.add_option('-o', '--output', dest='output_path', default='clinical_reporting.txt', help='filename to output variant data to')
     parser.add_option('--export-vcf', dest='export_vcf', default=False, help='whether to export identified variants to a VCF file')
     parser.add_option('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
     
     (opts, args) = parser.parse_args()
+    
+    if opts.ped_path and opts.child_path:
+        parser.error("--ped and --child are mutually exclusive")
+    if opts.filters_path is None:
+        parser.error("--filter (-l) is required")
+    if opts.tags_path is None:
+        parser.error("--tags (-t) is required")
     
     return (opts, args)
 
@@ -582,7 +567,11 @@ def main():
     numeric_level = getattr(logging, loglevel.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError('Invalid log level: %s' % loglevel)
-    logging.basicConfig(level=numeric_level, filename=opts.ped_path + '.log')
+    if opts.ped_path is not None:
+        log_filename = opts.ped_path + '.log'
+    else:
+        log_filename = "clinical-filter.log"
+    logging.basicConfig(level=numeric_level, filename=log_filename)
     
     defs = loadDefinitions(opts)
     myTrio = Trio(defs)

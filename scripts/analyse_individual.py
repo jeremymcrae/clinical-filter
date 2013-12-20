@@ -11,15 +11,12 @@ import glob
 
 
 home_folder = "/nfs/users/nfs_j/jm33/"
-evar_folder = os.path.join(home_folder, "apps", "evar")
+app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
-evar_code = os.path.join(evar_folder, "EVAR_trio.py")
-ped_file = os.path.join(evar_folder, "exome_reporting.ped")
-inh_model = os.path.join(evar_folder, "models", "trio_complete_penetrance.txt")
-filters = os.path.join(evar_folder, "filters.txt")
-hierarchy = os.path.join(evar_folder, "hierarchy.txt")
-columns_format = os.path.join(evar_folder, "columns.txt")
-tag_names = os.path.join(evar_folder, "tags.txt")
+evar_code = os.path.join(app_folder, "EVAR_trio.py")
+ped_file = os.path.join(app_folder, "exome_reporting.ped")
+filters = os.path.join(app_folder, "config", "filters.txt")
+tag_names = os.path.join(app_folder, "config", "tags.txt")
 
 datafreeze = "/nfs/ddd0/Data/datafreeze/1139trios_20131030/"
 known_genes = os.path.join(datafreeze, "DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv")
@@ -89,9 +86,6 @@ def main():
     for filename in files:
         os.remove(filename)
     
-    if os.path.exists("evar.log"):
-        os.remove("evar.log")
-    
     # write the temp ped file for the family to a file, but make sure it doesn't overwrite anything
     random_filename = tmp_name + str(random.randint(100000, 999999)) + ".ped"
     while os.path.exists(random_filename):
@@ -103,7 +97,7 @@ def main():
     
     # now set up the command for analysing the given pedigree file
     bjobs_preamble = ["bsub", "-q", "normal", "-o", random_filename + ".bjob_output.txt"]
-    evar_command = ["python", evar_code, "--ped", random_filename, "-M", inh_model, "-l", filters, "-r", hierarchy, "--columns", columns_format, "-t", tag_names, "--known-genes", known_genes, "--alternate-ids", alternate_ids, "--output", random_filename + ".output.txt", "--export-vcf"] + logging_option
+    evar_command = ["python", evar_code, "--ped", random_filename, "--filter", filters, "--tags", tag_names, "--known-genes", known_genes, "--alternate-ids", alternate_ids, "--output", random_filename + ".output.txt", "--export-vcf"] + logging_option
     full_command = " ".join(bjobs_preamble + evar_command)
     
     subprocess.call(bjobs_preamble + evar_command)

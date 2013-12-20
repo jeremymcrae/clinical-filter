@@ -11,8 +11,8 @@ import random
 import glob
 
 user_folder = "/nfs/users/nfs_j/jm33/"
-submit_evar_script = os.path.join(user_folder, "apps", "evar", "scripts", "submit_evar_lsf_job_array.py")
-evar_folder = os.path.join(user_folder, "apps", "evar")
+app_folder = os.path.join(user_folder, "apps", "clinical-filter")
+submit_evar_script = os.path.join(app_folder, "scripts", "submit_evar_lsf_job_array.py")
 ped_file = os.path.join(user_folder, "exome_reporting.ped")
 
 def get_options():
@@ -61,9 +61,6 @@ def main():
     files = glob.glob(tmp_name + "*")
     for filename in files:
         os.remove(filename)
-    
-    if os.path.exists("evar.log"):
-        os.remove("evar.log")
     
     # write the temp ped file for the family to a file, but make sure it doesn't overwrite anything
     random_filename = tmp_name + str(random.randint(100000, 999999)) + ".ped"

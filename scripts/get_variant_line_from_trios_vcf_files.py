@@ -10,8 +10,8 @@ import random
 import glob
 
 user_folder = "/nfs/users/nfs_j/jm33/"
-evar_folder = os.path.join(user_folder, "apps", "evar")
-ped_file = os.path.join(evar_folder, "exome_reporting.ped")
+app_folder = os.path.join(user_folder, "apps", "clinical-filter")
+ped_file = os.path.join(app_folder, "exome_reporting.ped")
 
 def get_options():
     """ gets the options from the command line

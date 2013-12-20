@@ -173,8 +173,7 @@ class inheritance(object):
         if variant_check == "recessive" or variant_check == "hemizygous":
             self.compound_hets.append([variant, self.nucleotide_position, variant_check, inheritance_type])
         elif variant_check == "candidate":
-            if self.passes_sift_and_polyphen(variant):
-                self.candidates.append([variant, self.nucleotide_position, variant_check, inheritance_type])
+            self.candidates.append([variant, self.nucleotide_position, variant_check, inheritance_type])
     
     def find_variants_without_parents(self):
         """ test variants in children where we lack parental genotype information.
@@ -422,10 +421,6 @@ class inheritance(object):
         for first in range(len(variants)):
             for second in range(len(variants)):
                 if first == second:
-                    continue
-                
-                # exclude polyphen and sift benign variants
-                if not (self.passes_sift_and_polyphen(variants[first][0]) and self.passes_sift_and_polyphen(variants[second][0])):
                     continue
                 
                 # ok, so we are in the same gene, and looking at two different variants
