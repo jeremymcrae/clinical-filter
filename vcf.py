@@ -5,6 +5,8 @@ sa9@sanger.ac.uk
 '''
 
 import os
+import io
+import platform
 import sys
 import gzip
 import logging
@@ -27,12 +29,17 @@ def getVcfFile(path):
         raise IOError("VCF file not found at: " + path)
 
     if path.endswith(".gz"):
-        f =  gzip.open(path,'r')
+        # python2 gzip opens in text, but same mode in python3 opens as bytes,
+        # avoid with platform specific code
+        if platform.python_version_tuple()[0] == "2":
+            f = gzip.open(path, 'r')
+        else:
+            f = gzip.open(path, "rt")
     elif path.endswith(".vcf") or path.endswith(".txt"):
-        f = open(path,'r')
+        f = io.open(path,'r', encoding="latin_1")
     else:
-        print 'Unable to open files with extension "%s". Accepted extensions are ".vcf" or ".txt"' % path.split(".")[-1]
-        print 'The ".txt" is tab-separated file and it can be compressed in gz format.'
+        print('Unable to open files with extension "%s". Accepted extensions are ".vcf" or ".txt"' % path.split(".")[-1])
+        print('The ".txt" is tab-separated file and it can be compressed in gz format.')
         sys.exit(0)
     return f
 
@@ -67,7 +74,7 @@ def getKey(line, type="chr_pos"):
         key = (line[0], line[1], line[3], line[4]) # chr,pos, ref, alt
     
     #if line[0] == "X":
-    #    print key
+    #    print(key)
     return key
 
 
@@ -259,7 +266,7 @@ def vcf2tsv(path, isPassUserFilters=None, child_variants=None):
     # logging.info("%s\t%s\t%s" % (sample, total_variant_count, passing_filters))
     
     # logging.debug(path)
-    # for key in vcf["data"]:
+    # for key in sorted(vcf["data"]):
     #     logging.debug(key)
     
     return vcf

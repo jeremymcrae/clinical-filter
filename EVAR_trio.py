@@ -286,7 +286,7 @@ class Trio(parser.Parser, reporting.report):
         """
         
         sorted_pos = sorted([int(pos) for pos in positions])
-        sorted_pos = map(str, sorted_pos)
+        sorted_pos = list(map(str, sorted_pos))
         
         return sorted_pos     
     
@@ -371,7 +371,7 @@ class Trio(parser.Parser, reporting.report):
             return
        
         # run through the variants in the child, and
-        positions = self.child_vcf["data"].keys()
+        positions = list(self.child_vcf["data"].keys())
         for position in positions:
             if self.filter_de_novo_for_single_variant(position, self.child_vcf, self.mother_vcf, self.father_vcf) == False:
                 del self.child_vcf["data"][position]

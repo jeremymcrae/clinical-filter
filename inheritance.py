@@ -353,7 +353,8 @@ class inheritance(object):
             # recessive: should be marked for compound-het screen
             report = "hemizygous"
         elif "X-linked over-dominance" == inheritance:
-            report = "currently unused"
+            report = "X-linked over dominance not currently supported"
+            return "nothing"
         else:
             raise ValueError("unknown gene inheritance status: " + str(inheritance))
         
@@ -382,6 +383,9 @@ class inheritance(object):
         elif "Hemizygous" == inheritance:
             # recessive: should be marked for compound-het screen
             report = "hemizygous"
+        elif inheritance == "X-linked over-dominance":
+            self.log_string = "X-linked over dominance not currently supported"
+            return False
         else:
             raise ValueError("unknown gene inheritance status: " + str(inheritance))
         

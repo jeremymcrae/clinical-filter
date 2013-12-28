@@ -76,12 +76,13 @@ class Parser(object):
         # print record
         
         show_fail_point = False
-        if record['CHROM'] == '2' and record['POS'] == '38298394':
-            # print record
+        if record['CHROM'] == '1' and record['POS'] == '18937':
+            # for key in sorted(record):
+            #     print(key, record[key])
             show_fail_point = True
         
         def show_fail():
-            print key, ":", value, "not", condition, filter_values
+            print(str(key) + ": " + str(value) + " not " + str(condition) + " " + str(filter_values))
         
         isPass = True
         for key, value in record.items():
@@ -91,6 +92,8 @@ class Parser(object):
             if key in self.filters:
                 condition = self.filters[key][0]
                 filter_values = self.filters[key][1]
+                # if show_fail_point:
+                #     print(key, value, filter_values)
                 if condition == "list":
                     if value not in filter_values:
                         isPass = False
@@ -99,6 +102,10 @@ class Parser(object):
                         break   
                 elif condition == "greater_than":
                     value = self.getNumber(value)
+                    try:
+                        value > filter_values
+                    except TypeError:
+                        continue
                     if value < filter_values and self.is_number(value):
                         isPass = False
                         if show_fail_point:
@@ -113,6 +120,10 @@ class Parser(object):
                     #         if value > 0.5:
                     #             value = 1 - value
                     value = self.getNumber(value)
+                    try:
+                        value > filter_values
+                    except TypeError:
+                        continue
                     if value > filter_values and self.is_number(value):
                         isPass = False
                         if show_fail_point:
@@ -155,10 +166,14 @@ class Parser(object):
                     if condition == "startswith":
                         if not value.startswith(filter_values):
                             isPass = False
+                            if show_fail_point:
+                                show_fail()
                             break
                     elif condition == "endswith":
                         if not value.endswith(filter_values):
                             isPass = False
+                            if show_fail_point:
+                                show_fail()
                             break
                 elif condition == "range":
                     start, end = filter_values
@@ -247,7 +262,7 @@ class Parser(object):
                     gene_tag = tag
             
             if gene_tag is None:
-                print record
+                print(record)
                 sys.exit()
             
             # append the record to the appropriate gene entry in a dictionary

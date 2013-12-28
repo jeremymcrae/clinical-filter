@@ -6,6 +6,8 @@ sa9@sanger.ac.uk
 '''
 
 import os
+import io
+import sys
 import sys
 import logging
 
@@ -31,7 +33,7 @@ def parseGenes(path='DDGP-reportable.txt'):
         raise IOError("Path to known gene file does not exist")
     
     known_genes = {}
-    f = open(path, 'r')
+    f = io.open(path, 'r', encoding="latin_1")
     
     # allow for gene files with different column names and positions
     header = f.readline().strip().split("\t")
@@ -75,7 +77,7 @@ def parseGenes(path='DDGP-reportable.txt'):
         if gene_inheritance == "Both":
             known_genes[gene_ID].add("Monoallelic")
             known_genes[gene_ID].add("Biallelic")
-        
+    
     if len(known_genes) == 0:
         raise ValueError("No genes found in the file, check the line endings")
     
@@ -157,8 +159,8 @@ def parseFilters(path):
                 try:
                     values = float(values)
                 except ValueError:
-                    print "Please check your filter file or correct this value. Here is the full record:"
-                    print line
+                    print("Please check your filter file or correct this value. Here is the full record:")
+                    print(line)
                     raise ValueError("One of these values couldn't be converted to float. Filter (%s) VCF value (%s)" % (condition, values))
 
             # convert numeric lists to lists of floats
@@ -166,8 +168,8 @@ def parseFilters(path):
                 try:
                     values = [float(x) for x in values]
                 except ValueError:
-                    print "Please check your filter file or correct this value. Here is the full record:"
-                    print line
+                    print("Please check your filter file or correct this value. Here is the full record:")
+                    print(line)
                     raise ValueError("One of these values couldn't be converted to float. Filter (%s) VCF value (%s)" % (condition, values))
 
             mydict[label] = (condition, values)

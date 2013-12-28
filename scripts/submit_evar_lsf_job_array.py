@@ -149,7 +149,7 @@ def run_evar_array(hash_string, trio_counter, temp_name, output_name, known_gene
     
     bjob_output_name = temp_name + "bjob_output"
     
-    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python", evar_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--known-genes", known_genes_path, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt"] + log_options
+    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", evar_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--known-genes", known_genes_path, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt"] + log_options
     
     sh_file = write_sh_file(hash_string, command)
     subprocess.Popen(["sh", sh_file])
@@ -199,7 +199,7 @@ def main():
         log_options = []
     
     if opts.ped_path is None:
-        ped_path = os.path.join(app_folder, "exome_reporting.ped")
+        ped_path = os.path.join(home_folder, "exome_reporting.ped")
         make_ped(ped_path)
     else:
         ped_path = opts.ped_path

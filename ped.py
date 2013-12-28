@@ -83,7 +83,7 @@ class person(object):
             sys.exit("unknown gender code: " + self.get_gender())
         
         if gender_code not in current_gender_codes:
-            print current_gender_codes
+            print(current_gender_codes)
             # I'm logging this, as well as exiting with a message, do we need both?
             logging.warning(self.person_ID + "'s gender differs from that expected as a parent")
             sys.exit(self.person_ID + " is listed as gender " + self.get_gender() + ", which " \
@@ -181,8 +181,8 @@ class pedTrio(person):
         elif mother_affected and father_affected:
             affected_status = "both_parents_affected"
         else:
-            print "unknown parental affected status, mother:", mother_affected, \
-                  "father:", father_affected, ". They should be True/False values"
+            print("unknown parental affected status, mother:", mother_affected, \
+                  "father:", father_affected, ". They should be True/False values")
             sys.exit(1)
         
         return affected_status
@@ -210,7 +210,7 @@ def loadPedFile(path):
     """
     
     if not os.path.exists(path):
-        print path
+        print(path)
         raise IOError("Path to ped file does not exist")
     
     mothers = {}
