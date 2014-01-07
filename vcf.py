@@ -11,6 +11,8 @@ import sys
 import gzip
 import logging
 
+import variant
+
 
 def getVcfFile(path):
     """Gets a VCF file handle while allowing for gzipped and text VCF formats.
@@ -42,95 +44,6 @@ def getVcfFile(path):
         print('The ".txt" is tab-separated file and it can be compressed in gz format.')
         sys.exit(0)
     return f
-
-# def fliePath(f):
-#     """ I don't think this function is used anywhere, possibly remove.
-#     """
-#     return f.name
-
-def getKey(line, type="chr_pos"):
-    """Creates a unique key for the variants being investigated.
-
-    Args:
-        line: list of values from a split tab-separated VCF line
-        type: the kind of unique ID to create from the position and allele codes.
-
-    Returns:
-        set pf values defineing the unique identifier for the variant based on the variant position
-        and allele codes. For example, this variant:
-
-        chrom: "1"
-        pos: "14907"
-        reference allele: "A"
-        alternate allele: "G"
-
-        returns ("1", "14907", "A", "G")
-    """
-    if type == "pos":
-        key = (line[1])
-    elif type == "chr_pos":
-        key = (line[0], line[1])
-    elif type == "chr_pos_ref_alt":
-        key = (line[0], line[1], line[3], line[4]) # chr,pos, ref, alt
-    
-    #if line[0] == "X":
-    #    print(key)
-    return key
-
-
-def translateGT(GT):
-    """Maps genotypes from two character format to single character.
-
-    Args:
-        GT: genotype in two character format. eg '0/0'
-
-    Returns:
-        Genotype in single character format. eg '0'
-    """
-    # This function might run quicker as the following. Possibly could speed up further by passing 
-    # reference to a dictionary, rather than creating new each time.
-    genotype_dict = {'00': 0, '01': 1, '10': 1, '12': 1, '21': 1, '02': 1, '20': 1, '11': 2, '22': 2}
-    return genotype_dict[GT[0] + GT[2]]
-
-def parseINFO(info):
-    """Parses the INFO column from VCF files.
-
-    Args:
-        # data_holder: dictionary entry for a VCF line
-        info: INFO text from a line in a VCF file
-
-    Returns:
-        A dictionary including INFO items, if the item is a key-value pair, it uses that for the 
-        entry, otherwise uses the key and value of '1' for the entry.
-    """
-    data_holder = {}
-    for item in info.split(";"):
-        if "=" in item:
-            k, v = item.split("=")
-        else:
-            k, v = item, "1"
-        data_holder[k] = v
-    return data_holder
-
-def parseFORMAT(data_holder, formats):
-    """Parses the FORMAT column from VCF files.
-
-    Args:
-        data_holder: dictionary entry for a VCF line
-        formats: FORMAT text from a line in a VCF file
-
-    Returns:
-        A dictionary including FORMAT items, which uses each FORMAT label as a key, and the 
-         value is the corresponding value in following column. For example:
-
-        {'DP': '10', 'FP': '40', etc}
-    """
-    tag_labels = formats[0].split(":") # the first item in formats are the tags DP:FP:ETC
-    tag_values = formats[1].split(":") # the second item are the corresponding values.
-    
-    for i, value in enumerate(tag_values):
-        data_holder[tag_labels[i]] = value
-    return data_holder
 
 def get_vcf_header(f):
     '''Get the header lines from a VCF file.
@@ -198,7 +111,108 @@ def getHeaderLabels(header):
     
     return labels
 
-def vcf2tsv(path, isPassUserFilters=None, child_variants=None):
+class MatchCNVs(object):
+    """ class to find if a parents CNV matches any of a childs CNVs
+    """
+    
+    def __init__(self, child_variants):
+        """ initiate the class with the childs variants
+        """
+        
+        self.child_variants = child_variants
+        
+        # figure out which of the childs variants are CNVs
+        self.cnvs = []
+        for key in self.child_variants:
+            if len(key) == 3: # ignore SNVs, which are only (chrom, position)
+                self.cnvs.append(key)
+    
+    def has_match(self, var):
+        """ checks if a CNV has any matches amongst the childs CNVs
+        
+        Args:
+            var: CNV object
+        
+        Returns:
+            returns true if any of the childs CNVs are good matches
+        """
+        
+        # TODO: swap to code that compares CNV sizes in line below
+        # if self.any_overlap(var) and self.similar_size(var):
+        if self.any_overlap(var):
+            print(var.get_key(), self.overlap)
+            return True
+        else:
+            return False
+        
+    def any_overlap(self, var):
+        """ checks if any of the childs CNVs overlap the current CNV
+        
+        Args:
+            var: CNV object
+        
+        Returns:
+            returns true if any of the childs CNVs overlap
+        """
+        
+        var_key = var.get_key() # CNVs are (chrom, start, end)
+        var_chrom = var_key[0]
+        var_start = int(var_key[1])
+        var_end = int(var_key[2])
+        
+        self.overlap = []
+        for key in self.cnvs:
+            
+            child_chrom = key[0]
+            child_start = int(key[1])
+            child_end = int(key[2])
+            
+            if var_chrom != child_chrom:
+                continue
+            
+            # check if the childs CNVs end points lie within the CNV that we
+            # are examining, or if the childs CNV surrounds the examined CNV
+            if var_end >= child_start >= var_start or \
+               var_end >= child_end >= var_start or \
+               child_end >= var_start >= child_start:
+                self.overlap.append(key)
+        
+        if len(self.overlap) > 0:
+            return True
+        else:
+            return False
+        
+    def similar_size(self, var):
+        """ checks if the current CNV matches the overlapping child CNVs size
+        
+        Args:
+            var: CNV object
+        
+        Returns:
+            returns true if any of the overlapping CNVs have similar sizes
+        """
+        (min_size, max_size) = var.calculate_cnv_size_tolerance()
+        
+        for overlap in self.overlap:
+            var_chrom = overlap[0]
+            var_start = int(overlap[1])
+            var_end = int(overlap[2])
+            var_size = var_end - var_start
+            
+            if max_size > var_size > min_size:
+                self.overlap = overlap
+                return True
+        
+        return False
+    
+    def get_overlap_key(self):
+        """ returns the tuple for an overlapping CNV
+        """
+        
+        return self.overlap
+
+
+def vcf2tsv(path, gender, filters=None, child_variants=None):
     ''' Convert VCF to TSV format. Use for single sample VCF file.
 
     Obtains the VCF data for a single sample. This function optionally filters the lines of the 
@@ -206,13 +220,17 @@ def vcf2tsv(path, isPassUserFilters=None, child_variants=None):
 
     Args:
         path: path to VCF file for the sample.
-        isPassUserFilters: optional filters, as loaded by parseFilters in user.py
+        gender: gender of the individual
+        filters: optional filters, as loaded by parseFilters in user.py
         child_variants: list of tuple keys for variants identified in affected child, in order to
                         get the same variants from the parents.
 
     Returns:
         A dictionary containing header data, and variant data for each variant.
     '''
+    
+    if child_variants is not None:
+        cnv_matcher = MatchCNVs(child_variants)
     
     try:
         f = getVcfFile(path)
@@ -226,49 +244,81 @@ def vcf2tsv(path, isPassUserFilters=None, child_variants=None):
     vcf["header"] = labels
     vcf["header_lines"] = header
     
-    # total_variant_count = 0
-    # passing_filters = 0
     for line in f:
-        if not line.startswith("#"):
-        #if line.startswith("X"):  #uncomment this line if you want to test one chromosome
-            line = line.strip().split("\t")
-            # total_variant_count += 1
+        if line.startswith("#"):
+            continue
+        
+        line = line.strip().split("\t")
+        
+        chrom = line[0]
+        position = line[1]
+        snp_id = line[2]
+        ref_allele = line[3]
+        alt_allele = line[4]
+        quality = line[5]
+        filter_value = line[6]
+        info_values = line[7]
+        format_keys = line[8]
+        sample_values = line[9]
+        
+        if alt_allele == "<DUP>" or alt_allele == "<DEL>":
+            var = variant.CNV(chrom, position, snp_id, ref_allele, alt_allele, quality, filter_value)
+            var.add_info(info_values)
+        else:
+            var = variant.SNV(chrom, position, snp_id, ref_allele, alt_allele, quality, filter_value)
+        
+        include_variant = False
+        if child_variants is not None:
+            key = var.get_key()
+            if key in child_variants:
+                include_variant = True
+            elif alt_allele == "<DUP>" or alt_allele == "<DEL>":
+                if cnv_matcher.has_match(var):
+                    include_variant = True
+        elif filters is not None:
+            var.add_info(info_values)
+            if var.passes_filters(filters):
+                include_variant = True
+        else:
+            include_variant = True
+        
+        if include_variant:
+            var.add_info(info_values)
+            var.add_format(format_keys, sample_values)
+            var.add_vcf_line(line)
+            var.set_gender(gender)
+            var.set_genotype()
             
-            # start the
-            data_holder = dict.fromkeys(labels, None)
-            data_holder.update(parseINFO(line[7]))
-            for i in range(0, 7): #i, item in enumerate(line):
-                data_holder[labels[i]] = line[i]
-            
-            # if the isPassUserFilters function is passed into this function, then test the current
-            # record for whether it passes the filtering criteria such as low minor allele 
-            # frequency etc
-            if child_variants is not None:
-                key = getKey(line, "chr_pos")
-                if key in child_variants:
-                    data_holder = parseFORMAT(data_holder, line[8:])
-                    vcf["data"][key] = data_holder
-            elif isPassUserFilters is not None:
-                if isPassUserFilters(data_holder):
-                    # passing_filters += 1
-                    key = getKey(line, "chr_pos")
-                    data_holder = parseFORMAT(data_holder, line[8:])
-                    vcf["data"][key] = data_holder
-                    vcf["data"][key]["vcf_line"] = line
-            else:
-                key = getKey(line, "chr_pos")
-                data_holder = parseFORMAT(data_holder, line[8:])
-                vcf["data"][key] = data_holder
-                vcf["data"][key]["vcf_line"] = line
+            key = var.get_key()
+            vcf["data"][key] = var
+        
+        # data_holder = dict.fromkeys(labels, None)
+        # for i in range(0, 7): #i, item in enumerate(line):
+        #     data_holder[labels[i]] = line[i]
+        # 
+        # # figure out whether to include the variant or not
+        # include_variant = False
+        # if child_variants is not None:
+        #     key = (line[0], line[1])
+        #     if key in child_variants:
+        #         include_variant = True
+        # elif isPassUserFilters is not None:
+        #     parseINFO(data_holder, line[7])
+        #     if isPassUserFilters(data_holder):
+        #         include_variant = True
+        # else:
+        #     include_variant = True
+        # 
+        # if include_variant:
+        #     key = (line[0], line[1])
+        #     parseINFO(data_holder, line[7])
+        #     parseFORMAT(data_holder, line[8:])
+        #     vcf["data"][key] = data_holder
+        #     vcf["data"][key]["vcf_line"] = line
     
-    # base = os.path.basename(path)
-    # sample = os.path.splitext(base)[0]
-    # logging.info("%s\t%s\t%s" % (sample, total_variant_count, passing_filters))
-    
-    # logging.debug(path)
-    # for key in sorted(vcf["data"]):
-    #     logging.debug(key)
+    logging.debug(path)
+    for key in sorted(vcf["data"]):
+        logging.debug(vcf["data"][key])
     
     return vcf
-
 

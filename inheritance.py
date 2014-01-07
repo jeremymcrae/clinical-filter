@@ -3,9 +3,9 @@ inheritance model specific to the gene and chromosome that the variant/s are in.
 """
 
 import sys
-
 import logging
-from snp import snp
+
+from variant import SNV
 
 
 class inheritance(object):
@@ -146,9 +146,9 @@ class inheritance(object):
         # sometimes a male child or father is het on the X chromosome (and not in a pseudoautosomal 
         # region). Raise an error if this happens
         try:
-            self.child = snp(variant["child"]["genotype"], self.chrom_inheritance, self.trio.child.get_gender())
-            self.mom = snp(variant["mother"]["genotype"], mother_inheritance_type, self.trio.mother.get_gender())
-            self.dad = snp(variant["father"]["genotype"], father_inheritance_type, self.trio.father.get_gender())
+            self.child = SNV(variant["child"]["genotype"], self.chrom_inheritance, self.trio.child.get_gender())
+            self.mom = SNV(variant["mother"]["genotype"], mother_inheritance_type, self.trio.mother.get_gender())
+            self.dad = SNV(variant["father"]["genotype"], father_inheritance_type, self.trio.father.get_gender())
         except ValueError:
             raise ValueError
     

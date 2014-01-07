@@ -153,7 +153,7 @@ def create_default_vcf_dict(position, ID):
     
     default = {}
     
-    default["CHROM"] = "0"
+    default["CHROM"] = "1"
     default["POS"] = position
     default["ID"] = ID
     default["REF"] = "C"

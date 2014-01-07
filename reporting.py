@@ -9,12 +9,19 @@ import platform
 import datetime
 import gzip
 
-import user
-
-
 class report(object):
     """A class to report candidate variants.
     """
+    
+    def printFileContent(path):
+        """ prints the text content of a file.
+        """
+        f = open(path, 'r')
+        for line in f:
+            if not line.startswith('#'):
+                logging.info("#" + line.strip())
+        f.close()
+    
     def printSectionTitle(self, title):
         """prints a title to standard out.
         
@@ -64,7 +71,7 @@ class report(object):
         logging.info("#" + 74 * "-")
         logging.info("# Filters")
         logging.info("#" + 74 * "-")
-        user.printFileContent(self.filters_path)
+        self.printFileContent(self.filters_path)
         logging.info(75 * "#")
     
     def save_results(self):
@@ -153,7 +160,13 @@ class report(object):
                 
                 child_lines.append("\t".join(vcf_line) + "\n")
         
+        
         # join the list of lines for the VCF file into a single string
         child_lines = "".join(child_lines)
-        with gzip.open(self.pedTrio.child.get_ID() + ".vcf.gz", 'wb') as f:
-            f.write(child_lines)
+        if platform.python_version_tuple()[0] == "2":
+            with gzip.open(self.pedTrio.child.get_ID() + ".vcf.gz", 'wb') as f:
+                f.write(child_lines)
+        else:
+            with gzip.open(self.pedTrio.child.get_ID() + ".vcf.gz", 'wt') as f:
+                f.write(child_lines)
+        
