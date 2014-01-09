@@ -42,7 +42,6 @@ class VcfInfo(object):
         
         if "CQ" not in self.info:
             self.info["CQ"] = None
-        
     
     def get_number(self, values):
         """ converts a string into a number
@@ -293,7 +292,7 @@ class Variant(VcfInfo):
     """
     
     def __init__(self, chrom, position, snp_id, ref_allele, alt_allele, quality, filter):
-        """ intialise the object with the definition values
+        """ initialise the object with the definition values
         """
         
         self.chrom = chrom
@@ -399,6 +398,12 @@ class Variant(VcfInfo):
         
         return self.inheritance_type
     
+    def get_position():
+        """ return the variant chromosomal inheritance type
+        """
+        
+        return self.position
+    
     def get_genotype(self):
         """ return the genotype value
         """
@@ -423,8 +428,8 @@ class Variant(VcfInfo):
         # run through all the possible populations in the VCF file (typically the 1000 Genomes 
         # populations (AFR_AF, EUR_AF etc), an internal popuation (DDD_AF), and a AF_MAX field)
         for key in populations:
-            if key in record:
-                number = self.getNumber(self.info[key])
+            if key in self.info:
+                number = self.get_number(self.info[key])
                 if not self.is_number(number):
                     continue
                 # if number > 0.5:
@@ -451,12 +456,26 @@ class SNV(Variant):
         
         return (self.chrom, self.position)
     
-    def set_genotype(self):
+    def set_genotype(self, genotype=None):
         """ sets the genotype of the variant
         """
         
-        self.genotype = self.format["GT"]
-        self.genotype = self.convert_genotype()
+        if hasattr(self, "format"):
+            self.genotype = self.format["GT"]
+            self.genotype = self.convert_genotype()
+        elif genotype is not None:
+            self.genotype = genotype
+        else:
+            raise NotImplementedError("cannot find a genotype")
+        
+        self.set_reference_genotypes()
+        self.convert_genotype_code_to_alleles()
+    
+    def set_default_genotype(self):
+        """ for variants lacking genotypes, set a defaul genotype
+        """
+        
+        self.genotype = 0
         
         self.set_reference_genotypes()
         self.convert_genotype_code_to_alleles()
@@ -602,18 +621,41 @@ class CNV(Variant):
         """
         
         if self.alt_allele == "<DUP>":
-            self.genotype = "duplication"
+            self.genotype = "dup"
         elif self.alt_allele == "<DEL>":
-            self.genotype = "deletion"
+            self.genotype = "del"
+        elif self.alt_allele == "no_variation":
+            self.alt_allele = "ref"
         
         self.set_range()
+        self.set_reference_genotypes()
+    
+    def set_default_genotype(self):
+        """ set a default genotype for individuals without one
+        """
+        
+        self.genotype = "ref"
+        self.set_range()
+        self.set_reference_genotypes()
+    
+    def set_reference_genotypes(self):
+        """ sets reference genotypes for homozygotes and heterozygotes, for checking against
+        """
+        
+        self.ref_genotypes = set(["ref"])
+        self.alt_genotypes = set(["del", "dup"])
     
     def set_range(self):
         """ sets the range for the CNV
         """
         
         self.start_position = self.position
-        self.end_position = self.info["END"]
+        
+        if hasattr(self, "info"):
+            self.end_position = self.info["END"]
+        else:
+            self.end_position = str(int(self.start_position) + 10000)
+        
         self.range = (self.start_position, self.end_position)
         self.size = int(self.end_position) - int(self.start_position)
     
@@ -648,4 +690,39 @@ class CNV(Variant):
         max_size = self.size + 100 * math.sqrt(self.size)
         
         return (min_size, max_size)
+    
+    def is_het(self):
+        return False
+        # if self.genotype in self.alt_genotypes:
+        #     return True
+        # else:
+        #     return False
+    
+    def is_hom_alt(self):
+        return False
+        # if self.genotype in self.alt_genotypes:
+        #     return True
+        # else:
+        #     return False
+    
+    def is_hom_ref(self):
+        return True
+        # if self.genotype in self.ref_genotypes:
+        #     return True
+        # else:
+        #     return False
+    
+    def is_not_ref(self):
+        return False
+        # if self.genotype in self.alt_genotypes:
+        #     return True
+        # else:
+        #     return False
+    
+    def is_not_alt(self):
+        return True
+        # if self.genotype in self.ref_genotypes:
+        #     return True
+        # else:
+        #     return False
 

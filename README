@@ -11,10 +11,10 @@ inheritance models of the gene.
 
 Usage:
 
-python EVAR_trio.py \
+python clinical-filter.py \
     --ped temp_name.ped \
-    -l filters.txt \
-    -t tags.txt \
+    --filter filters.txt \
+    --tags tags.txt \
     --known-genes known_genes.txt \
     --alternate-ids alternate_ids.txt \
     --output output_name.txt

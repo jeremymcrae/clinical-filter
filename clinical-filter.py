@@ -11,7 +11,7 @@ inheritance models of the gene.
 
 Usage:
 
-python EVAR_trio.py \
+python clinical-filter.py \
     --ped temp_name.ped \
     --filter filters.txt \
     --tags tags.txt \
@@ -19,40 +19,57 @@ python EVAR_trio.py \
     --alternate-ids alternate_ids.txt \
     --output output_name.txt
 
+Written by Jeremy McRae (jm33@sanger.ac.uk), derived from code by Saeed Al 
+Turki (sa9@sanger.ac.uk).
 
-sa9@sanger.ac.uk
 '''
 
-import platform
-if platform.python_implementation() == "PyPy":
-    import numpypy
-
-import numpy as np
 import sys
 import optparse
-import itertools
-import os
 import logging
 
 import load_files
 import vcf
-import parser
-import inheritance
+import inheritance as inh
 import ped
 import reporting
 
-pseudoautosomal_regions = [(1,2699520), (154930290,155260560), (88456802,92375509)]
-
-class ClinicalFilter(parser.Parser, reporting.report):
+class ClinicalFilter(reporting.report):
+    """ filters trios for candidate variants that might contribute to a 
+    probands disorder.
+    """
+    
     def __init__(self, defs):
+        """intialise the class with the some definitions
+        """
         
         # set some definitions
         self.setDefinitions(defs)
         self.first_run = True
         self.counter = 0
     
-    def run_filter(self):
-        # load the trio paths into the current path setup, currently only test a single trio
+    def setDefinitions(self, defs):
+        """sets the definitions for the filters and weights, as previously 
+        created by the loadDefinitions class.
+        """
+        
+        self.filters_path = defs.filters_path
+        self.output_path = defs.output_path
+        self.export_vcf = defs.export_vcf
+        
+        self.filters = defs.filters
+        self.tags_dict = defs.tags_dict
+        
+        self.known_genes = defs.known_genes
+        self.ID_mapper = defs.ID_mapper
+        
+        self.pedTrios = defs.pedTrios
+    
+    def filter_trios(self):
+        """ loads trio variants, and screens for candidate variants
+        """
+        
+        # load the trio paths into the current path setup
         for family_ID in sorted(self.pedTrios):
             self.pedTrio = self.pedTrios[family_ID]
             
@@ -61,8 +78,8 @@ class ClinicalFilter(parser.Parser, reporting.report):
                 self.pedTrio.set_child()
                 if self.pedTrio.child.get_boolean_affected_status():
                     try:
-                        self.load_vcfs()
-                        self.filter_de_novos()
+                        self.vcf_loader = vcf.LoadVCFs(self.pedTrio, self.counter, len(self.pedTrios), self.filters)
+                        self.variants = self.vcf_loader.get_trio_variants()
                         self.analyse_trio()
                     except IOError as error:
                         if self.pedTrio.mother is None:
@@ -97,31 +114,13 @@ class ClinicalFilter(parser.Parser, reporting.report):
             if self.output_path is not None:
                 self.output = open(self.output_path, "w")
         
-        # create numpy matrices of variants and genotypes in each gene, then find variants that fit
+        # organise variants by gene, then find variants that fit
         # different inheritance models
-        self.create_gene_matrix()
-        self.found_variants = {}
+        self.create_gene_dict()
+        self.found_variants = []
         for gene in self.genes_dict:
-            chrom = self.get_chr(self.genes_dict[gene])
-            positions = self.get_sorted_positions(self.genes_dict[gene].keys())
-            chr_inheritance_group = self.get_chr_group(chrom, positions[0], positions[-1])
-            
-            # get the inheritance for the gene (monoalleleic, biallelic, hemizygous etc), but allow
-            # for times when we haven't specified a list of genes to use
-            if self.known_genes is not None:
-                gene_inheritance = self.known_genes[gene]
-            else:
-                gene_inheritance = None
-            
-            # ignore intergenic variants
-            if gene == None:
-                continue
-            
-            logging.debug(self.pedTrio.child.get_ID() + " " + gene + " " + str(self.genes_dict[gene].keys()) + " " + str(gene_inheritance))
-            finder = inheritance.inheritance(self.genes_dict[gene], self.pedTrio, chr_inheritance_group, gene_inheritance)
-            candidates = finder.get_candidiate_variants()
-            for candidate in candidates:
-                self.include_variant(gene, candidate)
+            variants = self.genes_dict[gene]
+            self.find_variants(variants, gene)
         
         # export the results to either tab-separated table or VCF format
         if self.output_path is not None:
@@ -130,305 +129,50 @@ class ClinicalFilter(parser.Parser, reporting.report):
             self.save_vcf()
         self.first_run = False
     
-    def load_vcfs(self):
-        """ opens and parses the VCF files for members of the family trio.
-        
-        We need to load the VCF data for each of the members of the trio. As a bare minimum we need 
-        VCF data for the child in the family. Occasionally we lack parents for the child, so we 
-        create blank entries when that happens.
-        """
-        
-        # load the VCF file for each member of the trio
-        logging.info("opening trio " + str(self.counter + 1) + " of " + str(len(self.pedTrios)) \
-                     + ". child path: " + self.pedTrio.child.get_path())
-        
-        # open the childs VCF file
-        self.child_vcf = vcf.vcf2tsv(self.pedTrio.child.get_path(), self.pedTrio.child.get_gender(), self.filters)
-        
-        # if the child doesn't have a parent listed, generate blank dictionary for them
-        if self.pedTrio.mother is not None:
-            logging.info(" mothers path: " + self.pedTrio.mother.get_path())
-            self.mother_vcf = vcf.vcf2tsv(self.pedTrio.mother.get_path(), self.pedTrio.mother.get_gender(), child_variants=self.child_vcf["data"].keys())
-        else:
-            self.mother_vcf = {"data": {}}
-            
-        if self.pedTrio.father is not None:
-            logging.info(" fathers path: " + self.pedTrio.father.get_path())
-            self.father_vcf = vcf.vcf2tsv(self.pedTrio.father.get_path(), self.pedTrio.father.get_gender(), child_variants=self.child_vcf["data"].keys())
-        else:
-            self.father_vcf = {"data": {}}
-    
-    def setDefinitions(self, defs):
-        """sets the definitions for the filters and weights, as previously created by the 
-        loadDefinitions class.
-        """
-        
-        self.filters_path = defs.filters_path
-        self.output_path = defs.output_path
-        self.export_vcf = defs.export_vcf
-        
-        self.filters = defs.filters
-        self.tags_dict = defs.tags_dict
-        
-        self.known_genes = defs.known_genes
-        self.ID_mapper = defs.ID_mapper
-        
-        self.pedTrios = defs.pedTrios
-    
-    def create_gene_matrix(self):
-        """creates numpy arrays of trio variant genotypes and weights for each gene.
-        
-        For each gene in self.genes_dict, extract the genotypes for the variants, then convert 
-        the genotypes for a variant into a numpy array, along with the weights. This seems like a 
-        overly complex way of going about it.
+    def create_gene_dict(self):
+        """creates dictionary of variants indexed by gene
         """
         
         # organise the variants into entries for each gene
         self.genes_dict = {}
-        self.make_genes_dict(self.child_vcf, "child")
-        self.make_genes_dict(self.mother_vcf, "mother")
-        self.make_genes_dict(self.father_vcf, "father")
-        
-        for gene in self.genes_dict:
-            sorted_pos = self.get_sorted_positions(self.genes_dict[gene])
-
-            family_members = ['child', 'mother', 'father']
-            for pos in sorted_pos:
-                for member in family_members:
-                    # extract the genotype and weights for the variant, unless the individual does 
-                    # not have them
-                    if member in self.genes_dict[gene][pos]:
-                        record = self.genes_dict[gene][pos][member]
-                        # get the genotype, but make sure we account for different ways of naming
-                        # the genotype field
-                        genotype = None
-                        for genotype_tag in self.tags_dict["genotype"]:
-                            if genotype_tag in record:
-                                try:
-                                    genotype = vcf.translateGT(record[genotype_tag])
-                                except TypeError:
-                                    genotype = None
-                                break
-                    else:
-                        # the member does not have variants in this pos i.e. hom ref
-                        genotype = 0
-                        self.genes_dict[gene][pos][member] = {}
-                    
-                    self.genes_dict[gene][pos][member]["genotype"] = genotype
-    
-    def get_chr(self, record):
-        """returns the chromosome ID for a gene.
-        
-        Args:
-            record: dictionary entry for a gene, containing all the variants
+        for var in self.variants:
+             # make sure that gene is in self.genes_dict
+            if var.gene not in self.genes_dict:
+                self.genes_dict[var.gene] = []
             
-        Returns:
-            the chromosome that the gene is on.
-        """
-        for pos in record:
-            for member in ['child', 'mother', 'father']:
-                if member in record[pos]:
-                    chrom = record[pos][member]['CHROM']
-                    break
-        return chrom
-
-    def get_chr_group(self, chrom, min_pos, max_pos):
-        """ returns the chromosome type (eg autosomal, or X chromosome type).
+            # add the variant to the gene entry
+            self.genes_dict[var.gene].append(var)
         
-        provides the chromosome type for a chromosome (eg Autosomal, or X-chrom male etc). This only
-        does simple string matching. The chromosome string is either the chromosome number, or in 
-        the case of the sex-chromosomes, the chromosome character. This doesn't allow for 
-        chromosomes to be specified as 'chr1', and sex chromosomes have to be specified as 'X' or 
-        'Y', not '23' or '24'.
+    def find_variants(self, variants, gene):
+        """ finds variants that fit inheritance models
         
         Args:
-            CHR: chromosome string, coded just as the ID (eg '1', '2', '3' ... 'X', 'Y')
-        
-        Returns:
-            chromosome type (eg 'autosomal', 'XChrMale', 'XChrFemale')
+            variants: list of TrioGenotype objects
+            gene: gene ID as string
         """
         
-        if chrom not in ['chrX', 'ChrX', 'X']:
-            return 'autosomal'
+        # get the inheritance for the gene (monoalleleic, biallelic, hemizygous
+        # etc), but allow for times when we haven't specified a list of genes 
+        # to use
+        if self.known_genes is not None:
+            gene_inheritance = self.known_genes[gene]
         else:
-            # check if the gene lies within a pseudoautosomal region
-            for start, end in pseudoautosomal_regions:
-                if start < int(min_pos) < end or start < int(max_pos) < end:
-                    return "autosomal"
-            
-            if self.pedTrio.child.is_male():
-                return 'XChrMale'
-            if self.pedTrio.child.is_female():
-                return 'XChrFemale'
-    
-    def get_sorted_positions(self, positions):
-        """Returns a list of nucleotide positions, sorted according to the nucleotide position.
+            gene_inheritance = None
         
-        Args:
-            positions: list of nucleotide position strings
-        
-        Returns:
-            list of sorted nucleotide positions, as strings.
-        """
-        
-        sorted_pos = sorted([int(pos) for pos in positions])
-        sorted_pos = list(map(str, sorted_pos))
-        
-        return sorted_pos     
-    
-    def include_variant(self, gene, candidate):
-        """Adds a candidate variant to dictionary of variants for a specific inheritance model.
-        
-        Args:
-            gene: HUGO gene ID
-            candidate: a list of [variant, nucleotide position, check_type, inheritance]
-        """
-        
-        dictionary = self.found_variants
-        
-        variant = candidate[0]
-        position = candidate[1]
-        check_type = candidate[2]
-        inheritance_type = candidate[3]
-        record = self.extractUserFields(variant["child"])
-        record["MAX_MAF"] = variant.find_max_allele_frequency(self.tags_dict["MAX_MAF"])
-        
-        variant["child"]["genotype"] = vcf.translateGT(variant["child"]["genotype"])
-        
-        trio_genotype = "%d/%d/%d" % (variant["child"]["genotype"], variant["mother"]["genotype"], variant["father"]["genotype"])
-        record['trio_genotype'] = trio_genotype
-        
-        # make sure the gene is in the dictionary
-        if gene not in dictionary:
-            dictionary[gene] = {}
-        
-        # make sure the VCF record for the child is recorded under the variant position entry for 
-        # the gene
-        dictionary[gene][position] = record
-        
-        # add in all sorts of extra information here, probably better to do this later though
-        dictionary[gene][position]['inh'] = inheritance_type
-        
-        if self.pedTrio.father is not None:
-            dictionary[gene][position]['dad_aff'] = self.pedTrio.father.get_affected_status()
-        else:
-            dictionary[gene][position]['dad_aff'] = "NA"
-        if self.pedTrio.mother is not None:
-            dictionary[gene][position]['mom_aff'] = self.pedTrio.mother.get_affected_status()
-        else:
-            dictionary[gene][position]['mom_aff'] = "NA"
-        
-        dictionary[gene][position]['person_ID'] = self.pedTrio.child.get_ID()
-        dictionary[gene][position]['result'] = check_type
-        
-        # include an alternate ID for the affected child, if it exists
-        if self.ID_mapper is not None:
-            dictionary[gene][position]['alternate_ID'] = self.ID_mapper[self.pedTrio.child.get_ID()]
-        else:
-            dictionary[gene][position]['alternate_ID'] = 'no_alternate_ID'
-    
-    def get_genotype(self, record):
-        """extracts the genotype for an individual for a VCF record
-        
-        Args:
-            record: a VCF record as a dictionary for a single variant for a single person
-        
-        Returns:
-            A genotype converted to 0, 1, or 2 (referring to number of copies of the alternate 
-            allele). If the record does not have a genotype, then return None.
-        """
-        
-        for genotype_tag in self.tags_dict["genotype"]:
-            if genotype_tag in record:
-                try:
-                    return vcf.translateGT(record[genotype_tag])
-                except TypeError:
-                    return None
-        else:
-            return None
-    
-    def filter_de_novos(self):
-        """ filter out the de novos that have been picked up at an earlier stage of the pipeline
-        """
-        
-        # ignore situations when we haven't loaded any parents, which would all look like de novos 
-        # since we insert "0" for missing parental genotypes
-        if self.pedTrio.father is None and self.pedTrio.mother is None:
+        # ignore intergenic variants
+        if gene == None:
             return
-       
-        # run through the variants in the child, and
-        positions = list(self.child_vcf["data"].keys())
-        for position in positions:
-            if self.filter_de_novo_for_single_variant(position, self.child_vcf, self.mother_vcf, self.father_vcf) == False:
-                del self.child_vcf["data"][position]
-                if position in self.mother_vcf["data"]:
-                    del self.mother_vcf["data"][position]
-                if position in self.father_vcf["data"]:
-                    del self.father_vcf["data"][position]
-    
-    def filter_de_novo_for_single_variant(self, position, child_vcf, mother_vcf, father_vcf):
-        """ check if a variant is de novo in the child, and whether screened by denovogear
         
-        Some variants are de novo in the child, and if they are, then we should subject them to 
-        additional filtering to see if they have been passed by de novo gear, and an additional hard
-        coded filter called 'TEAM29_FILTER' that describes whether the variant passed screening, or 
-        if not, which filter it failed.
+        logging.debug(self.pedTrio.child.get_ID() + " " + gene + " " + str(variants) + " " + str(gene_inheritance))
+        chrom_inheritance = variants[0].get_inheritance_type()
         
-        Args:
-            position: chromosome and nucleotide position tuple for the variant
-            child_vcf: full vcf data for the child
-            mother_vcf: full vcf data for the mother
-            father_vcf: full vcf data for the father
-        
-        Returns:
-            boolean value for whether the variant should be included
-        """
-        
-        # currently hard code the filtering fields. The de novo field indicates whether the variant
-        # is de novo, I don't know how this is assigned. The project filter field indicates an 
-        # internal filter, curently whether the variant passed MAF, alternate frequency, and 
-        # segmental duplication criteria.
-        de_novo_snp_field = "DENOVO-SNP"
-        de_novo_indel_field = "DENOVO-INDEL"
-        project_filter_field = "TEAM29_FILTER"
-        
-        # set the standard de novo genotype combination
-        de_novo_genotype = (1,0,0)
-        
-        # account for X chrom de novos in males
-        chrom = position[0]
-        bp_position = position[1]
-        chrom_inheritance = self.get_chr_group(chrom, bp_position, bp_position)
-        if chrom_inheritance == "XChrMale" and self.pedTrio.child.is_male():
-            de_novo_genotype = (2,0,0)
-        
-        # get the genotypes for the trio
-        trio = [child_vcf, mother_vcf, father_vcf]
-        trio_genotype = []
-        for member in trio:
-            if position in member["data"]:
-                genotype = self.get_genotype(member["data"][position])
-                if genotype is None:
-                    genotype = 0
-                trio_genotype.append(genotype)
-            else:
-                trio_genotype.append(0)
-        
-        trio_genotype = tuple(trio_genotype)
-        
-        # if the variant is not de novo, don't worry about the additional filtering
-        if trio_genotype != de_novo_genotype:
-            return True
-        
-        # check the childs VCF record to see whether the variant has been screened out
-        child_vcf = child_vcf["data"][position]
-        if child_vcf[de_novo_snp_field] is None and child_vcf[de_novo_indel_field] is None:
-            return False
-        
-        if child_vcf[project_filter_field] != "PASS":
-            return False
-        else:
-            return True
+        if chrom_inheritance == "autosomal":
+            finder = inh.Autosomal(variants, self.pedTrio, gene_inheritance)
+        elif chrom_inheritance in ["XChrMale", "XChrFemale"]:
+            finder = inh.Allosomal(variants, self.pedTrio, gene_inheritance)
+        candidates = finder.get_candidiate_variants()
+        for candidate in candidates:
+            self.found_variants.append(candidate)
 
 
 class loadDefinitions:
@@ -561,7 +305,7 @@ def main():
     
     defs = loadDefinitions(opts)
     finder = ClinicalFilter(defs)
-    finder.run_filter()
+    finder.filter_trios()
 
 if __name__ == "__main__":
     main()

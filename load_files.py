@@ -1,15 +1,8 @@
-'''
-Read user filter and grouping files and return them as python dict
-
-10 Dec 2011
-sa9@sanger.ac.uk
-'''
+""" loads configuration files for clinical-filter.py
+"""
 
 import os
 import io
-import sys
-import sys
-import logging
 
 def open_known_genes(path='DDGP-reportable.txt'):
     """Loads list of known disease causative genes.
@@ -149,22 +142,22 @@ def open_filters(path):
                 values = set(values.split(","))
             
             # split nested strings into nested lists
-            if condition == "multiple_not":
+            elif condition == "multiple_not":
                 values = values.strip("()").split("), (")
                 for position in range(len(values)):
                     values[position] = tuple(values[position].split(", "))
             
             # convert numeric values to floats
-            if condition in set(["greater_than", "smaller_than", "equal"]):
+            elif condition in set(["greater_than", "smaller_than", "equal"]):
                 try:
                     values = float(values)
                 except ValueError:
                     print("Please check your filter file or correct this value. Here is the full record:")
                     print(line)
                     raise ValueError("One of these values couldn't be converted to float. Filter (%s) VCF value (%s)" % (condition, values))
-
+            
             # convert numeric lists to lists of floats
-            if condition == 'range':
+            elif condition == 'range':
                 try:
                     values = [float(x) for x in values]
                 except ValueError:

@@ -1,9 +1,6 @@
 """ class for reporting found variants via text or VCF files
 """
 
-
-import os
-import sys
 import logging
 import platform
 import datetime
@@ -13,7 +10,7 @@ class report(object):
     """A class to report candidate variants.
     """
     
-    def printFileContent(path):
+    def printFileContent(self, path):
         """ prints the text content of a file.
         """
         f = open(path, 'r')
@@ -77,7 +74,6 @@ class report(object):
     def save_results(self):
         """exports candidate variants and their details (currently matching exome-reporting.pl)
         """
-        results_dict = self.found_variants
         
         # only add in the header on the first run through
         if self.first_run:
@@ -85,29 +81,47 @@ class report(object):
                             "gene", "transcript", "consequence", "ref/alt_alleles", "MAX_MAF", \
                             "inheritance", "trio_genotype", "mom_aff", "dad_aff", "result"]) + "\n")
         
+        if self.pedTrio.father is not None:
+            dad_aff = self.pedTrio.father.get_affected_status()
+        else:
+            dad_aff = "NA"
+        if self.pedTrio.mother is not None:
+            mom_aff = self.pedTrio.mother.get_affected_status()
+        else:
+            mom_aff = "NA"
+        
+        # include an alternate ID for the affected child, if it exists
+        if self.ID_mapper is not None:
+            alternate_ID = self.ID_mapper[self.pedTrio.child.get_ID()]
+        else:
+            alternate_ID = 'no_alternate_ID'
+        
         reported_some_variants = False
-        for gene in sorted(results_dict):
-            for position in sorted(results_dict[gene]):
-                snp = results_dict[gene][position]
-                
-                # make sure we report the PolyPhen and SIFT scores, if available.
-                consequence = snp["consequence"]
-                if snp["PolyPhen"] is not None:
-                    consequence += ",PolyPhen=" + str(snp["PolyPhen"])
-                if snp["SIFT"] is not None:
-                    consequence += ",SIFT=" + str(snp["SIFT"])
-                snp["consequence"] = consequence
-                
-                alleles = snp["REF"] + "/" + snp["ALT"]
-                
-                output_line = [snp["person_ID"], snp["alternate_ID"], \
-                               self.pedTrio.child.get_gender(), snp["CHROM"], snp["POS"], \
-                               snp["gene"], snp['transcript'], snp["consequence"], alleles, \
-                               snp["MAX_MAF"], snp["inh"], snp["trio_genotype"], snp["mom_aff"], \
-                               snp["dad_aff"], snp['result']]
-                output_line = "\t".join(output_line) + "\n"
-                self.output.write(output_line)
-                reported_some_variants = True 
+        for candidate in sorted(self.found_variants):
+            var = candidate[0]
+            result = candidate[1]
+            inheritance_type = candidate[2]
+            
+            # make sure we report the PolyPhen and SIFT scores, if available.
+            consequence = var.child.info["CQ"]
+            if "PolyPhen" in var.child.info:
+                consequence += ",PolyPhen=" + str(var.child.info["PolyPhen"])
+            if "SIFT" in var.child.info:
+                consequence += ",SIFT=" + str(var.child.info["SIFT"])
+            
+            transcript = var.child.info["ENST"]
+            alleles = var.child.ref_allele + "/" + var.child.alt_allele
+            trio_genotype = "%s/%s/%s" % var.get_trio_genotype()
+            max_maf = var.child.find_max_allele_frequency(self.tags_dict["MAX_MAF"])
+            
+            output_line = [self.pedTrio.child.get_ID(), alternate_ID, \
+                           self.pedTrio.child.get_gender(), var.get_chrom(), var.get_position(), \
+                           var.get_gene(), transcript, consequence, alleles, \
+                           max_maf, inheritance_type, trio_genotype, mom_aff, \
+                           dad_aff, result]
+            output_line = "\t".join(output_line) + "\n"
+            self.output.write(output_line)
+            reported_some_variants = True 
         
         # leave a gap between individuals, as per previous reporting system
         if reported_some_variants: 
@@ -118,7 +132,7 @@ class report(object):
         """
         
         # figure out what to do with the header
-        child_lines = self.child_vcf["header_lines"]
+        child_lines = self.vcf_loader.header_lines
         
         child_lines.insert(-1, '##INFO=<ID=ClinicalFilterType,Number=.,Type=String,Description="The type of clinical filter that passed this variant.">\n')
         child_lines.insert(-1, '##INFO=<ID=ClinicalFilterRunDate,Number=.,Type=String,Description="The date on which the clinical filter was run.">\n')
@@ -130,35 +144,35 @@ class report(object):
         ClinicalFilterRunDate = ",ClinicalFilterRunDate=" + str(datetime.date.today())
         ClinicalFilterVersion = ",ClinicalFilterVersion=XXX"
         
-        results_dict = self.found_variants
-        for gene in sorted(results_dict):
-            for position in sorted(results_dict[gene]):
-                snp = results_dict[gene][position]
-                chrom = snp["CHROM"]
-                position = snp["POS"]
-                
-                snp_key = (chrom, position)
-                vcf_line = self.child_vcf["data"][snp_key]["vcf_line"]
-                
-                ClinicalFilterType = ",ClinicalFilterType=" + "XXX"
-                vcf_line[7] += ClinicalFilterType + ClinicalFilterRunDate + ClinicalFilterVersion
-                
-                mother_genotype = snp["trio_genotype"].split("/")[1]
-                father_genotype = snp["trio_genotype"].split("/")[2]
-                
-                if mother_genotype == 0 and father_genotype == 0:
-                    parental_inheritance = "deNovo"
-                elif mother_genotype == 0 and father_genotype != 0:
-                    parental_inheritance == "paternal"
-                elif mother_genotype != 0 and father_genotype == 0:
-                    parental_inheritance = "maternal"
-                else:
-                    parental_inheritance = "biparental"
-                
-                vcf_line[8] = ":".join(["INHERITANCE", "INHERITANCE_GENOTYPE"])
-                vcf_line[9] = ":".join([parental_inheritance, snp["trio_genotype"].replace("/", ",")])
-                
-                child_lines.append("\t".join(vcf_line) + "\n")
+        for candidate in sorted(self.found_variants):
+            var = candidate[0]
+            
+            chrom = var.get_chrom()
+            position = var.get_position
+            
+            snp_key = (chrom, position)
+            vcf_line = var.child.get_vcf_line()
+            
+            ClinicalFilterType = ",ClinicalFilterType=" + "XXX"
+            vcf_line[7] += ClinicalFilterType + ClinicalFilterRunDate + ClinicalFilterVersion
+            
+            mother_genotype = var.mother.get_genotype()
+            father_genotype = var.father.get_genotype()
+            
+            if mother_genotype == 0 and father_genotype == 0:
+                parental_inheritance = "deNovo"
+            elif mother_genotype == 0 and father_genotype != 0:
+                parental_inheritance == "paternal"
+            elif mother_genotype != 0 and father_genotype == 0:
+                parental_inheritance = "maternal"
+            else:
+                parental_inheritance = "biparental"
+            
+            vcf_line[8] = ":".join(["INHERITANCE", "INHERITANCE_GENOTYPE"])
+            trio_genotype = list(map(str, var.get_trio_genotype()))
+            vcf_line[9] = ":".join([parental_inheritance, ",".join(trio_genotype)])
+            
+            child_lines.append("\t".join(vcf_line) + "\n")
         
         
         # join the list of lines for the VCF file into a single string
