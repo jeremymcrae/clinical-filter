@@ -24,7 +24,7 @@ $(SRCDIR): $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip
 $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip:
 	git archive --format zip --output $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip --remote $(GIT_URI) --prefix clinical-filter-$(CLINICAL_FILTER_VERSION)/ $(CLINICAL_FILTER_VERSION)
 
-install-python: $(wildcard $(SRCDIR)/*.py)
+install-python: $(wildcard $(SRCDIR)/src/main/python/*)
 	$(INSTALL) -d -m 0755 $(CLINICAL_FILTER_PREFIX)
 	$(INSTALL) -m 0755 $^ $(CLINICAL_FILTER_PREFIX)
 
