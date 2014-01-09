@@ -1,15 +1,16 @@
 #!/usr/bin/make -f
 
-PREFIX            := /software/ddd/internal/clinical-filter
-GIT_URI           := ssh://git.internal.sanger.ac.uk/repos/git/ddd/clinical-filter.git
-CLINICAL_FILTER_VERSION  :=
+PREFIX                  := /software/ddd/internal/clinical-filter
+GIT_URI                 := ssh://git.internal.sanger.ac.uk/repos/git/ddd/clinical-filter.git
+CLINICAL_FILTER_VERSION :=
 
-TMPDIR            := $(shell mktemp -d)
-SRCDIR            := $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION)
+TMPDIR                  := $(shell mktemp -d)
+SRCDIR                  := $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION)
 
-CLINICAL_FILTER_PREFIX := $(PREFIX)/clinical-filter-$(CLINICAL_FILTER_VERSION)
+CLINICAL_FILTER_PREFIX  := $(PREFIX)/clinical-filter-$(CLINICAL_FILTER_VERSION)
 
-INSTALL            := /usr/bin/install
+INSTALL                 := /usr/bin/install
+CHMOD                   := Du=rwx,Dg=rwx,Do=rx,Fu=rw,Fg=rw,Fo=r
 
 usage:
 	@echo "Usage: install CLINICAL_FILTER_VERSION=XXX clinicalfilter" >&2
@@ -24,8 +25,7 @@ $(SRCDIR): $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip
 $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip:
 	git archive --format zip --output $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip --remote $(GIT_URI) --prefix clinical-filter-$(CLINICAL_FILTER_VERSION)/ $(CLINICAL_FILTER_VERSION)
 
-install-python: $(wildcard $(SRCDIR)/src/main/python/*)
-	$(INSTALL) -d -m 0755 $(CLINICAL_FILTER_PREFIX)
-	$(INSTALL) -m 0755 $^ $(CLINICAL_FILTER_PREFIX)
+install-python:
+	rsync -rp --chmod=$(CHMOD) $(SRCDIR)/src/main/python/ $(CLINICAL_FILTER_PREFIX)
 
 
