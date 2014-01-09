@@ -9,7 +9,7 @@ import platform
 import datetime
 import gzip
 
-import user
+from clinicalfilter import user
 
 
 class report(object):

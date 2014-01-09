@@ -34,12 +34,12 @@ import itertools
 import os
 import logging
 
-import user
-import vcf
-import parser
-import inheritance
-import ped
-import reporting
+from clinicalfilter import user
+from clinicalfilter import vcf
+from clinicalfilter import parser
+from clinicalfilter import inheritance
+from clinicalfilter import ped
+from clinicalfilter import reporting
 
 pseudoautosomal_regions = [(1,2699520), (154930290,155260560), (88456802,92375509)]
 

@@ -8,7 +8,7 @@ import sys
 import itertools
 import logging
 
-import user
+from clinicalfilter import user
 
 class Parser(object):
     """This class opens and parses the data from VCF files.

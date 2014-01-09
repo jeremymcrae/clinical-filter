@@ -5,7 +5,7 @@ inheritance model specific to the gene and chromosome that the variant/s are in.
 import sys
 
 import logging
-from snp import snp
+from clinicalfilter.snp import snp
 
 
 class inheritance(object):

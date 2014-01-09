@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export PYTHONPATH="src/main/python:src/test/python:$PYTHONPATH"
+
+python3 src/main/python/EVAR_trio.py $@ 
