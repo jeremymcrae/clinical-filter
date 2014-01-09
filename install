@@ -7,6 +7,7 @@ CLINICAL_FILTER_VERSION  :=
 TMPDIR            := $(shell mktemp -d)
 SRCDIR            := $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION)
 
+CLINICAL_FILTER_PREFIX := $(PREFIX)/clinical-filter-$(CLINICAL_FILTER_VERSION)
 
 INSTALL            := /usr/bin/install
 
@@ -15,7 +16,7 @@ usage:
 
 clinicalfilter: $(SRCDIR)
 	test -n "$(CLINICAL_FILTER_VERSION)"
-	$(MAKE) -C $< -f install TMPDIR=$(TMPDIR) CLINICAL_FILTER_VERSION=$(CLINICAL_FILTER_VERSION) 
+	$(MAKE) -C $< -f install TMPDIR=$(TMPDIR) CLINICAL_FILTER_VERSION=$(CLINICAL_FILTER_VERSION) install-python
 
 $(SRCDIR): $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip
 	cd $(TMPDIR) && unzip $<
@@ -23,5 +24,8 @@ $(SRCDIR): $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip
 $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip:
 	git archive --format zip --output $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip --remote $(GIT_URI) --prefix clinical-filter-$(CLINICAL_FILTER_VERSION)/ $(CLINICAL_FILTER_VERSION)
 
+install-python: $(wildcard $(SRCDIR)/*.py)
+	$(INSTALL) -d -m 0755 $(CLINICAL_FILTER_PREFIX)
+	$(INSTALL) -m 0755 $^ $(CLINICAL_FILTER_PREFIX)
 
 
