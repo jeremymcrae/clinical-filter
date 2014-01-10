@@ -17,13 +17,16 @@ usage:
 
 clinicalfilter: $(SRCDIR)
 	test -n "$(CLINICAL_FILTER_VERSION)"
-	$(MAKE) -C $< -f install TMPDIR=$(TMPDIR) CLINICAL_FILTER_VERSION=$(CLINICAL_FILTER_VERSION) install-python
+	$(MAKE) -C $< -f install TMPDIR=$(TMPDIR) CLINICAL_FILTER_VERSION=$(CLINICAL_FILTER_VERSION) clean-srcdir-git install-python
 
 $(SRCDIR): $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip
 	cd $(TMPDIR) && unzip $<
 
 $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip:
 	git archive --format zip --output $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip --remote $(GIT_URI) --prefix clinical-filter-$(CLINICAL_FILTER_VERSION)/ $(CLINICAL_FILTER_VERSION)
+
+clean-srcdir-git:
+	find $(SRCDIR)/src/main/ | grep "/\.gitignore"$ | xargs -I '{}' rm {}
 
 install-python:
 	rsync -rp --chmod=$(CHMOD) $(SRCDIR)/src/main/python/ $(CLINICAL_FILTER_PREFIX)
