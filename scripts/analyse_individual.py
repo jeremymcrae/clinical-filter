@@ -1,5 +1,5 @@
-""" runs EVAR analysis on a single proband, just starting from the proband ID. Used for testing
-purposes.
+""" runs clincal filtering analysis on a single proband, just starting from the
+proband ID. Used for testing purposes.
 """
 
 import os
@@ -13,8 +13,8 @@ import glob
 home_folder = "/nfs/users/nfs_j/jm33/"
 app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
-evar_code = os.path.join(app_folder, "EVAR_trio.py")
-ped_file = os.path.join(app_folder, "exome_reporting.ped")
+filter_code = os.path.join(app_folder, "clinical-filter.py")
+ped_file = os.path.join(home_folder, "exome_reporting.ped")
 filters = os.path.join(app_folder, "config", "filters.txt")
 tag_names = os.path.join(app_folder, "config", "tags.txt")
 
@@ -97,10 +97,10 @@ def main():
     
     # now set up the command for analysing the given pedigree file
     bjobs_preamble = ["bsub", "-q", "normal", "-o", random_filename + ".bjob_output.txt"]
-    evar_command = ["python", evar_code, "--ped", random_filename, "--filter", filters, "--tags", tag_names, "--known-genes", known_genes, "--alternate-ids", alternate_ids, "--output", random_filename + ".output.txt", "--export-vcf"] + logging_option
-    full_command = " ".join(bjobs_preamble + evar_command)
+    filter_command = ["python3", filter_code, "--ped", random_filename, "--filter", filters, "--tags", tag_names, "--known-genes", known_genes, "--alternate-ids", alternate_ids, "--output", random_filename + ".output.txt", "--export-vcf"] + logging_option
+    full_command = " ".join(bjobs_preamble + filter_command)
     
-    subprocess.call(bjobs_preamble + evar_command)
+    subprocess.call(bjobs_preamble + filter_command)
 
 if __name__ == "__main__":
     main()

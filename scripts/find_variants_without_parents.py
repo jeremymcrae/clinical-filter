@@ -1,5 +1,5 @@
-""" script to make a pedigree file for individuals without their parents, and then submit a cluster
-array job running EVAR on the PED file.
+""" script to make a pedigree file for individuals without their parents, and
+then submit a cluster array job filtering on the PED file.
 """
 
 
@@ -12,7 +12,7 @@ import glob
 
 user_folder = "/nfs/users/nfs_j/jm33/"
 app_folder = os.path.join(user_folder, "apps", "clinical-filter")
-submit_evar_script = os.path.join(app_folder, "scripts", "submit_evar_lsf_job_array.py")
+submit_script = os.path.join(app_folder, "scripts", "submit_lsf_job_array.py")
 ped_file = os.path.join(user_folder, "exome_reporting.ped")
 
 def get_options():
@@ -72,9 +72,9 @@ def main():
     random_file.close()
     
     # now set up the command for analysing the given pedigree file
-    evar_command = ["python", submit_evar_script, "--ped", random_filename] + logging_option
+    filter_command = ["python", submit_script, "--ped", random_filename] + logging_option
     
-    subprocess.call(evar_command)
+    subprocess.call(filter_command)
 
 if __name__ == "__main__":
     main()
