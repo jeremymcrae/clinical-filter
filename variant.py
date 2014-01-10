@@ -687,7 +687,7 @@ class CNV(Variant):
             boolean value for whether the record passes the filters
         """
         
-        # select only acgh CNV – INFO.CNSOLIDATE [flag]
+        # select only acgh CNV - INFO.CNSOLIDATE [flag]
         if "CNSOLIDATE" not in self.info:
             return False
 
