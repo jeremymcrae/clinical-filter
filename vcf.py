@@ -30,9 +30,23 @@ class LoadVCFs(object):
         """ loads the variants for a trio
         """
         
-        self.load_trio()
-        self.combine_trio_variants()
-        self.filter_de_novos()
+        try:
+            self.load_trio()
+            self.combine_trio_variants()
+            self.filter_de_novos()
+        except IOError as error:
+            if self.pedTrio.mother is None:
+                mother_ID = "no mother"
+            else:
+                mother_ID = self.pedTrio.mother.get_ID()
+            if self.pedTrio.father is None:
+                father_ID = "no father"
+            else:
+                father_ID = self.pedTrio.father.get_ID()
+            logging.error("trio with missing file - child: " + self.pedTrio.child.get_ID() \
+                + ", mother: " + mother_ID + ", father: " + father_ID + ". " + str(error))
+            
+            self.variants = []
         
         return self.variants
     

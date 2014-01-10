@@ -49,12 +49,12 @@ class Inheritance(object):
         self.trio = trio
         
         if self.trio.father is not None:
-            self.father_affected = self.trio.father.get_boolean_affected_status()
+            self.father_affected = self.trio.father.is_affected()
         else:
             self.father_affected = None
             
         if self.trio.mother is not None:
-            self.mother_affected = self.trio.mother.get_boolean_affected_status()
+            self.mother_affected = self.trio.mother.is_affected()
         else:
             self.mother_affected = None
         

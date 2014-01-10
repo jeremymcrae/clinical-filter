@@ -60,16 +60,17 @@ def open_known_genes(path='DDGP-reportable.txt'):
             continue 
         
         if gene_ID not in known_genes:
-            known_genes[gene_ID] = set([])
+            known_genes[gene_ID] = {"inheritance": set(), "confirmed_status": set()}
         
-        known_genes[gene_ID].add(gene_inheritance)
+        known_genes[gene_ID]["inheritance"].add(gene_inheritance)
+        known_genes[gene_ID]["confirmed_status"].add(gene_confirmed_status)
         
         # some genes are listed with an inheritance mode of "Both", which means the gene has been
         # observed in disorders with both monoallelic and biallelic inheritance. Make sure the
         # monoallelic and biallelic modes are shown for the gene.
         if gene_inheritance == "Both":
-            known_genes[gene_ID].add("Monoallelic")
-            known_genes[gene_ID].add("Biallelic")
+            known_genes[gene_ID]["inheritance"].add("Monoallelic")
+            known_genes[gene_ID]["inheritance"].add("Biallelic")
     
     if len(known_genes) == 0:
         raise ValueError("No genes found in the file, check the line endings")

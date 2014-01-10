@@ -76,22 +76,10 @@ class ClinicalFilter(reporting.report):
             # some families have more than one child in the family, so run through each child.
             while self.pedTrio.check_all_children_analysed() == False:
                 self.pedTrio.set_child()
-                if self.pedTrio.child.get_boolean_affected_status():
-                    try:
-                        self.vcf_loader = vcf.LoadVCFs(self.pedTrio, self.counter, len(self.pedTrios), self.filters)
-                        self.variants = self.vcf_loader.get_trio_variants()
-                        self.analyse_trio()
-                    except IOError as error:
-                        if self.pedTrio.mother is None:
-                            mother_ID = "no mother"
-                        else:
-                            mother_ID = self.pedTrio.mother.get_ID()
-                        if self.pedTrio.father is None:
-                            father_ID = "no father"
-                        else:
-                            father_ID = self.pedTrio.father.get_ID()
-                        logging.error("trio with missing file - child: " + self.pedTrio.child.get_ID() \
-                            + ", mother: " + mother_ID + ", father: " + father_ID + ". " + str(error))
+                if self.pedTrio.child.is_affected():
+                    self.vcf_loader = vcf.LoadVCFs(self.pedTrio, self.counter, len(self.pedTrios), self.filters)
+                    self.variants = self.vcf_loader.get_trio_variants()
+                    self.analyse_trio()
                 
                 self.pedTrio.set_child_examined()
             self.counter += 1
@@ -155,7 +143,7 @@ class ClinicalFilter(reporting.report):
         # etc), but allow for times when we haven't specified a list of genes 
         # to use
         if self.known_genes is not None:
-            gene_inheritance = self.known_genes[gene]
+            gene_inheritance = self.known_genes[gene]["inheritance"]
         else:
             gene_inheritance = None
         

@@ -36,7 +36,7 @@ class person(object):
         """
         return self.affected_status
     
-    def get_boolean_affected_status(self):
+    def is_affected(self):
         """gets a boolean value for affected status, rather than the affected status string
         """
         # change how the affected status is encoded. Current DDD ped files encode from "1" for 
@@ -169,8 +169,8 @@ class pedTrio(person):
         """
         
         # account for how the parents affected status changes the chromosome inheritance model
-        mother_affected = self.mother.get_boolean_affected_status() 
-        father_affected = self.father.get_boolean_affected_status()
+        mother_affected = self.mother.is_affected() 
+        father_affected = self.father.is_affected()
         
         if not mother_affected and not father_affected:
             affected_status = "parents_unaffected"

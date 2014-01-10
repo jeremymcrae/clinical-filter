@@ -621,11 +621,11 @@ class CNV(Variant):
         """
         
         if self.alt_allele == "<DUP>":
-            self.genotype = "dup"
+            self.genotype = "DUP"
         elif self.alt_allele == "<DEL>":
-            self.genotype = "del"
-        elif self.alt_allele == "no_variation":
-            self.alt_allele = "ref"
+            self.genotype = "DEL"
+        else:
+            self.alt_allele = "REF"
         
         self.set_range()
         self.set_reference_genotypes()
@@ -634,7 +634,7 @@ class CNV(Variant):
         """ set a default genotype for individuals without one
         """
         
-        self.genotype = "ref"
+        self.genotype = "REF"
         self.set_range()
         self.set_reference_genotypes()
     
@@ -676,20 +676,123 @@ class CNV(Variant):
         
         return self.genotype
     
-    def calculate_cnv_size_tolerance(self):
-        """ calculates the size range of CNVs that might match a given CNV size.
+    def trial_passes_filters(self, filters, pedTrio):
+        """Checks whether a VCF record passes user defined criteria.
         
         Args:
-            cnv_size: int value for CNV size in base pairs
-        
+            record: A dictionary entry for a single variant converted from a
+            VCF file.
+            
         Returns:
-            tuple of minimum and maximum sizes in base pairs
+            boolean value for whether the record passes the filters
         """
         
-        min_size = self.size - abs(100 * math.sqrt(self.size + 2500)) + 5000
-        max_size = self.size + 100 * math.sqrt(self.size)
+        # select only acgh CNV – INFO.CNSOLIDATE [flag]
+        if "CNSOLIDATE" not in self.info:
+            return False
+
+        # Pass CNVs:
+        #     MADR > 15
+        #         Abs(INFO.MEANLR2/INFO.MADLR2)
+        #     INFO.WSCORE > 0.4
+        #     INFO.CALLP < 0.01
+        #     COMMONFORWARDS < 0.8
+        if float(self.info["MEANLR2"])/float(self.info["MADLR2"]) < 15:
+            return False
         
-        return (min_size, max_size)
+        if float(self.info["WSCORE"]) < 0.04:
+            return False
+        
+        if float(self.info["CALLP"]) > 0.01:
+            return False
+        
+        if float(self.info["COMMONFORWARDS"]) > 0.8:
+            return False
+            
+        #     INFO.SVTYPE == DUP
+        #         INFO.MEANLR2 > 0.36
+        
+        if self.genotype == "DUP":
+            if float(self.info["MEANLR2"]) < 0.36:
+                return False
+            
+        #     INFO.SVTYPE == DEL
+        #         INFO.MEANLR2 < -0.41
+        
+        if self.genotype == "DUP":
+            if float(self.info["MEANLR2"]) > -0.41:
+                return False
+        
+        # Non-DD-route:
+        #     FORMAT.INHERITANCE == "deNovo"
+        #     FORMAT.INHERITANCE == "Paternal" & Father Affected
+        #     FORMAT.INHERITANCE == "Maternal" & Mother Affected
+        #     FORMAT.INHERITANCE == "Biparental" & Either Affected
+        #         DEL: INFO.SVLEN > 100000
+        #         DUP: INFO.SVLEN > 250000
+        # 
+        #     FORMAT.INHERITANCE == "unknown" (i.e. not deNovo, Parental).
+        #         DEL & DUP: INFO.SVLEN > 500000
+        
+        if self.gene == "" or self.gene not in filters["HGNC"]:
+            inh = self.format["INHERITANCE"]
+            if inh == "deNovo" \
+               or (inh == "Paternal" and pedTrio.father.is_affected()) \
+               or (inh == "Maternal" and pedTrio.mother.is_affected()) \
+               or (inh == "Biparental" and \
+                (pedTrio.mother.is_affected() or pedTrio.father.is_affected())):
+                if self.genotype == "DEL":
+                    if float(self.info["SVLEN"]) < 100000:
+                        return False
+                if self.genotype == "DUP":
+                    if float(self.info["SVLEN"]) < 250000:
+                        return False
+            
+            if inh == "unknown":
+                if float(self.info["SVLEN"]) < 500000:
+                    return False 
+        
+        # DD gene route:
+        #     DD Gene Type == "Both DD and IF" = report
+        
+        if self.gene in filters["HGNC"]:
+            dd_gene_type = filters["HGNC"][self.gene]["confirmed_status"]
+            dd_gene_mode = filters["HGNC"][self.gene]["inheritance"]
+            if dd_gene_type == "Confirmed DD Gene" or dd_gene_type == "Probable DD gene":
+                pass
+        #     DD Gene Type == "Confirmed DD Gene" or "Probable DD gene"
+            
+        #         DD Gene Mode == "Biallelic"
+        #             chr: all
+        #             gender: male/female
+        #             INFO.CNS == 0
+        #             Mechs: "Uncertain", "Loss of function", "Dominant negative"
+                
+        #         DD Gene Mode == "Monoallelic"
+        #             chr: all
+        #             gender: male/female
+        #             INFO.CNS == 0,1,3
+        #             Mechs: "Uncertain", "Loss of function", "Dominant negative", "Increased gene dosage"
+                
+        #         DD Gene Mode == "X-linked dominant"
+        #             chr: X
+        #             gender: male/female
+        #             INFO.CNS == 0,1,3
+        #             Mechs: "Uncertain", "Loss of function", "Dominant negative", "Increased gene dosage"
+                
+        #         DD Gene Mode == "Hemizygous"
+        #             chr: X
+        #             gender: male
+        #             INFO.CNS == 0,1,3
+        #             Mechs: "Uncertain", "Loss of function", "Dominant negative", "Increased gene dosage"
+                
+        #         DD Gene Mode == "Hemizygous"
+        #              chr: X
+        #             gender: female
+        #             INFO.CNS == 3
+        #             Mechs: "Increased gene dosage"
+
+        return True
     
     def is_het(self):
         return False
