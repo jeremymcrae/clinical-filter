@@ -11,7 +11,7 @@ inheritance models of the gene.
 
 Usage:
 
-python clinical-filter.py \
+python clinical_filter.py \
     --ped temp_name.ped \
     --filter filters.txt \
     --tags tags.txt \
@@ -28,11 +28,11 @@ import sys
 import optparse
 import logging
 
-import load_files
-import vcf
-import inheritance as inh
-import ped
-import reporting
+from clinicalfilter import load_files
+from clinicalfilter import vcf
+from clinicalfilter import inheritance as inh
+from clinicalfilter import ped
+from clinicalfilter import reporting
 
 class ClinicalFilter(reporting.report):
     """ filters trios for candidate variants that might contribute to a 

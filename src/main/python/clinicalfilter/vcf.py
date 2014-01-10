@@ -8,9 +8,9 @@ import sys
 import gzip
 import logging
 
-import variant
-from trio_genotypes import TrioGenotypes
-from match_cnvs import MatchCNVs
+from clinicalfilter import variant
+from clinicalfilter.trio_genotypes import TrioGenotypes
+from clinicalfilter.match_cnvs import MatchCNVs
 
 
 class LoadVCFs(object):
