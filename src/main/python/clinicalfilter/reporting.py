@@ -5,11 +5,27 @@ import logging
 import platform
 import datetime
 import gzip
+import importlib
+import sys
 
 class report(object):
     """A class to report candidate variants.
     """
-    
+
+    def clinicalFilterVersion(self):
+        """Tries to obtain the version (git tag) from clinicalfilter.version.version()
+        """
+        clinical_filter_version = "XXX"
+        try:
+            version_module = importlib.import_module("clinicalfilter.version")
+            clinical_filter_version = version_module.version()
+        except ImportError as ierr:
+            logging.info("Failed to import clinicalfilter.version. ImportError: '{0}' (Using 'XXX')".format (ierr))
+        except:
+            logging.warn("Uexpected error trying to import clinicalfilter.version. '{0}'".format(sys.exc_info()[0]))
+        
+        return clinical_filter_version
+
     def printFileContent(self, path):
         """ prints the text content of a file.
         """
@@ -142,7 +158,7 @@ class report(object):
         child_lines.insert(-1, '##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="The inheritance of the variant in the trio (biparental, paternal, maternal, deNovo).">\n')
         
         ClinicalFilterRunDate = ",ClinicalFilterRunDate=" + str(datetime.date.today())
-        ClinicalFilterVersion = ",ClinicalFilterVersion=XXX"
+        ClinicalFilterVersion = ",ClinicalFilterVersion={0}".format(self.clinicalFilterVersion())
         
         for candidate in sorted(self.found_variants):
             var = candidate[0]
