@@ -10,7 +10,6 @@ import random
 import glob
 
 user_folder = "/nfs/users/nfs_j/jm33/"
-app_folder = os.path.join(user_folder, "apps", "clinical-filter")
 ped_file = os.path.join(user_folder, "exome_reporting.ped")
 
 def get_options():

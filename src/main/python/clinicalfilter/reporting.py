@@ -143,6 +143,23 @@ class report(object):
         if reported_some_variants: 
             self.output.write("\n")
     
+    def include_vcf_provenance(self, provenance, member):
+        """ adds the original VCF filename and checksums
+        
+        Args:
+            provenance: tuple of checksum, filename and date for a member of a trio_genotype
+            member: code for member (eg "proband", "maternal", "paternal")
+        
+        Returns:
+            list of lines to add to VCF file
+        """
+        
+        checksum = "##UberVCF_" + member + "_Checksum=" + provenance[0] + "\n"
+        basename = "##UberVCF_" + member + "_Basename=" + provenance[1] + "\n"
+        date = "##UberVCF_" + member + "_Date=" + provenance[2] + "\n"
+        
+        return [checksum, basename, date]
+        
     def save_vcf(self):
         """ exports a VCF file for the childs candidate variants.
         """
@@ -151,17 +168,24 @@ class report(object):
         child_lines = self.vcf_loader.header_lines
         
         child_lines.insert(-1, '##INFO=<ID=ClinicalFilterType,Number=.,Type=String,Description="The type of clinical filter that passed this variant.">\n')
+        child_lines.insert(-1, '##INFO=<ID=ClinicalFilterGeneInheritance,Number=.,Type=String,Description="The inheritance mode (Monoallelic, Biallelic etc) under which the variant was found.">\n')
         child_lines.insert(-1, '##INFO=<ID=ClinicalFilterRunDate,Number=.,Type=String,Description="The date on which the clinical filter was run.">\n')
         child_lines.insert(-1, '##INFO=<ID=ClinicalFilterVersion,Number=.,Type=String,Description="The git tag of the clinical filter code.">\n')
         
         child_lines.insert(-1, '##FORMAT=<ID=INHERITANCE_GENOTYPE,Number=.,Type=String,Description="The 012 coded genotypes for a trio (child, mother, father).">\n')
         child_lines.insert(-1, '##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="The inheritance of the variant in the trio (biparental, paternal, maternal, deNovo).">\n')
         
-        ClinicalFilterRunDate = ",ClinicalFilterRunDate=" + str(datetime.date.today())
-        ClinicalFilterVersion = ",ClinicalFilterVersion={0}".format(self.clinicalFilterVersion())
+        ClinicalFilterRunDate = ";ClinicalFilterRunDate=" + str(datetime.date.today())
+        ClinicalFilterVersion = ";ClinicalFilterVersion={0}".format(self.clinicalFilterVersion())
+        
+        child_lines = child_lines[:-1] + self.include_vcf_provenance(self.vcf_provenance[0], "proband") + child_lines[-1:]
+        child_lines = child_lines[:-1] + self.include_vcf_provenance(self.vcf_provenance[1], "maternal") + child_lines[-1:]
+        child_lines = child_lines[:-1] + self.include_vcf_provenance(self.vcf_provenance[2], "paternal") + child_lines[-1:]
         
         for candidate in sorted(self.found_variants):
             var = candidate[0]
+            filter_type = candidate[1]
+            gene_inheritance = candidate[2]
             
             chrom = var.get_chrom()
             position = var.get_position
@@ -169,8 +193,9 @@ class report(object):
             snp_key = (chrom, position)
             vcf_line = var.child.get_vcf_line()
             
-            ClinicalFilterType = ",ClinicalFilterType=" + "XXX"
-            vcf_line[7] += ClinicalFilterType + ClinicalFilterRunDate + ClinicalFilterVersion
+            ClinicalFilterType = ";ClinicalFilterType=" + filter_type
+            ClinicalFilterGeneInheritance = ";ClinicalFilterGeneInheritance=" + gene_inheritance
+            vcf_line[7] += ClinicalFilterGeneInheritance + ClinicalFilterType + ClinicalFilterRunDate + ClinicalFilterVersion
             
             mother_genotype = var.mother.get_genotype()
             father_genotype = var.father.get_genotype()
@@ -189,7 +214,6 @@ class report(object):
             vcf_line[9] = ":".join([parental_inheritance, ",".join(trio_genotype)])
             
             child_lines.append("\t".join(vcf_line) + "\n")
-        
         
         # join the list of lines for the VCF file into a single string
         child_lines = "".join(child_lines)

@@ -86,7 +86,37 @@ class Inheritance(object):
         else:
             possibilities = self.find_variants_for_trio()
         
+        possibilities = self.exclude_duplicates(possibilities)
+        
         return possibilities
+    
+    def exclude_duplicates(self, variants):
+        """ rejig variants included under multiple inheritance mechanisms
+        
+        Args:
+            variants: list of candidate variants
+        
+        Returns:
+            list of [variant, check_type, inheritance], with duplicates 
+            excluded, and originals modified to show both mechanisms
+        """
+        
+        variant_keys = set()
+        variants_to_keep = []
+        for variant in variants:
+            key = variant[0].child.get_key()
+            if key not in variant_keys:
+                variants_to_keep.append(variant)
+                variant_keys.add(key)
+            else:
+                for pos in range(len(variants_to_keep)):
+                    temp = variants_to_keep[pos]
+                    if temp[0].child.get_key() == key:
+                        temp[1] += "," + variant[1]
+                        temp[2] += "," +  variant[2]
+                        variants_to_keep[pos] = temp
+        
+        return variants_to_keep
     
     def check_inheritance_mode_matches_gene_mode(self):
         """ make sure that the mode of inheritance for the gene makes sense 

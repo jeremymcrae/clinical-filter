@@ -13,7 +13,7 @@ import optparse
 home_folder = "/nfs/users/nfs_j/jm33/"
 app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
-filter_code = os.path.join(app_folder, "clinical-filter.py")
+filter_code = os.path.join(app_folder, "src", "main", "python", "clinical_filter.py")
 filters = os.path.join(app_folder, "config", "filters.txt")
 tag_names = os.path.join(app_folder, "config", "tags.txt")
 

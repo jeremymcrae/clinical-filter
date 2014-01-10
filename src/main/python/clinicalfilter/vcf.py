@@ -7,6 +7,7 @@ import platform
 import sys
 import gzip
 import logging
+import hashlib
 
 from clinicalfilter import variant
 from clinicalfilter.trio_genotypes import TrioGenotypes
@@ -134,7 +135,16 @@ class LoadVCFs(object):
             # we only get ValueError when the genotype cannot be set, which
             # occurs for x chrom male heterozygotes (an impossible genotype)
             pass
+    
+    def find_vcf_definitions(self, path):
+        """ get provenance information for a vcf path
+        """ 
         
+        vcf_checksum = hashlib.sha1(open(path, 'rb').read()).hexdigest()
+        vcf_basename = os.path.basename(path)
+        vcf_date = vcf_basename.split(".")[-3]
+        
+        return (vcf_checksum, vcf_basename, vcf_date)
     
     def include_variant(self, var, child_variants, filters):
         """ check if we want to include the variant or not
@@ -157,7 +167,6 @@ class LoadVCFs(object):
             
         return use_variant
         
-    
     def open_individual(self, path, gender, filters=False, child_variants=False):
         """ Convert VCF to TSV format. Use for single sample VCF file.
         
@@ -181,6 +190,7 @@ class LoadVCFs(object):
         f = self.open_vcf_file(path)
         header = self.get_vcf_header(f)
         self.header_lines = header
+        file_definitions = self.find_vcf_definitions(path)
         
         vcf = {}
         for line in f:
@@ -207,7 +217,7 @@ class LoadVCFs(object):
         # for key in sorted(vcf):
         #     logging.debug(vcf[key])
         
-        return vcf
+        return vcf, file_definitions
     
     def load_trio(self):
         """ opens and parses the VCF files for members of the family trio.
@@ -224,24 +234,24 @@ class LoadVCFs(object):
             self.pedTrio.child.get_path())
         
         # open the childs VCF file
-        self.child_vcf = self.open_individual(self.pedTrio.child.get_path(), \
+        self.child_vcf, self.child_defs = self.open_individual(self.pedTrio.child.get_path(), \
             self.pedTrio.child.get_gender(), filters=True)
         self.cnv_matcher = MatchCNVs(self.child_vcf)
         
         # if the trio doesn't include parents, generate blank dictionaries
         if self.pedTrio.mother is not None:
             logging.info(" mothers path: " + self.pedTrio.mother.get_path())
-            self.mother_vcf = self.open_individual(self.pedTrio.mother.get_path(), \
+            self.mother_vcf, self.mother_defs = self.open_individual(self.pedTrio.mother.get_path(), \
                 self.pedTrio.mother.get_gender(), child_variants=True)
         else:
-            self.mother_vcf = {}
+            self.mother_vcf, self.mother_defs = {}, ("NA", "NA", "NA")
             
         if self.pedTrio.father is not None:
             logging.info(" fathers path: " + self.pedTrio.father.get_path())
-            self.father_vcf = self.open_individual(self.pedTrio.father.get_path(), \
+            self.father_vcf, self.father_defs = self.open_individual(self.pedTrio.father.get_path(), \
                 self.pedTrio.father.get_gender(), child_variants=True)
         else:
-            self.father_vcf = {}
+            self.father_vcf, self.father_defs = {}, ("NA", "NA", "NA")
     
     def combine_trio_variants(self):
         """ for each variant, combine the trio's genotypes
@@ -296,7 +306,13 @@ class LoadVCFs(object):
                 var.set_default_genotype()
         
         return var
+    
+    def get_vcf_provenance(self):
+        """ returns provenance of VCFs for individuals in a trio
+        """
         
+        return self.child_defs, self.mother_defs, self.father_defs
+    
     def filter_de_novos(self):
         """ filter out the de novos that have been picked up at an earlier stage of the pipeline
         """

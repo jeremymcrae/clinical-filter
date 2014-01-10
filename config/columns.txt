@@ -1,2 +1,0 @@
-output	CHROM,POS,ID,REF,ALT,genotype,gene,transcript,consequence,MAX_MAF,PolyPhen,SIFT
-#UK10K_MAF,EVS_ALL,EVS_GTC,

@@ -11,7 +11,7 @@ inheritance models of the gene.
 
 Usage:
 
-python clinical-filter.py \
+python clinical_filter.py \
     --ped temp_name.ped \
     --filter filters.txt \
     --tags tags.txt \

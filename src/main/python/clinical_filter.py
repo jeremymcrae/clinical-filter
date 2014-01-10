@@ -79,6 +79,7 @@ class ClinicalFilter(reporting.report):
                 if self.pedTrio.child.is_affected():
                     self.vcf_loader = vcf.LoadVCFs(self.pedTrio, self.counter, len(self.pedTrios), self.filters)
                     self.variants = self.vcf_loader.get_trio_variants()
+                    self.vcf_provenance = self.vcf_loader.get_vcf_provenance()
                     self.analyse_trio()
                 
                 self.pedTrio.set_child_examined()
@@ -159,6 +160,7 @@ class ClinicalFilter(reporting.report):
         elif chrom_inheritance in ["XChrMale", "XChrFemale"]:
             finder = inh.Allosomal(variants, self.pedTrio, gene_inheritance)
         candidates = finder.get_candidiate_variants()
+        
         for candidate in candidates:
             self.found_variants.append(candidate)
 
