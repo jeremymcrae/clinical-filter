@@ -298,6 +298,7 @@ class Variant(VcfInfo):
         self.chrom = chrom
         self.position = position
         self.id = snp_id
+        self.set_mutation_id()
         
         self.ref_allele = ref_allele
         self.alt_allele = alt_allele
@@ -322,6 +323,33 @@ class Variant(VcfInfo):
             raise ValueError("unknown gender")
         
         self.set_inheritance_type()
+    
+    def set_mutation_id(self):
+        """ sets the mutation ID based on the ID column value
+        """
+        
+        # the variant ID can be either "." for null value, an rsID, a HGMD ID,
+        # a COSMIC ID, or any combination of those (including multiple HGMD IDs
+        # for a single variant). 
+        mutation_id = self.id
+        
+        if mutation_id == ".":
+            self.mutation_id = "NA"
+        else:
+            mutation_id = mutation_id.split("&")
+            ids = []
+            for value in mutation_id:
+                # include everything that isn't an rsID
+                if not value.startswith("rs"):
+                    ids.append(value)
+            
+            if len(ids) == 0:
+                self.mutation_id = "NA"
+            else:
+                self.mutation_id = ",".join(ids)
+                    
+    def get_mutation_id(self):
+        return self.mutation_id
     
     def get_gender(self):
         """returns the gender for a person (1, M = male, 2, F = female).
@@ -758,6 +786,8 @@ class CNV(Variant):
         if self.gene in filters["HGNC"]:
             dd_gene_type = filters["HGNC"][self.gene]["confirmed_status"]
             dd_gene_mode = filters["HGNC"][self.gene]["inheritance"]
+            if dd_gene_mode == "Both DD and IF":
+                return True
             if dd_gene_type == "Confirmed DD Gene" or dd_gene_type == "Probable DD gene":
                 pass
         #     DD Gene Type == "Confirmed DD Gene" or "Probable DD gene"

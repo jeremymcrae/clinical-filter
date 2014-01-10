@@ -78,7 +78,7 @@ class report(object):
         # only add in the header on the first run through
         if self.first_run:
             self.output.write("\t".join(["proband", "alternate_ID", "sex", "chrom", "position", \
-                            "gene", "transcript", "consequence", "ref/alt_alleles", "MAX_MAF", \
+                            "gene", "mutation_ID", "transcript", "consequence", "ref/alt_alleles", "MAX_MAF", \
                             "inheritance", "trio_genotype", "mom_aff", "dad_aff", "result"]) + "\n")
         
         if self.pedTrio.father is not None:
@@ -116,7 +116,7 @@ class report(object):
             
             output_line = [self.pedTrio.child.get_ID(), alternate_ID, \
                            self.pedTrio.child.get_gender(), var.get_chrom(), var.get_position(), \
-                           var.get_gene(), transcript, consequence, alleles, \
+                           var.get_gene(), var.child.get_mutation_id(), transcript, consequence, alleles, \
                            max_maf, inheritance_type, trio_genotype, mom_aff, \
                            dad_aff, result]
             output_line = "\t".join(output_line) + "\n"
