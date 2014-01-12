@@ -197,17 +197,19 @@ class report(object):
             ClinicalFilterGeneInheritance = ";ClinicalFilterGeneInheritance=" + gene_inheritance
             vcf_line[7] += ClinicalFilterGeneInheritance + ClinicalFilterType + ClinicalFilterRunDate + ClinicalFilterVersion
             
-            mother_genotype = var.mother.get_genotype()
-            father_genotype = var.father.get_genotype()
-            
-            if mother_genotype == 0 and father_genotype == 0:
-                parental_inheritance = "deNovo"
-            elif mother_genotype == 0 and father_genotype != 0:
-                parental_inheritance == "paternal"
-            elif mother_genotype != 0 and father_genotype == 0:
-                parental_inheritance = "maternal"
+            if self.pedTrio.mother == None and self.pedTrio.father == None:
+                parental_inheritance = "unknown"
             else:
+                mother_genotype = var.mother.get_genotype()
+                father_genotype = var.father.get_genotype()
+                
                 parental_inheritance = "biparental"
+                if mother_genotype == 0 and father_genotype == 0:
+                    parental_inheritance = "deNovo"
+                elif mother_genotype == 0 and father_genotype != 0:
+                    parental_inheritance == "paternal"
+                elif mother_genotype != 0 and father_genotype == 0:
+                    parental_inheritance = "maternal"
             
             vcf_line[8] = ":".join(["INHERITANCE", "INHERITANCE_GENOTYPE"])
             trio_genotype = list(map(str, var.get_trio_genotype()))

@@ -263,7 +263,7 @@ def get_options():
     parser.add_option('--known-genes', dest='genes_path', help='path to list of known disease causative genes, eg DDG2P-reportable.txt')
     parser.add_option('--alternate-ids', dest='alternate_ids_path', help='path to list of alternate IDs, eg personid_decipher_id_sangerid.txt')
     parser.add_option('-o', '--output', dest='output_path', default='clinical_reporting.txt', help='filename to output variant data to')
-    parser.add_option('--export-vcf', dest='export_vcf', default=False, help='whether to export identified variants to a VCF file')
+    parser.add_option('--export-vcf', dest='export_vcf', action="store_true", default=False, help='whether to export identified variants to a VCF file')
     parser.add_option('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
     
     (opts, args) = parser.parse_args()
