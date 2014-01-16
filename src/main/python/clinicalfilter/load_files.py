@@ -4,7 +4,7 @@
 import os
 import io
 
-def open_known_genes(path='DDGP-reportable.txt'):
+def open_known_genes(path="DDGP-reportable.txt"):
     """Loads list of known disease causative genes.
     
     We obtain a liost of genes that are known to be involved in disorders, so that we can screen 
@@ -26,7 +26,7 @@ def open_known_genes(path='DDGP-reportable.txt'):
         raise IOError("Path to known gene file does not exist")
     
     known_genes = {}
-    f = io.open(path, 'r', encoding="latin_1")
+    f = io.open(path, "r", encoding="latin_1")
     
     # allow for gene files with different column names and positions
     header = f.readline().strip().split("\t")
@@ -34,10 +34,12 @@ def open_known_genes(path='DDGP-reportable.txt'):
         gene_label = "Gene"
         confirmed_status_label = "DDG2P_Status"
         inheritance_label = "Inheritance"
+        mechanism_label = "Mechanism"
     elif "type" in header:
         gene_label = "gene"
         confirmed_status_label = "type"
         inheritance_label = "mode"
+        mechanism_label = "mech"
     else:
         raise ValueError("The gene file doesn't contain any expected header column names")
     
@@ -45,6 +47,7 @@ def open_known_genes(path='DDGP-reportable.txt'):
     gene_column = header.index(gene_label)
     confirmed_status_column = header.index(confirmed_status_label)
     inheritance_column = header.index(inheritance_label)
+    mechanism_column = header.index(mechanism_label)
     
     # only include genes with sufficient DDG2P status
     allowed_confirmed_statuses = ["Confirmed DD Gene", "Probable DD gene", "Both DD and IF"]
@@ -54,23 +57,31 @@ def open_known_genes(path='DDGP-reportable.txt'):
         gene_ID = line[gene_column]
         gene_confirmed_status = line[confirmed_status_column]
         gene_inheritance = line[inheritance_column]
+        gene_mechanism = line[mechanism_column]
         
         # ignore genes with insufficient evidence
         if gene_confirmed_status not in allowed_confirmed_statuses:
             continue 
         
         if gene_ID not in known_genes:
-            known_genes[gene_ID] = {"inheritance": set(), "confirmed_status": set()}
+            known_genes[gene_ID] = {"inheritance": {}, "confirmed_status": set()}
         
-        known_genes[gene_ID]["inheritance"].add(gene_inheritance)
+        if gene_inheritance not in known_genes[gene_ID]["inheritance"]:
+            known_genes[gene_ID]["inheritance"][gene_inheritance] = set()
+        
+        known_genes[gene_ID]["inheritance"][gene_inheritance].add(gene_mechanism)
         known_genes[gene_ID]["confirmed_status"].add(gene_confirmed_status)
         
         # some genes are listed with an inheritance mode of "Both", which means the gene has been
         # observed in disorders with both monoallelic and biallelic inheritance. Make sure the
         # monoallelic and biallelic modes are shown for the gene.
         if gene_inheritance == "Both":
-            known_genes[gene_ID]["inheritance"].add("Monoallelic")
-            known_genes[gene_ID]["inheritance"].add("Biallelic")
+            if "Monoallelic" not in known_genes[gene_ID]["inheritance"]:
+                known_genes[gene_ID]["inheritance"]["Monoallelic"] = set()
+            if "Biallelic" not in known_genes[gene_ID]["inheritance"]:
+                known_genes[gene_ID]["inheritance"]["Biallelic"] = set()
+            known_genes[gene_ID]["inheritance"]["Monoallelic"].add(gene_mechanism)
+            known_genes[gene_ID]["inheritance"]["Biallelic"].add(gene_mechanism)
     
     if len(known_genes) == 0:
         raise ValueError("No genes found in the file, check the line endings")
@@ -119,8 +130,8 @@ def open_filters(path):
     Returns: 
         A dictionary of VCF INFO categories with corresponding criteria. For example: 
         
-        {'VCQ': '(list', ['ESSENTIAL_SPLICE_SITE', 'STOP_GAINED']), 
-        'AF_MAX': ('smaller_than', 0.01)}
+        {"VCQ": "(list", ["ESSENTIAL_SPLICE_SITE", "STOP_GAINED"]), 
+        "AF_MAX": ("smaller_than", 0.01)}
 
     Raises:
         IOError: An error when the filter file path is not specified correctly.
@@ -133,7 +144,7 @@ def open_filters(path):
 
     # open the path and load the filter criteria
     mydict = {}
-    f = io.open(path, 'r', encoding="latin1")
+    f = io.open(path, "r", encoding="latin1")
     for line in f:
         if not line.startswith("#"):
             label, condition, values = line.strip().split("\t")
@@ -158,7 +169,7 @@ def open_filters(path):
                     raise ValueError("One of these values couldn't be converted to float. Filter (%s) VCF value (%s)" % (condition, values))
             
             # convert numeric lists to lists of floats
-            elif condition == 'range':
+            elif condition == "range":
                 try:
                     values = [float(x) for x in values]
                 except ValueError:
@@ -198,7 +209,7 @@ def open_tags(path):
     GT_tag = "genotype"
     
     tags_dict = {GN_tag: "", CQ_tag: "", MAF_tag: "", GT_tag: ""}
-    f = open(path,'r')
+    f = open(path,"r")
     for line in f:
         if line.startswith("#"):
             continue

@@ -9,7 +9,8 @@ import gzip
 import logging
 import hashlib
 
-from clinicalfilter import variant
+from clinicalfilter.variant_snv import SNV
+from clinicalfilter.variant_cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 from clinicalfilter.match_cnvs import MatchCNVs
 
@@ -18,11 +19,11 @@ class LoadVCFs(object):
     """ load VCF files for a trio
     """
     
-    def __init__(self, pedTrio, counter, total_trios, filters):
+    def __init__(self, family, counter, total_trios, filters):
         """ intitalise the class with the filters and trio details etc
         """
         
-        self.pedTrio = pedTrio
+        self.family = family
         self.counter = counter
         self.total_trios = total_trios
         self.filters = filters
@@ -36,15 +37,14 @@ class LoadVCFs(object):
             self.combine_trio_variants()
             self.filter_de_novos()
         except IOError as error:
-            if self.pedTrio.mother is None:
+            if self.family.has_parents():
+                mother_ID = self.family.mother.get_ID()
+                father_ID = self.family.father.get_ID()
+            else:
                 mother_ID = "no mother"
-            else:
-                mother_ID = self.pedTrio.mother.get_ID()
-            if self.pedTrio.father is None:
                 father_ID = "no father"
-            else:
-                father_ID = self.pedTrio.father.get_ID()
-            logging.error("trio with missing file - child: " + self.pedTrio.child.get_ID() \
+            
+            logging.error("trio with missing file - child: " + self.family.child.get_ID() \
                 + ", mother: " + mother_ID + ", father: " + father_ID + ". " + str(error))
             
             self.variants = []
@@ -71,14 +71,14 @@ class LoadVCFs(object):
             # python2 gzip opens in text, but same mode in python3 opens as bytes,
             # avoid with platform specific code
             if platform.python_version_tuple()[0] == "2":
-                f = gzip.open(path, 'r')
+                f = gzip.open(path, "r")
             else:
                 f = gzip.open(path, "rt")
         elif path.endswith(".vcf") or path.endswith(".txt"):
-            f = io.open(path,'r', encoding="latin_1")
+            f = io.open(path,"r", encoding="latin_1")
         else:
-            print('Unable to open extension "%s". Accepted extensions are ".vcf" or ".txt"' % path.split(".")[-1])
-            print('The ".txt" is tab-separated file and it can be compressed in gz format.')
+            print("Unable to open extension '%s'. Accepted extensions are '.vcf' or '.txt'" % path.split(".")[-1])
+            print("The '.txt' is tab-separated file and it can be compressed in gz format.")
             sys.exit(0)
         return f
 
@@ -140,7 +140,11 @@ class LoadVCFs(object):
         """ get provenance information for a vcf path
         """ 
         
-        vcf_checksum = hashlib.sha1(open(path, 'rb').read()).hexdigest()
+        try:
+            vcf_checksum = hashlib.sha1(open(path, "rb").read()).hexdigest()
+        except (OSError, IOError) as e:
+            vcf_checksum = "NA"
+        
         vcf_basename = os.path.basename(path)
         vcf_date = vcf_basename.split(".")[-3]
         
@@ -200,12 +204,16 @@ class LoadVCFs(object):
             line = self.split_vcf_line(line)
             
             if self.alt_allele == "<DUP>" or self.alt_allele == "<DEL>":
-                var = variant.CNV(self.chrom, self.position, self.snp_id, \
+                var = CNV(self.chrom, self.position, self.snp_id, \
                     self.ref_allele, self.alt_allele, self.quality, \
                     self.filter_value)
+                # we have to set CNV values to be able to filter
                 var.add_info(self.info_values)
+                var.set_gender(gender)
+                var.add_format(self.format_keys, self.sample_values)
+                var.set_parental_statuses(self.family.mother.is_affected(), self.family.father.is_affected())
             else:
-                var = variant.SNV(self.chrom, self.position, self.snp_id, \
+                var = SNV(self.chrom, self.position, self.snp_id, \
                     self.ref_allele, self.alt_allele, self.quality, \
                     self.filter_value)
             
@@ -231,26 +239,24 @@ class LoadVCFs(object):
         # load the VCF file for each member of the trio
         logging.info("opening trio " + str(self.counter + 1) + " of " + \
             str(self.total_trios) + ". child path: " + \
-            self.pedTrio.child.get_path())
+            self.family.child.get_path())
         
         # open the childs VCF file
-        self.child_vcf, self.child_defs = self.open_individual(self.pedTrio.child.get_path(), \
-            self.pedTrio.child.get_gender(), filters=True)
+        self.child_vcf, self.child_defs = self.open_individual(self.family.child.get_path(), \
+            self.family.child.get_gender(), filters=True)
         self.cnv_matcher = MatchCNVs(self.child_vcf)
         
-        # if the trio doesn't include parents, generate blank dictionaries
-        if self.pedTrio.mother is not None:
-            logging.info(" mothers path: " + self.pedTrio.mother.get_path())
-            self.mother_vcf, self.mother_defs = self.open_individual(self.pedTrio.mother.get_path(), \
-                self.pedTrio.mother.get_gender(), child_variants=True)
-        else:
-            self.mother_vcf, self.mother_defs = {}, ("NA", "NA", "NA")
+        if self.family.has_parents():
+            logging.info(" mothers path: " + self.family.mother.get_path())
+            self.mother_vcf, self.mother_defs = self.open_individual(self.family.mother.get_path(), \
+                self.family.mother.get_gender(), child_variants=True)
             
-        if self.pedTrio.father is not None:
-            logging.info(" fathers path: " + self.pedTrio.father.get_path())
-            self.father_vcf, self.father_defs = self.open_individual(self.pedTrio.father.get_path(), \
-                self.pedTrio.father.get_gender(), child_variants=True)
+            logging.info(" fathers path: " + self.family.father.get_path())
+            self.father_vcf, self.father_defs = self.open_individual(self.family.father.get_path(), \
+                self.family.father.get_gender(), child_variants=True)
         else:
+            # if the trio doesn't include parents, generate blank dictionaries
+            self.mother_vcf, self.mother_defs = {}, ("NA", "NA", "NA")
             self.father_vcf, self.father_defs = {}, ("NA", "NA", "NA")
     
     def combine_trio_variants(self):
@@ -266,42 +272,42 @@ class LoadVCFs(object):
             trio = TrioGenotypes(var)
             
             # if we only have the child, then just add the variant to the list
-            if self.pedTrio.mother is None and self.pedTrio.father is None:
+            if self.family.has_parents() == False:
                 self.variants.append(trio)
                 continue
             
-            mother_var = self.get_parental_var(var, self.mother_vcf, self.pedTrio.mother.get_gender(), mother_cnv_matcher)
+            mother_var = self.get_parental_var(var, self.mother_vcf, self.family.mother.get_gender(), mother_cnv_matcher)
             trio.add_mother_variant(mother_var)
             
-            father_var = self.get_parental_var(var, self.father_vcf, self.pedTrio.father.get_gender(), father_cnv_matcher)
+            father_var = self.get_parental_var(var, self.father_vcf, self.family.father.get_gender(), father_cnv_matcher)
             trio.add_father_variant(father_var)
             
             self.variants.append(trio)
     
     def get_parental_var(self, var, parental_vcf, gender, matcher):
         """ get the corresponding parental variant to a childs variant, or 
-        create a variant with reference genotype.
+        create a default variant with reference genotype.
         
         Args:
             var: childs var, as Variant object
-            parental_vcf: dict of parental variants, indexed by variant position key
+            parental_vcf: dict of parental variants, indexed by position key
             gender: gender of the parent
             matcher: cnv matcher for parent
         """
         
-        if isinstance(var, variant.CNV):
+        if isinstance(var, CNV):
             if matcher.any_overlap(var):
                 overlap_key = matcher.get_overlap_key(var.get_key())
                 var = parental_vcf[overlap_key]
             else:
-                var = variant.CNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.quality, var.filter)
+                var = CNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.quality, var.filter)
                 var.set_gender(gender)
                 var.set_default_genotype()
         else:
             if var.get_key() in parental_vcf:
                 var = parental_vcf[var.get_key()]
             else:
-                var = variant.SNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.quality, var.filter)
+                var = SNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.quality, var.filter)
                 var.set_gender(gender)
                 var.set_default_genotype()
         
@@ -314,18 +320,18 @@ class LoadVCFs(object):
         return self.child_defs, self.mother_defs, self.father_defs
     
     def filter_de_novos(self):
-        """ filter out the de novos that have been picked up at an earlier stage of the pipeline
+        """ filter the de novos variants in the VCF files
         """
         
-        # ignore situations when we haven't loaded any parents, which would all look like de novos 
-        # since we insert "0" for missing parental genotypes
-        if self.pedTrio.father is None and self.pedTrio.mother is None:
+        # ignore situations when we haven't loaded any parents, which would all
+        # look like de novos  since we insert "0" for missing parental genotypes
+        if self.family.has_parents() == False:
             return 
        
         # run through the variants in the child, and
         passed_variants = []
         for var in self.variants:
-            if var.passes_de_novo_checks(self.pedTrio):
+            if var.passes_de_novo_checks(self.family):
                 passed_variants.append(var)
         
         self.variants = passed_variants

@@ -29,24 +29,11 @@ class report(object):
     def printFileContent(self, path):
         """ prints the text content of a file.
         """
-        f = open(path, 'r')
+        f = open(path, "r")
         for line in f:
-            if not line.startswith('#'):
+            if not line.startswith("#"):
                 logging.info("#" + line.strip())
         f.close()
-    
-    def printSectionTitle(self, title):
-        """prints a title to standard out.
-        
-        Args:
-            title: a string naming an inheritance model, such as 'Autosomal Recessive HOM'.
-            
-        Returns:
-            Nothing, just prints to the screen.
-        """
-        logging.info(75 * "*")
-        logging.info(title.upper())
-        logging.info(75 * "*")
     
     def printReportInputInfo(self, title):
         """report the parameters used to run the script, such as python version, script version, 
@@ -56,29 +43,12 @@ class report(object):
         python_version = "%s %s %s" % (platform.python_version(), platform.python_build(), platform.python_compiler())
         
         # capture the program title
-        logging.info(75 * "#")
-        logging.info("#")
-        logging.info("#" + title.upper())
-        logging.info("#")
-        logging.info(75 * "#")
-        logging.info("#")
+        logging.info("#" + title)
         
         # capture some information about the progam version, and when and what ran
         logging.info("# Date/Time : " + str(datetime.datetime.now()))
         logging.info("# Python    : " + python_version)
         logging.info("#")
-        logging.info("#" + 74 * "-")
-        
-        # capture the VCF files used for analysis (this should be swapped to the PED file, if used)
-        logging.info("# Files")
-        logging.info("#" + 74 * "-")
-        paths = [self.pedTrio.child.get_path()]
-        if self.pedTrio.mother is not None:
-            paths.append(self.pedTrio.mother.get_path())
-        if self.pedTrio.father is not None:
-            paths.append(self.pedTrio.father.get_path())
-        for path in paths:
-            logging.info("#" + path)
             
         # capture some information about the filters used for screening
         logging.info("#" + 74 * "-")
@@ -97,25 +67,23 @@ class report(object):
                             "gene", "mutation_ID", "transcript", "consequence", "ref/alt_alleles", "MAX_MAF", \
                             "inheritance", "trio_genotype", "mom_aff", "dad_aff", "result"]) + "\n")
         
-        if self.pedTrio.father is not None:
-            dad_aff = self.pedTrio.father.get_affected_status()
+        if self.family.has_parents():
+            dad_aff = self.family.father.get_affected_status()
+            mom_aff = self.family.mother.get_affected_status()
         else:
             dad_aff = "NA"
-        if self.pedTrio.mother is not None:
-            mom_aff = self.pedTrio.mother.get_affected_status()
-        else:
             mom_aff = "NA"
         
         # include an alternate ID for the affected child, if it exists
         if self.ID_mapper is not None:
-            alternate_ID = self.ID_mapper[self.pedTrio.child.get_ID()]
+            alternate_ID = self.ID_mapper[self.family.child.get_ID()]
         else:
             alternate_ID = 'no_alternate_ID'
         
         reported_some_variants = False
         for candidate in sorted(self.found_variants):
             var = candidate[0]
-            result = candidate[1]
+            filter_type = candidate[1]
             inheritance_type = candidate[2]
             
             # make sure we report the PolyPhen and SIFT scores, if available.
@@ -130,11 +98,11 @@ class report(object):
             trio_genotype = "%s/%s/%s" % var.get_trio_genotype()
             max_maf = var.child.find_max_allele_frequency(self.tags_dict["MAX_MAF"])
             
-            output_line = [self.pedTrio.child.get_ID(), alternate_ID, \
-                           self.pedTrio.child.get_gender(), var.get_chrom(), var.get_position(), \
+            output_line = [self.family.child.get_ID(), alternate_ID, \
+                           self.family.child.get_gender(), var.get_chrom(), var.get_position(), \
                            var.get_gene(), var.child.get_mutation_id(), transcript, consequence, alleles, \
                            max_maf, inheritance_type, trio_genotype, mom_aff, \
-                           dad_aff, result]
+                           dad_aff, filter_type]
             output_line = "\t".join(output_line) + "\n"
             self.output.write(output_line)
             reported_some_variants = True 
@@ -190,16 +158,13 @@ class report(object):
             chrom = var.get_chrom()
             position = var.get_position
             
-            snp_key = (chrom, position)
             vcf_line = var.child.get_vcf_line()
             
             ClinicalFilterType = ";ClinicalFilterType=" + filter_type
             ClinicalFilterGeneInheritance = ";ClinicalFilterGeneInheritance=" + gene_inheritance
             vcf_line[7] += ClinicalFilterGeneInheritance + ClinicalFilterType + ClinicalFilterRunDate + ClinicalFilterVersion
             
-            if self.pedTrio.mother == None and self.pedTrio.father == None:
-                parental_inheritance = "unknown"
-            else:
+            if self.family.has_parents():
                 mother_genotype = var.mother.get_genotype()
                 father_genotype = var.father.get_genotype()
                 
@@ -210,19 +175,21 @@ class report(object):
                     parental_inheritance == "paternal"
                 elif mother_genotype != 0 and father_genotype == 0:
                     parental_inheritance = "maternal"
+            else:
+                parental_inheritance = "unknown"
             
             vcf_line[8] = ":".join(["INHERITANCE", "INHERITANCE_GENOTYPE"])
-            trio_genotype = list(map(str, var.get_trio_genotype()))
-            vcf_line[9] = ":".join([parental_inheritance, ",".join(trio_genotype)])
+            trio_genotype = "%s,%s,%s" % var.get_trio_genotype()
+            vcf_line[9] = ":".join([parental_inheritance, trio_genotype])
             
             child_lines.append("\t".join(vcf_line) + "\n")
         
         # join the list of lines for the VCF file into a single string
         child_lines = "".join(child_lines)
         if platform.python_version_tuple()[0] == "2":
-            with gzip.open(self.pedTrio.child.get_ID() + ".vcf.gz", 'wb') as f:
+            with gzip.open(self.family.child.get_ID() + ".vcf.gz", 'wb') as f:
                 f.write(child_lines)
         else:
-            with gzip.open(self.pedTrio.child.get_ID() + ".vcf.gz", 'wt') as f:
+            with gzip.open(self.family.child.get_ID() + ".vcf.gz", 'wt') as f:
                 f.write(child_lines)
         

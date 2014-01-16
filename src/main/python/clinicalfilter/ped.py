@@ -5,8 +5,8 @@ import os
 import logging
 import sys
 
-class person(object):
-    """creates an object for a person, with their ID, and path to their VCF file etc
+class Person(object):
+    """creates an object for a person, with their ID, and VCF path
     """
     def __init__(self, person_ID, VCF_path, affected_status, gender):
         self.person_ID = person_ID
@@ -37,17 +37,18 @@ class person(object):
         return self.affected_status
     
     def is_affected(self):
-        """gets a boolean value for affected status, rather than the affected status string
+        """returns true or false for affected, rather than the string value
         """
-        # change how the affected status is encoded. Current DDD ped files encode from "1" for 
-        # unaffected, and "2" for affected. Change this to True/False values, and catch any unknown 
-        # affected statuses.
+        # change how the affected status is encoded. Current DDD ped files 
+        # encode "1" for unaffected, and "2" for affected. Change this to 
+        # True/False values, and catch any unknown affected statuses.
         if self.affected_status == "1":
             boolean_affected_status = False
         elif self.affected_status == "2":
             boolean_affected_status = True
         else:
-            sys.exit("unknown affected: " + self.affected_status + ", should be 1 = unaffected, 2 = affected") 
+            sys.exit("unknown status: " + self.affected_status + ", should be \
+                      1: unaffected, 2: affected") 
         
         return boolean_affected_status
     
@@ -72,7 +73,7 @@ class person(object):
         """ makes sure that the parents match their expected gender.
         
         Args:
-            gender_code: mothers, being female, are "2", while fathers, being male, are "1"
+            gender_code: mothers, are "2", while fathers, are "1"
         """
         
         if self.is_male():
@@ -83,15 +84,11 @@ class person(object):
             sys.exit("unknown gender code: " + self.get_gender())
         
         if gender_code not in current_gender_codes:
-            print(current_gender_codes)
-            # I'm logging this, as well as exiting with a message, do we need both?
-            logging.warning(self.person_ID + "'s gender differs from that expected as a parent")
-            sys.exit(self.person_ID + " is listed as gender " + self.get_gender() + ", which " \
-                     + "is different to that expected from their parental status (ie mother or " \
-                     + "father)")
+            sys.exit(self.person_ID + " is listed as gender " + self.get_gender()\
+                 + ", which differs from the sex expected as mother or father)")
 
-class pedTrio(person):
-    """creates an object for each trio, with useful info like paths, IDs, and affected statuses.
+class Family(object):
+    """creates a family, with VCF paths, IDs, and affected statuses
     """
     
     def __init__(self, family_ID):
@@ -109,22 +106,39 @@ class pedTrio(person):
             return True
         else:
             return False
+        
+    def has_parents(self):
+        """returns True/False for whether the family includes parental info
+        """
+        
+        if self.father == None and self.mother == None:
+            return False
+        
+        return True
     
     def add_child(self, ID, path, affected_status, gender):
-        tmp_child = person(ID, path, affected_status, gender)
+        """ adds a child
+        
+        Args:
+            ID: individual ID string
+            path: path to childs VCF file
+            affected_status: affected status string for child
+            gender: gender string for child
+        """
+        tmp_child = Person(ID, path, affected_status, gender)
         tmp_child.analysed = False
         self.children.append(tmp_child)
     
     def add_mother(self, ID, path, affected_status, gender):
-        self.mother = person(ID, path, affected_status, gender)
+        self.mother = Person(ID, path, affected_status, gender)
         self.mother.check_gender("2")
     
     def add_father(self, ID, path, affected_status, gender):
-        self.father = person(ID, path, affected_status, gender)
+        self.father = Person(ID, path, affected_status, gender)
         self.father.check_gender("1")
     
     def set_child(self):
-        """set the child as the first in the family without a 'True' examined status
+        """ define the child to be examined
         """
         for child in self.children:
             if child.analysed == False:
@@ -132,7 +146,7 @@ class pedTrio(person):
                 break
     
     def set_child_examined(self):
-        """ once a child has been examined, mark it as such in the list of children
+        """ once a child has been examined, mark it as such in the children list
         """
         for child_position in range(len(self.children)):
             child = self.children[child_position]
@@ -149,50 +163,13 @@ class pedTrio(person):
         
         return all_checked
     
-    def has_sibling(self):
-        if len(self.children) == 1:
-            return False
-        else:
-            return True
-    
-    # def swap_sibling_to_child(self):
-    #     self.set_child(self.sibling.get_ID(), self.sibling.get_path(), self.sibling.get_affected_status(), self.sibling.get_gender())
-    
-    def get_trio_paths(self):
-        return [self.child.get_path(), self.mother.get_path(), self.father.get_path()]
-    
-    def get_parents_affected_status(self):
-        """ Determine whether either, or both, of the parents are also affected.
-        
-        Returns:
-            the affected status of the parents as a string.
-        """
-        
-        # account for how the parents affected status changes the chromosome inheritance model
-        mother_affected = self.mother.is_affected() 
-        father_affected = self.father.is_affected()
-        
-        if not mother_affected and not father_affected:
-            affected_status = "parents_unaffected"
-        elif mother_affected and not father_affected:
-            affected_status = "mother_affected"
-        elif not mother_affected and father_affected:
-            affected_status = "father_affected"
-        elif mother_affected and father_affected:
-            affected_status = "both_parents_affected"
-        else:
-            print("unknown parental affected status, mother:", mother_affected, \
-                  "father:", father_affected, ". They should be True/False values")
-            sys.exit(1)
-        
-        return affected_status
-
-def loadPedFile(path):
+def load_ped_file(path):
     """Loads a PED file containing details for multiple trios.
     
-    The PED file is in LINKAGE PED format, with the first six columns specfifying the indivudual and
-    how they are related to toher individuals. In contrast to other PED files, the genotypes are 
-    specified as a path to a VCF file for the individual.
+    The PED file is in LINKAGE PED format, with the first six columns s
+    pecfifying the indivudual and how they are related to toher individuals. In 
+    contrast to other PED files, the genotypes are specified as a path to a VCF 
+    file for the individual.
     
     Args:
         path: path to the ped file
@@ -204,14 +181,10 @@ def loadPedFile(path):
         affected: dictionary of affected statuses, indexed by individual ID
         sex: dictionary of genders, indexed by individual ID
         vcfs: dictionary of VCF paths, indexed by individual ID
-    
-    Raises:
-        IOError: an error when the PED file path is not specified correctly
     """
     
     if not os.path.exists(path):
-        print(path)
-        raise IOError("Path to ped file does not exist")
+        sys.exit("Path to ped file does not exist: " + path)
     
     mothers = {}
     fathers = {}
@@ -232,13 +205,13 @@ def loadPedFile(path):
         affected_status = line[5]
         path = line[6]
         
-        # make sure we can match each individual to their own paths, and affected status
+        # make sure we can match individuals to their paths, and affected status
         vcfs[individual_ID] = path
         affected[individual_ID] = affected_status
         sex[individual_ID] = gender
         
         # track the child, maternal and paternal IDs
-        if paternal_ID != '0' and maternal_ID != '0':
+        if paternal_ID != "0" and maternal_ID != "0":
             children[individual_ID] = family_ID
         if paternal_ID != 0:
             fathers[individual_ID] = paternal_ID
@@ -247,28 +220,28 @@ def loadPedFile(path):
     
     return mothers, fathers, children, affected, sex, vcfs
 
-def loadPedTrios(path):
-    """Creates a dictionary of trio data from a PED file.
+def load_families(path):
+    """Creates a dictionary of family data from a PED file.
     
     Args:
         path: path to the ped file
         
     Returns:
-        pedTrios: a dictionary of pedTrio objects, indexed by family IDs
+        families: a dictionary of Family objects, indexed by family IDs
     """
     
     # do an initial parse of the ped file
-    mothers, fathers, children, affected, sex, vcfs = loadPedFile(path)
+    mothers, fathers, children, affected, sex, vcfs = load_ped_file(path)
     
-    pedTrios = {}
+    families = {}
     
     # put all the family info into a trio class
     for child_ID, family_ID in children.items():
-        # if the family hasn't been included already, generate a new class for the trio
-        if family_ID not in pedTrios:
-            pedTrios[family_ID] = pedTrio(family_ID)
+        # if the family hasn't been included already, generate a new trio
+        if family_ID not in families:
+            families[family_ID] = Family(family_ID)
         
-        trio = pedTrios[family_ID]
+        trio = families[family_ID]
         father = fathers[child_ID]
         mother = mothers[child_ID]
         
@@ -282,7 +255,7 @@ def loadPedTrios(path):
         if mother in vcfs and mother in affected:
             trio.add_mother(mother, vcfs[mother], affected[mother], sex[mother])
         
-        pedTrios[family_ID] = trio
+        families[family_ID] = trio
     
-    return pedTrios
+    return families
 

@@ -1,4 +1,4 @@
-''' Clinical filtering for trios
+""" Clinical filtering for trios
 
 Find variants in affected children that might contribute to their disorder. We
 load VCF files (either named on the command line, or listed in a PED file) for
@@ -22,7 +22,7 @@ python clinical_filter.py \
 Written by Jeremy McRae (jm33@sanger.ac.uk), derived from code by Saeed Al 
 Turki (sa9@sanger.ac.uk).
 
-'''
+"""
 
 import sys
 import optparse
@@ -63,26 +63,29 @@ class ClinicalFilter(reporting.report):
         self.known_genes = defs.known_genes
         self.ID_mapper = defs.ID_mapper
         
-        self.pedTrios = defs.pedTrios
+        self.families = defs.families
     
     def filter_trios(self):
         """ loads trio variants, and screens for candidate variants
         """
         
+        if self.first_run:
+            self.printReportInputInfo(" Clinical filtering analysis")
+        
         # load the trio paths into the current path setup
-        for family_ID in sorted(self.pedTrios):
-            self.pedTrio = self.pedTrios[family_ID]
+        for family_ID in sorted(self.families):
+            self.family = self.families[family_ID]
             
             # some families have more than one child in the family, so run through each child.
-            while self.pedTrio.check_all_children_analysed() == False:
-                self.pedTrio.set_child()
-                if self.pedTrio.child.is_affected():
-                    self.vcf_loader = vcf.LoadVCFs(self.pedTrio, self.counter, len(self.pedTrios), self.filters)
+            while self.family.check_all_children_analysed() == False:
+                self.family.set_child()
+                if self.family.child.is_affected():
+                    self.vcf_loader = vcf.LoadVCFs(self.family, self.counter, len(self.families), self.filters)
                     self.variants = self.vcf_loader.get_trio_variants()
                     self.vcf_provenance = self.vcf_loader.get_vcf_provenance()
                     self.analyse_trio()
                 
-                self.pedTrio.set_child_examined()
+                self.family.set_child_examined()
             self.counter += 1
         
         # make sure we close the output file off
@@ -96,12 +99,8 @@ class ClinicalFilter(reporting.report):
         """
         
         # report the variants that were found
-        if self.first_run:
-            self.printReportInputInfo('\tTrio family analysis [EVA Report]')
-            
-            # open the output file while analysing the first trio
-            if self.output_path is not None:
-                self.output = open(self.output_path, "w")
+        if self.first_run and self.output_path is not None:
+            self.output = open(self.output_path, "w")
         
         # organise variants by gene, then find variants that fit
         # different inheritance models
@@ -143,7 +142,7 @@ class ClinicalFilter(reporting.report):
         # get the inheritance for the gene (monoalleleic, biallelic, hemizygous
         # etc), but allow for times when we haven't specified a list of genes 
         # to use
-        if self.known_genes is not None:
+        if self.known_genes is not None and gene in self.known_genes:
             gene_inheritance = self.known_genes[gene]["inheritance"]
         else:
             gene_inheritance = None
@@ -152,13 +151,13 @@ class ClinicalFilter(reporting.report):
         if gene == None:
             return
         
-        logging.debug(self.pedTrio.child.get_ID() + " " + gene + " " + str(variants) + " " + str(gene_inheritance))
+        logging.debug(self.family.child.get_ID() + " " + gene + " " + str(variants) + " " + str(gene_inheritance))
         chrom_inheritance = variants[0].get_inheritance_type()
         
         if chrom_inheritance == "autosomal":
-            finder = inh.Autosomal(variants, self.pedTrio, gene_inheritance)
+            finder = inh.Autosomal(variants, self.family, gene_inheritance)
         elif chrom_inheritance in ["XChrMale", "XChrFemale"]:
-            finder = inh.Allosomal(variants, self.pedTrio, gene_inheritance)
+            finder = inh.Allosomal(variants, self.family, gene_inheritance)
         candidates = finder.get_candidiate_variants()
         
         for candidate in candidates:
@@ -210,7 +209,7 @@ class loadDefinitions:
         if self.options.genes_path is not None:
             self.known_genes = load_files.open_known_genes(self.options.genes_path)
             # include all the possible ways IDs that a gene field can be named in a VCF file
-            for tag in self.tags_dict['gene']:
+            for tag in self.tags_dict["gene"]:
                 self.filters[tag] = ["list", self.known_genes]
         else:
             self.known_genes = None
@@ -233,16 +232,16 @@ class loadDefinitions:
             childGender: gender of proband child, mutually exclusive with ped_path option
         """
         if self.options.ped_path is None:
-            pedTrio = ped.pedTrio('blank_family_ID')
-            pedTrio.set_child('child', self.options.child_path, "2", self.options.child_gender)
+            family = ped.Family("blank_family_ID")
+            family.set_child("child", self.options.child_path, "2", self.options.child_gender)
             if self.options.mother_path is not None:
-                pedTrio.set_mother('mother', self.options.mother_path, self.options.mother_affected, '2')
+                family.set_mother("mother", self.options.mother_path, self.options.mother_affected, "2")
             if self.options.father_path is not None:
-                pedTrio.set_father('father', self.options.father_path, self.options.father_affected, '1')
+                family.set_father("father", self.options.father_path, self.options.father_affected, "1")
             
-            self.pedTrios = [pedTrio]
+            self.families = [family]
         else:
-            self.pedTrios = ped.loadPedTrios(self.options.ped_path)
+            self.families = ped.load_families(self.options.ped_path)
 
 
 def get_options():
@@ -250,21 +249,21 @@ def get_options():
     """
     
     parser = optparse.OptionParser()
-    parser.add_option('-p', '--ped', dest='ped_path', help='path to ped file containing cohort details for multiple trios')
-    parser.add_option('-c', '--child', dest='child_path', help='path to child\'s VCF file')
-    parser.add_option('-m', '--mother', dest='mother_path', help='path to mother\'s VCF file')
-    parser.add_option('-f', '--father', dest='father_path', help='path to father\'s VCF file')
-    parser.add_option('-G', '--gender', dest='child_gender', help='The child gender (male or female)')
-    parser.add_option('--mom_aff_status', dest='mother_affected', help='affected status of the mother (1 = unaffacted, or 2 = affected)')
-    parser.add_option('--dad_aff_status', dest='father_affected', help='affected status of the father (1 = unaffacted, or 2 = affected)')
+    parser.add_option("-p", "--ped", dest="ped_path", help="path to ped file containing cohort details for multiple trios")
+    parser.add_option("-c", "--child", dest="child_path", help="path to child's VCF file")
+    parser.add_option("-m", "--mother", dest="mother_path", help="path to mother's VCF file")
+    parser.add_option("-f", "--father", dest="father_path", help="path to father's VCF file")
+    parser.add_option("-G", "--gender", dest="child_gender", help="The child gender (male or female)")
+    parser.add_option("--mom_aff_status", dest="mother_affected", help="affected status of the mother (1 = unaffacted, or 2 = affected)")
+    parser.add_option("--dad_aff_status", dest="father_affected", help="affected status of the father (1 = unaffacted, or 2 = affected)")
     
-    parser.add_option('-l', '--filter', dest='filters_path', help='path to filter file (eg filters.txt)')
-    parser.add_option('-t', '--tags', dest='tags_path', help='path to tags.txt (eg tags.txt)')
-    parser.add_option('--known-genes', dest='genes_path', help='path to list of known disease causative genes, eg DDG2P-reportable.txt')
-    parser.add_option('--alternate-ids', dest='alternate_ids_path', help='path to list of alternate IDs, eg personid_decipher_id_sangerid.txt')
-    parser.add_option('-o', '--output', dest='output_path', default='clinical_reporting.txt', help='filename to output variant data to')
-    parser.add_option('--export-vcf', dest='export_vcf', action="store_true", default=False, help='whether to export identified variants to a VCF file')
-    parser.add_option('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
+    parser.add_option("-l", "--filter", dest="filters_path", help="path to filter file (eg filters.txt)")
+    parser.add_option("-t", "--tags", dest="tags_path", help="path to tags.txt (eg tags.txt)")
+    parser.add_option("--known-genes", dest="genes_path", help="path to list of known disease causative genes, eg DDG2P-reportable.txt")
+    parser.add_option("--alternate-ids", dest="alternate_ids_path", help="path to list of alternate IDs, eg personid_decipher_id_sangerid.txt")
+    parser.add_option("-o", "--output", dest="output_path", default="clinical_reporting.txt", help="filename to output variant data to")
+    parser.add_option("--export-vcf", dest="export_vcf", action="store_true", default=False, help="whether to export identified variants to a VCF file")
+    parser.add_option("--log", dest="loglevel", default="debug", help="level of logging to use, choose from: debug, info, warning, error or critical")
     
     (opts, args) = parser.parse_args()
     
@@ -286,9 +285,9 @@ def main():
     loglevel = opts.loglevel
     numeric_level = getattr(logging, loglevel.upper(), None)
     if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % loglevel)
+        raise ValueError("Invalid log level: %s" % loglevel)
     if opts.ped_path is not None:
-        log_filename = opts.ped_path + '.log'
+        log_filename = opts.ped_path + ".log"
     else:
         log_filename = "clinical-filter.log"
     logging.basicConfig(level=numeric_level, filename=log_filename)

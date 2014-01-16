@@ -2,6 +2,7 @@
 get genotype data for a single variant from all the family members.
 """
 
+from clinicalfilter.variant_cnv import CNV
 
 class TrioGenotypes(object):
     """ a class to hold genotypes for the members of a trio
@@ -16,8 +17,8 @@ class TrioGenotypes(object):
         
         self.child = child_variant
         
-        self.chrom = self.child.chrom
-        self.position = self.child.position
+        self.chrom = self.child.get_chrom()
+        self.position = self.child.get_position()
         self.inheritance_type = self.child.inheritance_type
         self.gene = self.child.gene
     
@@ -64,6 +65,15 @@ class TrioGenotypes(object):
         
         return "chr%s: %s - %s%s%s" % (chrom, position, child, mother, father)
     
+    def is_cnv(self):
+        """ checks whether the variant is for a CNV
+        """
+        
+        if isinstance(self.child, CNV):
+            return True
+        else:
+            return False
+    
     def add_father_variant(self, father_variant):
         self.father = father_variant
         
@@ -97,26 +107,27 @@ class TrioGenotypes(object):
     def get_gene(self):
         return self.gene
     
-    def passes_de_novo_checks(self, pedTrio):
+    def passes_de_novo_checks(self, family):
         """ checks if the child's de novo variants passes filters
         
         Some variants are de novo in the child, and if they are, then we should
         subject them to additional filtering to see if they have been passed by
-        de novo gear, and an additional hardcoded filter called 'TEAM29_FILTER'
+        de novo gear, and an additional hardcoded filter called "TEAM29_FILTER"
         that describes whether the variant passed screening, or if not, which 
         filter it failed.
         
         Args:
-            pedTrio: ped object for the trio
+            family: ped object for the trio
         
         Returns:
             boolean value for whether the variant should be included
         """
         
-        # currently hard code the filtering fields. The de novo field indicates whether the variant
-        # is de novo, I don't know how this is assigned. The project filter field indicates an 
-        # internal filter, curently whether the variant passed MAF, alternate frequency, and 
-        # segmental duplication criteria.
+        # currently hard code the filtering fields. The de novo field indicates
+        # whether the variant is de novo, I don't know how this is assigned. The
+        # project filter field indicates an internal filter, curently whether 
+        # the variant passed MAF, alternate frequency, and segmental duplication
+         # criteria.
         de_novo_snp_field = "DENOVO-SNP"
         de_novo_indel_field = "DENOVO-INDEL"
         project_filter_field = "TEAM29_FILTER"
@@ -125,16 +136,16 @@ class TrioGenotypes(object):
         de_novo_genotype = (1,0,0)
         
         # account for X chrom de novos in males
-        if self.inheritance_type == "XChrMale" and pedTrio.child.is_male():
+        if self.inheritance_type == "XChrMale" and family.child.is_male():
             de_novo_genotype = (2,0,0)
         
         # get the genotypes for the trio
         trio_genotype = self.get_trio_genotype()
-        # if the variant is not de novo, don't worry about the additional filtering
+        # if the variant is not de novo, don't worry about de novo filtering
         if trio_genotype != de_novo_genotype:
             return True
         
-        # check the childs VCF record to see whether the variant has been screened out
+        # check the VCF record to see whether the variant has been screened out
         if de_novo_snp_field not in self.child.info and de_novo_indel_field not in self.child.info:
             return False
         
