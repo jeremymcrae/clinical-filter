@@ -125,7 +125,7 @@ class report(object):
             list of lines to add to VCF file
         """
         
-        ID = "##UberVCF" + member.capitalize() + "ID=" + provenance[1].split(".")[0] + "\n"
+        ID = "##UberVCF_" + member + "_id=" + provenance[1].split(".")[0] + "\n"
         checksum = "##UberVCF_" + member + "_Checksum=" + provenance[0] + "\n"
         basename = "##UberVCF_" + member + "_Basename=" + provenance[1] + "\n"
         date = "##UberVCF_" + member + "_Date=" + provenance[2] + "\n"
@@ -196,7 +196,7 @@ class report(object):
             
             var_lines.append("\t".join(vcf_line) + "\n")
         
-        filter_string = "##TEST_FILTER_TYPES=" + ";".join(sorted(list(filter_strings))) + "\n"
+        filter_string = "##ClinicalFilterHistory=" + ";".join(sorted(list(filter_strings))) + "\n"
         child_lines.insert(-1, filter_string)
         
         child_lines += var_lines
