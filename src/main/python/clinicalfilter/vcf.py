@@ -19,7 +19,7 @@ class LoadVCFs(object):
     """ load VCF files for a trio
     """
     
-    def __init__(self, family, counter, total_trios, filters):
+    def __init__(self, family, counter, total_trios, filters, tags_dict):
         """ intitalise the class with the filters and trio details etc
         """
         
@@ -27,6 +27,7 @@ class LoadVCFs(object):
         self.counter = counter
         self.total_trios = total_trios
         self.filters = filters
+        self.tags_dict = tags_dict
     
     def get_trio_variants(self):
         """ loads the variants for a trio
@@ -52,7 +53,7 @@ class LoadVCFs(object):
         return self.variants
     
     def open_vcf_file(self, path):
-        """Gets a VCF file handle while allowing for gzipped and text VCF formats.
+        """Gets a VCF file handle while allowing for gzipped and text VCF files.
         
         Args:
             path: path to VCF file.
@@ -61,15 +62,15 @@ class LoadVCFs(object):
             A file handle for VCF file.
             
         Raises:
-            ValueError: An error when the VCF file path is not specified correctly.
+            ValueError: An error when the VCF file path does not exist
         """
         
         if not os.path.exists(path):
             raise IOError("VCF file not found at: " + path)
         
         if path.endswith(".gz"):
-            # python2 gzip opens in text, but same mode in python3 opens as bytes,
-            # avoid with platform specific code
+            # python2 gzip opens in text, but same mode in python3 opens as
+            # bytes, avoid with platform specific code
             if platform.python_version_tuple()[0] == "2":
                 f = gzip.open(path, "r")
             else:
@@ -123,7 +124,9 @@ class LoadVCFs(object):
         """ adds a single variant to a vcf dictionary indexed by position key
         """
         
-        var.add_info(self.info_values)
+        if not var.has_info():
+            var.add_info(self.info_values, self.tags_dict)
+        
         var.add_format(self.format_keys, self.sample_values)
         var.add_vcf_line(line)
         var.set_gender(gender)
@@ -163,7 +166,8 @@ class LoadVCFs(object):
                 if self.cnv_matcher.has_match(var):
                     use_variant = True
         elif filters:
-            var.add_info(self.info_values)
+            if not var.has_info():
+                var.add_info(self.info_values, self.tags_dict)
             if var.passes_filters(self.filters):
                 use_variant = True
         else:
@@ -171,7 +175,7 @@ class LoadVCFs(object):
             
         return use_variant
         
-    def open_individual(self, path, gender, filters=False, child_variants=False):
+    def open_individual(self, individual, filters=False, child_variants=False):
         """ Convert VCF to TSV format. Use for single sample VCF file.
         
         Obtains the VCF data for a single sample. This function optionally
@@ -179,9 +183,8 @@ class LoadVCFs(object):
         to reduce memory usage.
         
         Args:
-            path: path to VCF file for the individual
-            gender: gender of the individual
-            filters: optional filters to screen variants on
+            individual: Person object for individual
+            filters: filters to use to screen out variants
             child_variants: list of tuple keys for variants identified in 
                 the proband, in order to get the same variants from the 
                 parents.
@@ -190,6 +193,9 @@ class LoadVCFs(object):
             A dictionary containing variant data for each variant indexed by
             a position key.
         """
+        
+        path = individual.get_path()
+        gender = individual.get_gender()
         
         f = self.open_vcf_file(path)
         header = self.get_vcf_header(f)
@@ -208,10 +214,9 @@ class LoadVCFs(object):
                     self.ref_allele, self.alt_allele, self.quality, \
                     self.filter_value)
                 # we have to set CNV values to be able to filter
-                var.add_info(self.info_values)
+                var.add_info(self.info_values, self.tags_dict)
                 var.set_gender(gender)
                 var.add_format(self.format_keys, self.sample_values)
-                var.set_parental_statuses(self.family.mother.is_affected(), self.family.father.is_affected())
             else:
                 var = SNV(self.chrom, self.position, self.snp_id, \
                     self.ref_allele, self.alt_allele, self.quality, \
@@ -242,18 +247,15 @@ class LoadVCFs(object):
             self.family.child.get_path())
         
         # open the childs VCF file
-        self.child_vcf, self.child_defs = self.open_individual(self.family.child.get_path(), \
-            self.family.child.get_gender(), filters=True)
+        self.child_vcf, self.child_defs = self.open_individual(self.family.child, filters=True)
         self.cnv_matcher = MatchCNVs(self.child_vcf)
         
         if self.family.has_parents():
             logging.info(" mothers path: " + self.family.mother.get_path())
-            self.mother_vcf, self.mother_defs = self.open_individual(self.family.mother.get_path(), \
-                self.family.mother.get_gender(), child_variants=True)
+            self.mother_vcf, self.mother_defs = self.open_individual(self.family.mother, child_variants=True)
             
             logging.info(" fathers path: " + self.family.father.get_path())
-            self.father_vcf, self.father_defs = self.open_individual(self.family.father.get_path(), \
-                self.family.father.get_gender(), child_variants=True)
+            self.father_vcf, self.father_defs = self.open_individual(self.family.father, child_variants=True)
         else:
             # if the trio doesn't include parents, generate blank dictionaries
             self.mother_vcf, self.mother_defs = {}, ("NA", "NA", "NA")
@@ -296,7 +298,7 @@ class LoadVCFs(object):
         """
         
         if isinstance(var, CNV):
-            if matcher.any_overlap(var):
+            if matcher.has_match(var):
                 overlap_key = matcher.get_overlap_key(var.get_key())
                 var = parental_vcf[overlap_key]
             else:

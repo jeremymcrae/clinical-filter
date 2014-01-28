@@ -11,7 +11,7 @@ import random
 import glob
 
 user_folder = "/nfs/users/nfs_j/jm33/"
-app_folder = os.path.join(home_folder, "apps", "clinical-filter", "src", "main", "python")
+app_folder = os.path.join(user_folder, "apps", "clinical-filter")
 submit_script = os.path.join(app_folder, "scripts", "submit_lsf_job_array.py")
 ped_file = os.path.join(user_folder, "exome_reporting.ped")
 

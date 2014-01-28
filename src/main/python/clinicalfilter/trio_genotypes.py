@@ -23,7 +23,7 @@ class TrioGenotypes(object):
         self.gene = self.child.gene
     
     def convert_chrom_to_int(self, chrom):
-        """ converts a chromosome string to an int (if possible)
+        """ converts a chromosome string to an int (if possible) for sorting.
         
         Args: 
             chrom: string (eg "1", "2", "3" ... "22", "X", "Y")
@@ -33,7 +33,8 @@ class TrioGenotypes(object):
         """
         
         # set the integer values of the sex chromosomes
-        chrom_dict = {"X": 23, "CHRX": 23, "Y": 24, "CHRY": 24, "MT": 25, "CHRMT": 25}
+        chrom_dict = {"X": 23, "CHRX": 23, "Y": 24, "CHRY": 24, "MT": 25, \
+            "CHRMT": 25}
         
         try:
             chrom = int(chrom)
@@ -59,8 +60,8 @@ class TrioGenotypes(object):
     
     def __str__(self):
         
-        chrom = self.chrom
-        position = self.position
+        chrom = self.get_chrom()
+        position = self.get_position()
         (child, mother, father) = self.get_trio_genotype()
         
         return "chr%s: %s - %s%s%s" % (chrom, position, child, mother, father)
@@ -69,10 +70,7 @@ class TrioGenotypes(object):
         """ checks whether the variant is for a CNV
         """
         
-        if isinstance(self.child, CNV):
-            return True
-        else:
-            return False
+        return isinstance(self.child, CNV)
     
     def add_father_variant(self, father_variant):
         self.father = father_variant
@@ -114,7 +112,8 @@ class TrioGenotypes(object):
         subject them to additional filtering to see if they have been passed by
         de novo gear, and an additional hardcoded filter called "TEAM29_FILTER"
         that describes whether the variant passed screening, or if not, which 
-        filter it failed.
+        filter it failed. Note that both parents have genotypes specified, as we
+        have checked at an earlier stage that the parents are present.
         
         Args:
             family: ped object for the trio
@@ -146,16 +145,14 @@ class TrioGenotypes(object):
             return True
         
         # check the VCF record to see whether the variant has been screened out
-        if de_novo_snp_field not in self.child.info and de_novo_indel_field not in self.child.info:
+        if de_novo_snp_field not in self.child.info and \
+           de_novo_indel_field not in self.child.info:
             return False
         
         if project_filter_field not in self.child.format:
             return False
         
-        if self.child.format[project_filter_field] != "PASS":
-            return False
-        else:
-            return True
+        return self.child.format[project_filter_field] == "PASS"
 
 
 

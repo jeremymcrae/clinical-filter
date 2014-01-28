@@ -80,7 +80,7 @@ class writeVcf(object):
         
         # add in the INFO entries
         info = []
-        for key in vcf_entry["INFO"]:
+        for key in sorted(vcf_entry["INFO"]):
             if vcf_entry["INFO"][key] == True:
                 info.append(key)
             else:
@@ -138,8 +138,8 @@ def define_vep_consequences():
     
     return vep_consequences
 
-def create_default_vcf_dict(position, ID):
-    """ creates a dict for a default VCF entry, which passes filters
+def create_default_snv(position, ID):
+    """ creates a dict for a default SNV entry, which passes filters
     
     Args:
         position: nucleotide position for the variant
@@ -182,6 +182,44 @@ def create_default_vcf_dict(position, ID):
     default["FORMAT"]["GT"] = ["0/0"]
     default["FORMAT"]["GQ"] = ["50"]
     
+    return default
+
+def create_default_cnv(position, ID):
+    """ creates a dict for a default CNV entry, which passes filters
+    
+    Args:
+        position: nucleotide position for the variant
+    
+    Returns:
+        a dictionary for the VCF variant
+    """
+    
+    position = str(position)
+    
+    default = {}
+    
+    default["CHROM"] = "1"
+    default["POS"] = position
+    default["ID"] = ID
+    default["REF"] = "C"
+    default["ALT"] = "<DUP>"
+    default["QUAL"] = "50"
+    default["FILTER"] = "PASS"
+    default["INFO"] = {}
+    default["FORMAT"] = {}
+    
+    default["INFO"]["CQ"] = "missense_variant"
+    default["INFO"]["ENST"] = ID
+    default["INFO"]["HGNC"] = "TEMPGENENAME_" + position + "_" + ID
+    default["INFO"]["CNSOLIDATE"] = True
+    default["INFO"]["WSCORE"] = "0.5"
+    default["INFO"]["CALLP"] = "0"
+    default["INFO"]["COMMONFORWARDS"] = "0"
+    default["INFO"]["SVTYPE"] = "DUP"
+    default["INFO"]["MEANLR2"] = "0.5"
+    default["INFO"]["MADLR2"] = "0.01"
+    
+    default["FORMAT"]["INHERITANCE"] = "deNovo"  
     return default
 
 class createTestVcfs(object):
@@ -252,7 +290,7 @@ class createTestVcfs(object):
         else:
             self.cur_pos = self.cur_pos + increment - self.cur_pos % increment
     
-    def write_filtering_varint(self, vcf_entry):
+    def write_filtering_snv(self, vcf_entry):
         """ make a variant for filtering purposes
         """
         
@@ -274,9 +312,9 @@ class createTestVcfs(object):
         vep_consequences = define_vep_consequences()
         
         for cq in sorted(vep_consequences):
-            entry = create_default_vcf_dict(self.cur_pos,  "consequence:" + cq)
+            entry = create_default_snv(self.cur_pos,  "consequence:" + cq)
             entry["INFO"]["CQ"] = cq
-            self.write_filtering_varint(entry)
+            self.write_filtering_snv(entry)
         
         self.round_position_up()
     
@@ -291,9 +329,9 @@ class createTestVcfs(object):
         filter_types = ["PASS", "FAIL", "gtak_pl", ".", "", "NOT_PASSED"]
         
         for filt in sorted(filter_types):
-            entry = create_default_vcf_dict(self.cur_pos, "filter:" + filt)
+            entry = create_default_snv(self.cur_pos, "filter:" + filt)
             entry["FILTER"] = filt
-            self.write_filtering_varint(entry)
+            self.write_filtering_snv(entry)
         
         self.round_position_up()
     
@@ -303,19 +341,19 @@ class createTestVcfs(object):
         
         # check that we catch each population failing the MAF
         for pop in sorted(self.maf_pops):
-            entry = create_default_vcf_dict(self.cur_pos, "MAF:" + pop)
+            entry = create_default_snv(self.cur_pos, "MAF:" + pop)
             entry["INFO"][pop] = 0.1
-            self.write_filtering_varint(entry)
+            self.write_filtering_snv(entry)
         
         # and make an entry that lacks any MAF info for the populations
-        entry = create_default_vcf_dict(self.cur_pos, "MAF:none")
+        entry = create_default_snv(self.cur_pos, "MAF:none")
         for pop in sorted(self.maf_pops):
             del entry["INFO"][pop]
         
-        self.write_filtering_varint(entry)
+        self.write_filtering_snv(entry)
         
         # and make an entry that fails the de novo filter
-        entry = create_default_vcf_dict(self.cur_pos, "fail_de_novo")
+        entry = create_default_snv(self.cur_pos, "fail_de_novo")
         self.mother_vcf.write(entry)
         self.father_vcf.write(entry)
         entry["FORMAT"]["GT"] = ["0/1"]
@@ -386,11 +424,11 @@ class createTestVcfs(object):
             
             geno = self.convert_geno_list_to_string(combo)
             
-            entry = create_default_vcf_dict(self.cur_pos, "snv:" + geno)
+            entry = create_default_snv(self.cur_pos, "snv:" + geno)
             self.write_trio_snvs(entry, combo)
             
             # and do a set for the x-chromosome
-            entry = create_default_vcf_dict(self.cur_pos, "snv:" + geno)
+            entry = create_default_snv(self.cur_pos, "snv:" + geno)
             entry["CHROM"] = "X"
             self.write_trio_snvs(entry, combo)
         
@@ -412,26 +450,44 @@ class createTestVcfs(object):
                 geno1 = self.convert_geno_list_to_string(first)
                 geno2 = self.convert_geno_list_to_string(second)
                 
-                first_entry = create_default_vcf_dict(self.cur_pos, "compound:" + geno1 + "_" + geno2)
+                first_entry = create_default_snv(self.cur_pos, "compound:" + geno1 + "_" + geno2)
                 self.write_trio_snvs(first_entry, first)
                 
                 # both variants need to be on the same gene
-                second_entry = create_default_vcf_dict(self.cur_pos, "compound:" + geno1 + "_" + geno2)
+                second_entry = create_default_snv(self.cur_pos, "compound:" + geno1 + "_" + geno2)
                 second_entry["INFO"]["HGNC"] = "TEMPGENENAME_" + str(self.cur_pos - 1) + "_compound:"+ geno1 + "_" + geno2
                 self.write_trio_snvs(second_entry, second)
                 
                 # and do a set for the x-chromosome
-                first_entry = create_default_vcf_dict(self.cur_pos, "compound:" + geno1 + "_" + geno2)
+                first_entry = create_default_snv(self.cur_pos, "compound:" + geno1 + "_" + geno2)
                 first_entry["CHROM"] = "X"
                 self.write_trio_snvs(first_entry, first)
                 
                 # both variants need to be on the same gene
-                second_entry = create_default_vcf_dict(self.cur_pos, "compound:" + geno1 + "_" + geno2)
+                second_entry = create_default_snv(self.cur_pos, "compound:" + geno1 + "_" + geno2)
                 second_entry["CHROM"] = "X"
                 second_entry["INFO"]["HGNC"] = "TEMPGENENAME_" + str(self.cur_pos - 1)  + "_compound:"+ geno1 + "_" + geno2
                 self.write_trio_snvs(second_entry, second)
         
         self.round_position_up()
+    
+    def vary_cnv_filters(self):
+        """
+        """
+        
+        entry = create_default_cnv(self.cur_pos, "cnvtest")
+        # fail WSCORE
+        entry["INFO"]["WSCORE"] = "0.3"
+        
+        # fail CALLP
+        entry["INFO"]["CALLP"] = "0.3"
+        
+        # fail COMMONFORWARDS
+        entry["INFO"]["COMMONFORWARDS"] = "0.9"
+        
+        # fail MEANLR2/MADL2R ratio
+        entry["INFO"]["MEANLR2"] = str(float(entry["INFO"]["MADL2R"]) * 10)
+        
 
 
 def main():

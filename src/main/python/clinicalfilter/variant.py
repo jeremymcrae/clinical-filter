@@ -24,7 +24,8 @@ class Variant(object):
         self.male_codes = set(["1", "m", "M", "male"])
         self.female_codes = set(["2", "f", "F", "female"])
         
-        self.pseudoautosomal_regions = [(1,2699520), (154930290,155260560), (88456802,92375509)]
+        self.pseudoautosomal_regions = [(1,2699520), (154930290,155260560), \
+            (88456802,92375509)]
         
     def set_gender(self, gender):
         """ sets the gender of the individual for the variant
@@ -34,7 +35,7 @@ class Variant(object):
         elif gender in self.female_codes:
             self.gender = "female" 
         else:
-            raise ValueError("unknown gender")
+            raise ValueError
         
         self.set_inheritance_type()
     
@@ -84,8 +85,8 @@ class Variant(object):
     
     def __str__(self):
         
-        string = "%s chr%s: %s %s in %s" % (str(self.__class__.__name__), self.chrom, \
-                 self.position, self.genotype, self.gene)
+        string = "%s chr%s: %s %s in %s" % (str(self.__class__.__name__), \
+                  self.chrom, self.position, self.genotype, self.gene)
         return string
     
     def add_format(self, format_keys, sample_values):
@@ -98,8 +99,8 @@ class Variant(object):
         
         self.format = {}
         
-        tag_labels = format_keys.split(":") # the first item in formats are the tags DP:FP:ETC
-        tag_values = sample_values.split(":") # the second item are the corresponding values.
+        tag_labels = format_keys.split(":")
+        tag_values = sample_values.split(":")
         
         for i, value in enumerate(tag_values):
             self.format[tag_labels[i]] = value
@@ -128,13 +129,14 @@ class Variant(object):
             for start, end in self.pseudoautosomal_regions:
                 if start < int(self.position) < end or start < int(self.position) < end:
                     self.inheritance_type = "autosomal"
+                    return
             
             if self.is_male():
                 self.inheritance_type =  "XChrMale"
-            if self.is_female():
+            elif self.is_female():
                 self.inheritance_type = "XChrFemale"
     
-    def get_inheritance_type():
+    def get_inheritance_type(self):
         """ return the variant chromosomal inheritance type
         """
         
@@ -158,37 +160,4 @@ class Variant(object):
         
         return self.genotype
     
-    def find_max_allele_frequency(self, populations):
-        """gets the maximum allele frequency for a variant in a VCF record
-        
-        Finds the maximum allele frequency recorded for a variant across
-        different populations.
-        
-        Args:
-            populations: list of population IDs to search
-          
-        Returns:
-            the maximum allele frequency found within the populations in the
-            variant record
-        """
-        
-        max_allele_frequency = -100
-        # run through all the possible populations in the VCF file (typically the 1000 Genomes 
-        # populations (AFR_AF, EUR_AF etc), an internal popuation (DDD_AF), and a AF_MAX field)
-        for key in populations:
-            if key in self.info:
-                number = self.get_number(self.info[key])
-                if not self.is_number(number):
-                    continue
-                # if number > 0.5:
-                #     number = 1 - number
-                #     record[key] = str(number)
-                if number > max_allele_frequency:
-                    max_allele_frequency = number
-        
-        # return NA for variants without MAF recorded
-        if max_allele_frequency == -100:
-            max_allele_frequency = "NA"
-        
-        return str(max_allele_frequency)
 

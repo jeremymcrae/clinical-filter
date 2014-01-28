@@ -1,5 +1,5 @@
 FILTER	list	PASS,.
-VCQ	list	ESSENTIAL_SPLICE_SITE,STOP_GAINED,COMPLEX_INDEL,FRAMESHIFT_CODING,NON_SYNONYMOUS_CODING,STOP_LOST,transcript_ablation,splice_donor_variant,splice_acceptor_variant,frameshift_variant,initiator_codon_variant,inframe_insertion,inframe_deletion,missense_variant,transcript_amplification,stop_gained,stop_lost,coding_sequence_variant
+VCQ	list	transcript_ablation,splice_donor_variant,splice_acceptor_variant,frameshift_variant,initiator_codon_variant,inframe_insertion,inframe_deletion,missense_variant,transcript_amplification,stop_gained,stop_lost,coding_sequence_variant
 #UK10KtwinsMAF	smaller_than	0.01
 MAX_MAF	smaller_than	0.01
 #EVS_ALL	smaller_than	1.0

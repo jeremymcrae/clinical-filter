@@ -3,44 +3,27 @@
 
 
 class MatchCNVs(object):
-    """ class to find if a parents CNV matches any of a childs CNVs
+    """ class to find if a CNV matches any of another individuals CNVs
     """
     
     def __init__(self, variants):
         """ initiate the class with a dict of variants
         """
         
-        self.variants = variants
-        
-        # figure out which of the childs variants are CNVs
+        # figure out which of the variants are CNVs
         self.cnvs = []
-        for key in self.variants:
+        for key in variants:
             if len(key) == 3: # ignore SNVs, which are only (chrom, position)
                 self.cnvs.append(key)
-    
+        
     def has_match(self, var):
-        """ checks if a CNV has any matches amongst the childs CNVs
+        """ checks if any of the individuals CNVs overlap the current CNV
         
         Args:
             var: CNV object
         
         Returns:
-            returns true if any of the childs CNVs are good matches
-        """
-        
-        if self.any_overlap(var):
-            return True
-        else:
-            return False
-        
-    def any_overlap(self, var):
-        """ checks if any of the childs CNVs overlap the current CNV
-        
-        Args:
-            var: CNV object
-        
-        Returns:
-            returns true if any of the childs CNVs overlap
+            returns true if any of the individuals CNVs overlap
         """
         
         var_key = var.get_key() # CNVs are (chrom, start, end)
@@ -51,24 +34,20 @@ class MatchCNVs(object):
         self.overlap = {}
         for key in self.cnvs:
             
-            child_chrom = key[0]
-            child_start = int(key[1])
-            child_end = int(key[2])
+            chrom = key[0]
+            start = key[1]
+            end = key[2]
             
-            if var_chrom != child_chrom:
+            if var_chrom != chrom:
                 continue
             
-            # check if the childs CNVs end points lie within the CNV that we
-            # are examining, or if the childs CNV surrounds the examined CNV
-            if var_end >= child_start >= var_start or \
-               var_end >= child_end >= var_start or \
-               child_end >= var_start >= child_start:
+            # check if the individuals CNVs end points lie within the CNV that
+            # we are examining, or if the individuals CNV surrounds the examined
+            # CNV
+            if var_start <= int(end) and var_end >= int(start):
                 self.overlap[var_key] = key
         
-        if len(self.overlap) > 0:
-            return True
-        else:
-            return False
+        return len(self.overlap) > 0
     
     def get_overlap_key(self, var_key):
         """ returns the tuple for an overlapping CNV

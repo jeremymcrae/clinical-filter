@@ -15,25 +15,22 @@ class SNV(Variant, VcfInfo):
         """ return a tuple to identify the variant
         """
         
-        return (self.chrom, self.position)
+        return (self.get_chrom(), self.get_position())
     
-    def set_genotype(self, genotype=None):
-        """ sets the genotype of the variant
+    def set_genotype(self):
+        """ sets the genotype of the variant using the format entry
         """
         
         if hasattr(self, "format"):
-            self.genotype = self.format["GT"]
-            self.genotype = self.convert_genotype()
-        elif genotype is not None:
-            self.genotype = genotype
+            self.genotype = self.convert_genotype(self.format["GT"])
         else:
-            raise NotImplementedError("cannot find a genotype")
+            raise ValueError("cannot find a genotype")
         
         self.set_reference_genotypes()
         self.convert_genotype_code_to_alleles()
     
     def set_default_genotype(self):
-        """ for variants lacking genotypes, set a defaul genotype
+        """ for variants lacking genotypes, set a default genotype
         """
         
         self.genotype = 0
@@ -41,22 +38,26 @@ class SNV(Variant, VcfInfo):
         self.set_reference_genotypes()
         self.convert_genotype_code_to_alleles()
     
-    def convert_genotype(self):
+    def convert_genotype(self, genotype):
         """Maps genotypes from two character format to single character.
         
         Args:
-            GT: genotype in two character format. eg "0/0"
+            genotype: genotype in two character format. eg "0/0"
         
         Returns:
-            Genotype in single character format. eg "0"
+            Genotype in single character format. eg 0
         """
-        # This function might run quicker as the following. Possibly could speed up further by passing 
-        # reference to a dictionary, rather than creating new each time.
-        genotype_dict = {"00": 0, "01": 1, "10": 1, "12": 1, "21": 1, "02": 1, "20": 1, "11": 2, "22": 2}
-        return genotype_dict[self.genotype[0] + self.genotype[-1]]
+        
+        if len(genotype) == 1:
+            raise ValueError("genotype is only a single character")
+        
+        genotype_dict = {"00": 0, "01": 1, "10": 1, "12": 1, "21": 1, \
+            "02": 1, "20": 1, "11": 2, "22": 2}
+        
+        return genotype_dict[genotype[0] + genotype[-1]]
     
     def convert_genotype_code_to_alleles(self):
-        """ converts a 0/1/2 genotype code to a set of alleles, depending on the chromosome
+        """ converts a genotype to a set of alleles
         """
         
         if self.inheritance_type == "autosomal":
@@ -65,7 +66,7 @@ class SNV(Variant, VcfInfo):
             self.convert_allosomal_genotype_code_to_alleles()
     
     def set_reference_genotypes(self):
-        """ sets reference genotypes for homozygotes and heterozygotes, for checking against
+        """ sets reference genotypes for homozygotess and heterozygotes
         """
         
         if self.inheritance_type == "autosomal" or self.inheritance_type == "XChrFemale":
@@ -74,66 +75,43 @@ class SNV(Variant, VcfInfo):
             self.hom_alt = set([self.alt_allele, self.alt_allele])
         elif self.inheritance_type == "XChrMale":
             self.hom_alt = set([self.alt_allele])
+            self.het = set([])
             self.hom_ref = set([self.ref_allele])
+        else:
+            raise ValueError("unknown inheritance type:", self.inheritance_type)
     
     def is_het(self):
         """ returns whether a variant is heterozygous
         """
         
-        is_het = False
-        if self.inheritance_type == "autosomal" or self.inheritance_type == "XChrFemale":
-            if self.alleles == self.het:
-                is_het = True
-        elif self.inheritance_type == "XChrMale":
-            pass
-        
-        return is_het
+        return self.alleles == self.het
     
     def is_hom_alt(self):
         """ returns whether a genotype is homozygous for the alternate allele
         """
         
-        is_hom_alt = False
-        if self.alleles == self.hom_alt:
-            is_hom_alt = True
-        
-        return is_hom_alt
+        return self.alleles == self.hom_alt
     
     def is_hom_ref(self):
         """ returns whether a variant is homozygous for the reference allele
         """
         
-        is_hom_ref = False
-        if self.alleles == self.hom_ref:
-            is_hom_ref = True
-        
-        return is_hom_ref
+        return self.alleles == self.hom_ref
     
     def is_not_ref(self):
-        """ returns whether a variant is not the homozygous for the reference allele
+        """ returns whether a variant is not homozygous for the reference allele
         """
         
-        is_not_hom_ref = False
-        if self.alleles != self.hom_ref:
-            is_not_hom_ref = True
-        
-        return is_not_hom_ref
+        return self.alleles != self.hom_ref
     
     def is_not_alt(self):
         """ returns whether a variant is not homozygous for the alternate allele
         """
         
-        is_not_hom_alt = False
-        if self.alleles != self.hom_alt:
-            is_not_hom_alt = True
-        
-        return is_not_hom_alt
+        return self.alleles != self.hom_alt
     
     def convert_autosomal_genotype_code_to_alleles(self):
         """converts a genotype code to a set of alleles
-        
-        returns:
-            an unsorted set of allele codes
         """
         
         genotype = str(self.genotype)
@@ -145,13 +123,10 @@ class SNV(Variant, VcfInfo):
         elif genotype == "2":
             self.alleles = set([self.alt_allele, self.alt_allele])
         else:
-            raise ValueError("genotype code '" + genotype + "' is not recognised")
+            raise ValueError("unknown genotype '" + str(genotype))
         
     def convert_allosomal_genotype_code_to_alleles(self):
         """converts a genotype on the x-chromosome into the set of alleles
-        
-        returns:
-            an unsorted set of allele codes
         """
         
         genotype = str(self.genotype)
@@ -162,7 +137,6 @@ class SNV(Variant, VcfInfo):
             elif genotype == "2":
                 self.alleles = set([self.alt_allele])
             elif genotype == "1":
-                self.alleles = set([self.ref_allele, self.alt_allele])
                 raise ValueError("heterozygous X-chromomosome male")
             else:
                 raise ValueError("unknown genotype '" + str(genotype))

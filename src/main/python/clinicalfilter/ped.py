@@ -42,15 +42,21 @@ class Person(object):
         # change how the affected status is encoded. Current DDD ped files 
         # encode "1" for unaffected, and "2" for affected. Change this to 
         # True/False values, and catch any unknown affected statuses.
-        if self.affected_status == "1":
-            boolean_affected_status = False
-        elif self.affected_status == "2":
-            boolean_affected_status = True
-        else:
-            sys.exit("unknown status: " + self.affected_status + ", should be \
-                      1: unaffected, 2: affected") 
+        if self.affected_status not in set(["1", "2"]):
+            raise ValueError("unknown status: " + self.affected_status + ", \
+                should be 1: unaffected, 2: affected") 
         
-        return boolean_affected_status
+        return self.affected_status == "2"
+    
+    def set_analysed(self):
+        """ sets an individual as having been analysed
+        """
+        self.analysed = True
+    
+    def is_analysed(self):
+        """ checks whether the individual has been analysed
+        """
+        return self.analysed
     
     def get_gender(self):
         """returns the gender for a person (1, M = male, 2, F = female).
@@ -72,6 +78,9 @@ class Person(object):
     def check_gender(self, gender_code):
         """ makes sure that the parents match their expected gender.
         
+        Rather than returning true/false I've chosen to raise an error, as this
+        is a problem with the input data that needs to be fixed.
+        
         Args:
             gender_code: mothers, are "2", while fathers, are "1"
         """
@@ -81,11 +90,12 @@ class Person(object):
         elif self.is_female():
             current_gender_codes = self.female_codes
         else:
-            sys.exit("unknown gender code: " + self.get_gender())
+            raise ValueError("unknown gender code: " + self.get_gender())
         
         if gender_code not in current_gender_codes:
-            sys.exit(self.person_ID + " is listed as gender " + self.get_gender()\
-                 + ", which differs from the sex expected as mother or father)")
+            raise ValueError(self.person_ID + " is listed as gender " + \
+                self.get_gender() + ", which differs from the sex expected " + \
+                "as a parent)")
 
 class Family(object):
     """creates a family, with VCF paths, IDs, and affected statuses
@@ -99,19 +109,11 @@ class Family(object):
         self.father = None
         self.mother = None
     
-    def has_child(self):
-        """ Check whether a childs details have been included.
-        """
-        if len(self.children) == 0:
-            return True
-        else:
-            return False
-        
     def has_parents(self):
         """returns True/False for whether the family includes parental info
         """
         
-        if self.father == None and self.mother == None:
+        if self.father is None and self.mother is None:
             return False
         
         return True
@@ -125,15 +127,24 @@ class Family(object):
             affected_status: affected status string for child
             gender: gender string for child
         """
-        tmp_child = Person(ID, path, affected_status, gender)
-        tmp_child.analysed = False
-        self.children.append(tmp_child)
+        child = Person(ID, path, affected_status, gender)
+        self.children.append(child)
     
     def add_mother(self, ID, path, affected_status, gender):
+        # raise an error if we try to add a different mother to the family
+        if self.mother is not None:
+            if ID != self.mother.get_ID():
+                raise ValueError(self.family_ID, "already has a mother")
+        
         self.mother = Person(ID, path, affected_status, gender)
         self.mother.check_gender("2")
     
     def add_father(self, ID, path, affected_status, gender):
+        # raise an error if we try to add a different father to the family
+        if self.father is not None:
+            if ID != self.father.get_ID():
+                raise ValueError(self.family_ID, "already has a father")
+        
         self.father = Person(ID, path, affected_status, gender)
         self.father.check_gender("1")
     
@@ -141,9 +152,12 @@ class Family(object):
         """ define the child to be examined
         """
         for child in self.children:
-            if child.analysed == False:
+            if child.is_analysed() == False:
                 self.child = child
-                break
+                return
+        
+        # if we have run through all the children, set the child to None
+        self.child = None
     
     def set_child_examined(self):
         """ once a child has been examined, mark it as such in the children list
@@ -151,17 +165,10 @@ class Family(object):
         for child_position in range(len(self.children)):
             child = self.children[child_position]
             if child.get_ID() == self.child.get_ID():
-                self.children[child_position].analysed = True
-    
-    def check_all_children_analysed(self):
-        """returns whether all the children in a family have been analysed
-        """
-        all_checked = True
-        for child in self.children:
-            if child.analysed == False:
-                all_checked = False
+                self.children[child_position].set_analysed()
         
-        return all_checked
+        self.child = self.set_child()
+
     
 def load_ped_file(path):
     """Loads a PED file containing details for multiple trios.

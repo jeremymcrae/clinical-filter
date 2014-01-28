@@ -1,6 +1,7 @@
 """ class for filtering SNVs based on VCF INFO fields
 """
 
+import copy
 
 class VcfInfo(object):
     """ parses the VCF info field, and checks whether the variant passes 
@@ -13,13 +14,15 @@ class VcfInfo(object):
         
         self.show_fail_point = False
     
-    def add_info(self, info_values):
+    def add_info(self, info_values, tags):
         """Parses the INFO column from VCF files.
         
         Args:
             info_values: INFO text from a line in a VCF file
+            tags: the tags dict
         """
         
+        self.tags = tags
         self.info = {}
         
         for item in info_values.split(";"):
@@ -32,27 +35,32 @@ class VcfInfo(object):
         # add the filter value, as we filter with the info dict
         self.info["FILTER"] = self.filter
         
-        # sometimes the variant lacks an HGNC field, but does have a HGNC_ALL
-        # entry. 
-        if "HGNC" not in self.info and "HGNC_ALL" in self.info:
-            # if there is only one gene for HGNC_ALL, just use that as the gene
-            self.info["HGNC"] = self.info["HGNC_ALL"]
-            # if len(self.info["HGNC_ALL"].split(",")) == 1:
-            # # if there is more than one, call the gene NA, as CNVs can encompass
-            # # multiple genes, but we don't want those to match anything in the 
-            # # DDG2P list.
-            # else:
-            #     self.info["HGNC"] = "NA"
-        elif "HGNC" not in self.info and "HGNC_ALL"  not in self.info and "NUMBERGENES" in self.info:
-            self.info["HGNC"] = None
-            if int(self.info["NUMBERGENES"]) > 0:
-                self.info["HGNC"] = "."
-        # make sure we have gene and consequence keys in the info dict, for 
-        # the filter to work with
-        elif "HGNC" not in self.info:
-            self.info["HGNC"] = None
+        self.add_gene_from_info()
+        self.add_consequence()
+    
+    def has_info(self):
+        """ checks if the INFO field has been parsed and added to the object
+        """
         
-        self.gene = self.info["HGNC"]
+        return hasattr(self, "info")
+    
+    def add_gene_from_info(self):
+        """ adds a gene to the var using the info. CNVs and SNVs act differently
+        """
+        
+        # sometimes the variant lacks an HGNC field
+        if "HGNC" not in self.info:
+            self.gene = None
+        else:
+            self.gene = self.info["HGNC"]
+    
+    def add_consequence(self):
+        """ makes sure a consequence field is available in the info dict
+        """
+        
+        for consequence in self.tags["consequence"]:
+            if consequence in self.info:
+                self.info["CQ"] = self.info[consequence]
         
         if "CQ" not in self.info:
             self.info["CQ"] = None
@@ -108,6 +116,41 @@ class VcfInfo(object):
         
         return False
     
+    def find_max_allele_frequency(self, populations):
+        """gets the maximum allele frequency for a variant in a VCF record
+        
+        Finds the maximum allele frequency recorded for a variant across
+        different populations.
+        
+        Args:
+            populations: list of population IDs to search
+          
+        Returns:
+            the maximum allele frequency found within the populations in the
+            variant record
+        """
+        
+        max_allele_frequency = -100
+        # run through all the possible populations in the VCF file (typically 
+        # the 1000 Genomes populations (AFR_AF, EUR_AF etc), an internal 
+        # popuation (DDD_AF), and a AF_MAX field)
+        for key in populations:
+            if key in self.info:
+                number = self.get_number(self.info[key])
+                if not self.is_number(number):
+                    continue
+                # if number > 0.5:
+                #     number = 1 - number
+                #     record[key] = str(number)
+                if number > max_allele_frequency:
+                    max_allele_frequency = number
+        
+        # return NA for variants without MAF recorded
+        if max_allele_frequency == -100:
+            max_allele_frequency = "NA"
+        
+        return str(max_allele_frequency)
+    
     def show_fail(self, key, value, condition, filter_values):
         print(str(key) + ": " + str(value) + " not " + str(condition) + \
                   " " + str(filter_values))
@@ -116,15 +159,14 @@ class VcfInfo(object):
         """Checks whether a VCF record passes user defined criteria.
         
         Args:
-            record: A dictionary entry for a single variant converted from a
-            VCF file.
+            filters: A dictionary of filtering criteria.
             
         Returns:
-            boolean value for whether the record passes the filters
+            boolean value for whether the variant passes the filters
         """
         
         self.show_fail_point = False
-        if self.chrom == '1' and self.position == '18937':
+        if self.get_chrom() == "X" and self.get_position() == "76856021":
             show_fail_point = True
         
         passes = True
@@ -136,70 +178,37 @@ class VcfInfo(object):
             condition = filters[key][0]
             filter_values = filters[key][1]
             
-            if condition == "list" and self.fails_list(value, filter_values):
-                passes = False
-                break
-            elif condition == "greater_than" and self.fails_greater_than(value, filter_values):
-                passes = False
-                break
-            elif condition == "smaller_than" and self.fails_smaller_than(value, filter_values):
-                passes = False
-                break
-            elif condition == "equal" and self.fails_equal(value, filter_values):
-                passes = False
-                break
-            elif condition == "not" and self.fails_not(value, filter_values):
-                passes = False
-                break
-            elif condition == "multiple_not" and self.fails_multiple_not(value, filter_values):
-                passes = False
-                break
-            elif condition == "startswith" and self.fails_start_string(value, filter_values):
-                passes = False
-                break
-            elif condition == "endswith" and self.fails_end_string(value, filter_values):
-                passes = False
-                break
-            elif condition == "range" and self.fails_range(value, filter_values):
-                passes = False
-                break
+            if condition == "list":
+                passes = self.passes_list(value, filter_values)
+            elif condition == "smaller_than":
+                passes = self.passes_smaller_than(value, filter_values)
                 
             if passes == False:
                 break
         
-        if passes == False:
-            if self.show_fail_point:
-                self.show_fail(key, value, condition, filter_values)
+        # finally, check for some specific multiple requirements
+        if passes and not self.passes_multiple_filter():
+            key = "multiplefilter:cq=missense,mutation!=NA,maf>0.005"
+            value = ""
+            condition = ""
+            filter_values = ""
+            passes = False
+        
+        if passes == False and self.show_fail_point:
+            self.show_fail(key, value, condition, filter_values)
         
         return passes
     
-    def fails_list(self, value, filter_values):
+    def passes_list(self, value, filter_values):
         """ checks whether the vcf value is within a list 
         """
         
-        fails = False
-        if value not in filter_values:
-            fails = True
-        
-        return fails
-    
-    def fails_greater_than(self, value, filter_values):
-        """ checks whether values are not within a filter range
-        """
-        
-        value = self.get_number(value)
-        try:
-            value > filter_values
-        except TypeError:
+        if filter_values is None:
             return False
-            
-        fails = False
-        if value < filter_values and self.is_number(value):
-            fails = True
         
-        return fails
+        return value in filter_values
     
-    def fails_smaller_than(self, value, filter_values):
+    def passes_smaller_than(self, value, filter_values):
         """ checks whether values are not within a filter range
         """
         
@@ -214,90 +223,30 @@ class VcfInfo(object):
         try:
             value > filter_values
         except TypeError:
-            return False
+            return True
         
-        fails = False
-        if value > filter_values and self.is_number(value):
-            fails = True
-        
-        return fails
-                    
-    def fails_equal(self, value, filter_values):
-        """ checks whether values are not within a filter range
-        """
-        
-        fails = False
-        if value != filter_values:
-            fails = True
-            
-        return fails
+        return value <= filter_values and self.is_number(value)
     
-    def fails_not(self, value, filter_values):
-        """ checks whether values are not within a filter range
+    def passes_multiple_filter(self):
+        """ a few variants need filtering across multiple requirements
+        
+        Currently we only exclude vars where the mutation ID (HGMD from VCF ID
+        field) is unknown (ie "NA"), the vep consequence is missense_variant, 
+        and the MAF is > 0.005.
         """
         
-        fails = False
-        if value == filter_values:
-            fails = True
+        mut = self.get_mutation_id()
+        cq = self.info["CQ"]
+        
+        if mut == "NA" and cq == "missense_variant":
+            maf = self.find_max_allele_frequency(self.tags["MAX_MAF"])
+            if maf == "NA":
+                maf = 0
+            else:
+                maf = float(maf)
             
-        return fails
-    
-    def fails_range(self, value, filter_values):
-        """ checks whether values are not within a filter range
-        """
+            if maf > 0.005:
+                return False
         
-        fails = False
-        start, end = filter_values
-        if self.get_number(value) < start or self.get_number(value) > end:
-            fails = True
-            
-        return fails
-    
-    def fails_start_string(self, value, filter_values):
-        """ checks whether values are not within a filter range
-        """
-        
-        fails = False
-        if not value.startswith(filter_values):
-            fails = True
-        
-        return fails
-        
-    def fails_end_string(self, value, filter_values):
-        """ checks whether values are not within a filter range
-        """
-        
-        fails = False
-        if not value.endswith(filter_values):
-            fails = True
-        
-        return fails
-        
-    def fails_multiple_not(self, value, filter_values):
-        """ checks whether values are not within a filter range
-        """
-        
-        # sometimes we want to make sure two related keys don't contain certain
-        # values. Specifically, we want to exclude variants where polyphen 
-        # annotation is "benign" and sift annotation is "tolerated". These are
-        # provided as a list of  tuples. We catch the first key, and then check
-        # the second key at the same time
-        has_all_values = True
-        for key, filter_value in filter_values:
-            # pull out the value for each key in the list, and check whether it
-            # contains the filter value
-            temp_value = self.info[key]
-            if temp_value is None:
-                has_all_values = False
-            # the value should be something like benign(0.05), or 
-            # tolerated(0.3),and we just check if "benign", or "tolerated" are 
-            # in the corresponding values
-            elif filter_value not in temp_value:
-                has_all_values = False
-        
-        fails = False
-        if has_all_values:
-            passes = True
-        
-        return fails
+        return True
 

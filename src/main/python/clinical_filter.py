@@ -76,11 +76,12 @@ class ClinicalFilter(reporting.report):
         for family_ID in sorted(self.families):
             self.family = self.families[family_ID]
             
-            # some families have more than one child in the family, so run through each child.
-            while self.family.check_all_children_analysed() == False:
-                self.family.set_child()
+            # some families have more than one child in the family, so run 
+            # through each child.
+            self.family.set_child()
+            while self.family.child is not None:
                 if self.family.child.is_affected():
-                    self.vcf_loader = vcf.LoadVCFs(self.family, self.counter, len(self.families), self.filters)
+                    self.vcf_loader = vcf.LoadVCFs(self.family, self.counter, len(self.families), self.filters, self.tags_dict)
                     self.variants = self.vcf_loader.get_trio_variants()
                     self.vcf_provenance = self.vcf_loader.get_vcf_provenance()
                     self.analyse_trio()
@@ -125,11 +126,11 @@ class ClinicalFilter(reporting.report):
         self.genes_dict = {}
         for var in self.variants:
              # make sure that gene is in self.genes_dict
-            if var.gene not in self.genes_dict:
-                self.genes_dict[var.gene] = []
+            if var.get_gene() not in self.genes_dict:
+                self.genes_dict[var.get_gene()] = []
             
             # add the variant to the gene entry
-            self.genes_dict[var.gene].append(var)
+            self.genes_dict[var.get_gene()].append(var)
         
     def find_variants(self, variants, gene):
         """ finds variants that fit inheritance models
@@ -148,20 +149,21 @@ class ClinicalFilter(reporting.report):
             gene_inheritance = None
         
         # ignore intergenic variants
-        if gene == None:
+        if gene is None:
             return
         
         logging.debug(self.family.child.get_ID() + " " + gene + " " + str(variants) + " " + str(gene_inheritance))
         chrom_inheritance = variants[0].get_inheritance_type()
         
         if chrom_inheritance == "autosomal":
-            finder = inh.Autosomal(variants, self.family, gene_inheritance)
+            finder = inh.Autosomal(variants, self.family, self.known_genes, gene_inheritance)
         elif chrom_inheritance in ["XChrMale", "XChrFemale"]:
-            finder = inh.Allosomal(variants, self.family, gene_inheritance)
+            finder = inh.Allosomal(variants, self.family, self.known_genes, gene_inheritance)
         candidates = finder.get_candidiate_variants()
         
         for candidate in candidates:
             self.found_variants.append(candidate)
+    
 
 
 class loadDefinitions:
@@ -267,12 +269,14 @@ def get_options():
     
     (opts, args) = parser.parse_args()
     
+    if opts.ped_path is None and opts.child_path is None:
+        parser.error("either --ped FILENAME or --child FILENAME is required")
     if opts.ped_path and opts.child_path:
         parser.error("--ped and --child are mutually exclusive")
     if opts.filters_path is None:
-        parser.error("--filter (-l) is required")
+        parser.error("--filter (-l) FILENAME is required")
     if opts.tags_path is None:
-        parser.error("--tags (-t) is required")
+        parser.error("--tags (-t) FILENAME is required")
     
     return (opts, args)
 

@@ -58,14 +58,15 @@ class report(object):
         logging.info(75 * "#")
     
     def save_results(self):
-        """exports candidate variants and their details (currently matching exome-reporting.pl)
+        """exports candidate variants and their details
         """
         
         # only add in the header on the first run through
         if self.first_run:
-            self.output.write("\t".join(["proband", "alternate_ID", "sex", "chrom", "position", \
-                            "gene", "mutation_ID", "transcript", "consequence", "ref/alt_alleles", "MAX_MAF", \
-                            "inheritance", "trio_genotype", "mom_aff", "dad_aff", "result"]) + "\n")
+            self.output.write("\t".join(["proband", "alternate_ID", "sex", \
+                "chrom", "position", "gene", "mutation_ID", "transcript", \
+                "consequence", "ref/alt_alleles", "MAX_MAF", "inheritance", \
+                "trio_genotype", "mom_aff", "dad_aff", "result"]) + "\n")
         
         if self.family.has_parents():
             dad_aff = self.family.father.get_affected_status()
@@ -93,16 +94,18 @@ class report(object):
             if "SIFT" in var.child.info:
                 consequence += ",SIFT=" + str(var.child.info["SIFT"])
             
-            transcript = var.child.info["ENST"]
+            transcript = "NA"
+            if "ENST" in var.child.info:
+                transcript = var.child.info["ENST"]
             alleles = var.child.ref_allele + "/" + var.child.alt_allele
             trio_genotype = "%s/%s/%s" % var.get_trio_genotype()
             max_maf = var.child.find_max_allele_frequency(self.tags_dict["MAX_MAF"])
             
             output_line = [self.family.child.get_ID(), alternate_ID, \
-                           self.family.child.get_gender(), var.get_chrom(), var.get_position(), \
-                           var.get_gene(), var.child.get_mutation_id(), transcript, consequence, alleles, \
-                           max_maf, inheritance_type, trio_genotype, mom_aff, \
-                           dad_aff, filter_type]
+                self.family.child.get_gender(), var.get_chrom(), \
+                var.get_position(), var.get_gene(),var.child.get_mutation_id(),\
+                transcript, consequence, alleles, max_maf, inheritance_type, \
+                trio_genotype, mom_aff, dad_aff, filter_type]
             output_line = "\t".join(output_line) + "\n"
             self.output.write(output_line)
             reported_some_variants = True 
@@ -122,11 +125,12 @@ class report(object):
             list of lines to add to VCF file
         """
         
+        ID = "##UberVCF" + member.capitalize() + "ID=" + provenance[1].split(".")[0] + "\n"
         checksum = "##UberVCF_" + member + "_Checksum=" + provenance[0] + "\n"
         basename = "##UberVCF_" + member + "_Basename=" + provenance[1] + "\n"
         date = "##UberVCF_" + member + "_Date=" + provenance[2] + "\n"
         
-        return [checksum, basename, date]
+        return [ID, checksum, basename, date]
         
     def save_vcf(self):
         """ exports a VCF file for the childs candidate variants.
@@ -137,19 +141,21 @@ class report(object):
         
         child_lines.insert(-1, '##INFO=<ID=ClinicalFilterType,Number=.,Type=String,Description="The type of clinical filter that passed this variant.">\n')
         child_lines.insert(-1, '##INFO=<ID=ClinicalFilterGeneInheritance,Number=.,Type=String,Description="The inheritance mode (Monoallelic, Biallelic etc) under which the variant was found.">\n')
-        child_lines.insert(-1, '##INFO=<ID=ClinicalFilterRunDate,Number=.,Type=String,Description="The date on which the clinical filter was run.">\n')
-        child_lines.insert(-1, '##INFO=<ID=ClinicalFilterVersion,Number=.,Type=String,Description="The git tag of the clinical filter code.">\n')
+        # child_lines.insert(-1, '##INFO=<ID=ClinicalFilterRunDate,Number=.,Type=String,Description="The date on which the clinical filter was run.">\n')
+        # child_lines.insert(-1, '##INFO=<ID=ClinicalFilterVersion,Number=.,Type=String,Description="The git tag of the clinical filter code.">\n')
         
         child_lines.insert(-1, '##FORMAT=<ID=INHERITANCE_GENOTYPE,Number=.,Type=String,Description="The 012 coded genotypes for a trio (child, mother, father).">\n')
         child_lines.insert(-1, '##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="The inheritance of the variant in the trio (biparental, paternal, maternal, deNovo).">\n')
         
-        ClinicalFilterRunDate = ";ClinicalFilterRunDate=" + str(datetime.date.today())
-        ClinicalFilterVersion = ";ClinicalFilterVersion={0}".format(self.clinicalFilterVersion())
+        child_lines.insert(-1, "##ClinicalFilterRunDate={0}\n".format(datetime.date.today()))
+        child_lines.insert(-1, "##ClinicalFilterVersion={0}\n".format(self.clinicalFilterVersion()))
         
         child_lines = child_lines[:-1] + self.include_vcf_provenance(self.vcf_provenance[0], "proband") + child_lines[-1:]
         child_lines = child_lines[:-1] + self.include_vcf_provenance(self.vcf_provenance[1], "maternal") + child_lines[-1:]
         child_lines = child_lines[:-1] + self.include_vcf_provenance(self.vcf_provenance[2], "paternal") + child_lines[-1:]
         
+        var_lines = []
+        filter_strings = set([])
         for candidate in sorted(self.found_variants):
             var = candidate[0]
             filter_type = candidate[1]
@@ -162,7 +168,9 @@ class report(object):
             
             ClinicalFilterType = ";ClinicalFilterType=" + filter_type
             ClinicalFilterGeneInheritance = ";ClinicalFilterGeneInheritance=" + gene_inheritance
-            vcf_line[7] += ClinicalFilterGeneInheritance + ClinicalFilterType + ClinicalFilterRunDate + ClinicalFilterVersion
+            vcf_line[7] += ClinicalFilterGeneInheritance + ClinicalFilterType
+            
+            filter_strings.add(filter_type + "," + gene_inheritance)
             
             if self.family.has_parents():
                 mother_genotype = var.mother.get_genotype()
@@ -178,11 +186,20 @@ class report(object):
             else:
                 parental_inheritance = "unknown"
             
-            vcf_line[8] = ":".join(["INHERITANCE", "INHERITANCE_GENOTYPE"])
             trio_genotype = "%s,%s,%s" % var.get_trio_genotype()
-            vcf_line[9] = ":".join([parental_inheritance, trio_genotype])
+            if "INHERITANCE" in vcf_line[8]:
+                vcf_line[8] = ":".join([vcf_line[8], "INHERITANCE_GENOTYPE"])
+                vcf_line[9] = ":".join([vcf_line[9], trio_genotype])
+            else:
+                vcf_line[8] = ":".join([vcf_line[8], "INHERITANCE", "INHERITANCE_GENOTYPE"])
+                vcf_line[9] = ":".join([vcf_line[9], parental_inheritance, trio_genotype])
             
-            child_lines.append("\t".join(vcf_line) + "\n")
+            var_lines.append("\t".join(vcf_line) + "\n")
+        
+        filter_string = "##TEST_FILTER_TYPES=" + ";".join(sorted(list(filter_strings))) + "\n"
+        child_lines.insert(-1, filter_string)
+        
+        child_lines += var_lines
         
         # join the list of lines for the VCF file into a single string
         child_lines = "".join(child_lines)

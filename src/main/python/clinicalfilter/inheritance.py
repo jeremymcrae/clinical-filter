@@ -10,7 +10,7 @@ class Inheritance(object):
     """figure out whether trio genotypes fit mendelian inheritance models
     """
     
-    def __init__(self, variants, trio, gene_inheritance=None):
+    def __init__(self, variants, trio, known_genes, gene_inheritance=None):
         """ intialise the class with the variants and trio information
         
         We have an affected child, with two parents who may or may not be 
@@ -33,6 +33,7 @@ class Inheritance(object):
         
         self.variants = variants
         self.trio = trio
+        self.known_genes = known_genes
         
         if self.trio.has_parents():
             self.father_affected = self.trio.father.is_affected()
@@ -58,6 +59,10 @@ class Inheritance(object):
             self.gene_inheritance.add("Biallelic")
             self.gene_inheritance.add("Monoallelic")
             self.gene_inheritance.remove("Both")
+        
+        # set up the lists for candidate variants
+        self.compound_hets = []
+        self.candidates = []
     
     def get_candidiate_variants(self):
         """ screen for variants that might contribute to a childs disorder
@@ -154,11 +159,15 @@ class Inheritance(object):
             self.set_trio_genotypes(variant)
             
             if variant.is_cnv():
-                for inheritance in self.inheritance_modes & self.gene_inheritance:
-                    if inheritance == "Biallelic":
-                        self.add_variant_to_appropriate_list(variant, "compound_het", inheritance)
-                    self.add_variant_to_appropriate_list(variant, "single_variant", inheritance)
-                    self.log_string = "filtered CNV"
+                cnv_checker = CNVInheritance(variant, self.trio, self.known_genes)
+                check = cnv_checker.check_inheritance()
+                self.log_string = cnv_checker.log_string
+                self.add_variant_to_appropriate_list(variant, check, "unknown")
+                # for inheritance in self.inheritance_modes & self.gene_inheritance:
+                #     if inheritance == "Biallelic":
+                #         self.add_variant_to_appropriate_list(variant, "compound_het", inheritance)
+                #     self.add_variant_to_appropriate_list(variant, "single_variant", inheritance)
+                #     self.log_string = "filtered CNV"
             else:
                 # allow for genes having multiple inheritance modes by analysing
                 # each in turn
@@ -178,14 +187,11 @@ class Inheritance(object):
         """ test variants in children where we lack parental genotypes
         """
         
-        self.compound_hets = []
-        self.candidates = []
-        
         for variant in self.variants:
             self.set_trio_genotypes(variant)
             
             for inheritance in self.inheritance_modes & self.gene_inheritance:
-                self.examine_variant_without_parents(variant, inheritance)
+                self.check_variant_without_parents(variant, inheritance)
         
         # if we have less than two hets in the compound het candidates, then 
         # that's not enough to make a compound het
@@ -284,9 +290,9 @@ class Inheritance(object):
 
 class Autosomal(Inheritance):
     
-    def __init__(self, variants, trio, gene_inheritance=None):
+    def __init__(self, variants, trio, known_genes, gene_inheritance=None):
         
-        super(Autosomal, self).__init__(variants, trio, gene_inheritance)
+        super(Autosomal, self).__init__(variants, trio, known_genes, gene_inheritance)
         
         self.inheritance_modes = set(["Monoallelic", "Biallelic", "Both"])
     
@@ -363,9 +369,9 @@ class Autosomal(Inheritance):
 
 class Allosomal(Inheritance):
     
-    def __init__(self, variants, trio, gene_inheritance=None):
+    def __init__(self, variants, trio, known_genes, gene_inheritance=None):
         
-        super(Allosomal, self).__init__(variants, trio, gene_inheritance)
+        super(Allosomal, self).__init__(variants, trio, known_genes, gene_inheritance)
         
         self.inheritance_modes = set(["X-linked dominant", "Hemizygous", \
             "Monoallelic", "X-linked over-dominance"])
@@ -466,5 +472,137 @@ class Allosomal(Inheritance):
         return False
 
 
+class CNVInheritance(object):
+    
+    def __init__(self, variant, trio, known_genes):
+        """
+        """
+        
+        self.variant = variant
+        self.trio = trio
+        self.known_genes = known_genes
+        
+        self.gene = self.variant.child.gene
+    
+    def check_inheritance(self):
+        """
+        """
+        
+        if self.passes_nonddg2p_filter() or \
+           self.passes_ddg2p_filter():
+            return "single_variant"
+        
+        return "nothing"
+    
+    def get_CNV_filter_values(self, gene):
+        """ create CNV filter values dependent on DDG2P inheritance mode
+        """
+        
+        gene_mode = self.known_genes[gene]["inheritance"]
+        
+        # set some default parameters
+        required_chrom = "all"
+        required_copy_number = (["0", "1", "3"])
+        required_mechanisms = set(["Uncertain", "Loss of function", \
+            "Dominant negative", "Increased gene dosage"])
+        
+        if "Biallelic" in gene_mode:
+            required_copy_number = set(["0"])
+            required_mechanisms = set(["Uncertain", "Loss of function", "Dominant negative"])
+            inheritance = "Biallelic"
+        elif "Monoallelic" in gene_mode:
+            inheritance = "Monoallelic"
+        elif "X-linked dominant" in gene_mode:
+            required_chrom = "X"
+            inheritance = "X-linked dominant"
+        elif "Hemizygous" in gene_mode and self.variant.child.is_male():
+            required_chrom = "X"
+            inheritance = "Hemizygous"
+        elif "Hemizygous" in gene_mode and self.variant.child.is_female():
+            required_chrom = "X"
+            required_copy_number = set(["3"])
+            required_mechanisms = set(["Increased gene dosage"])
+            inheritance = "Hemizygous"
+        else:
+            # other inheritance modes of "Mosaic", or "Digenic" can be ignored
+            # by using impossible criteria
+            required_chrom = "GGG"
+            required_copy_number = set(["999"])
+            required_mechanisms = set(["Nothing"])
+            inheritance = list(set(gene_mode))[0]
+            
+        return required_chrom, required_copy_number, required_mechanisms, inheritance
+    
+    def passes_nonddg2p_filter(self):
+        """ checks if a CNV passes the non DDG2P criteria
+        """
+        
+        inh = self.variant.child.format["INHERITANCE"]
+        
+        if inh == "deNovo" or \
+            (inh == "paternal" and self.trio.father.is_affected()) or \
+            (inh == "maternal" and self.trio.mother.is_affected()) or \
+            (inh == "biparental" and \
+            (self.trio.father.is_affected() or self.trio.mother.is_affected())):
+            if self.variant.child.genotype == "DEL":
+                if float(self.variant.child.info["SVLEN"]) >= 100000:
+                    self.log_string = "non-DDG2P, DEL CNV, inh: " + inh
+                    return True
+            elif self.variant.child.genotype == "DUP":
+                if float(self.variant.child.info["SVLEN"]) >= 250000:
+                    self.log_string = "non-DDG2P, DUP CNV, inh: " + inh
+                    return True
+        elif inh not in ["deNovo", "paternal", "maternal", "biparental"]:
+            if float(self.variant.child.info["SVLEN"]) >= 500000:
+                self.log_string = "non-DDG2P, DUP CNV, unknown inh: " + inh
+                return True
+        
+        self.log_string = "non-reported CNV"
+        return False
+    
+    def passes_ddg2p_filter(self):
+        """ checks if a CNV passes the DDG2P CNV criteria
+        """
+        
+        if self.gene == None:
+            return False
+        elif "," in self.gene:
+            genes = self.gene.split(",")
+        else:
+            genes  = [self.gene]
+        
+        for gene in genes:
+            gene_passes = True
+            if gene in self.known_genes:
+                gene_type = self.known_genes[gene]["confirmed_status"]
+                
+                if "Both DD and IF" in gene_type:
+                    self.log_string = "Both DD and IF DDG2P gene"
+                    pass
+                elif "Confirmed DD Gene" in gene_type or "Probable DD gene" in gene_type:
+                    required_chrom, required_copy_number, required_mechanisms, inheritance = self.get_CNV_filter_values(gene)
+                    
+                    if required_chrom == "X" and self.variant.get_chrom() != "X":
+                        gene_passes = False
+                    
+                    if self.variant.child.info["CNS"] not in required_copy_number:
+                        gene_passes = False
+                    
+                    if len(self.known_genes[gene]["inheritance"][inheritance] & required_mechanisms) == 0:
+                        gene_passes = False
+                else:
+                    print(self, "failed some DDG2P CNV criteria")
+            else:
+                gene_passes = False
+            
+            if gene_passes:
+                self.log_string = "DDG2P CNV"
+                return True
+        
+        self.log_string = "non-reported CNV"
+        return False
+    
+    
+    
 
 
