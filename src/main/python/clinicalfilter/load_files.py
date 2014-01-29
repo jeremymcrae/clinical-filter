@@ -7,16 +7,17 @@ import io
 def open_known_genes(path="DDGP-reportable.txt"):
     """Loads list of known disease causative genes.
     
-    We obtain a liost of genes that are known to be involved in disorders, so that we can screen 
-    variants for being in these known genes, which makes them better candidates for being causative.
-    We currently only use genes that are monoallelic or biallelic.
+    We obtain a liost of genes that are known to be involved in disorders, so 
+    that we can screen variants for being in these known genes, which makes them
+    better candidates for being causative.
     
     Args:
         path: path to tab-separated file listing known disease-causing genes.
     
     Returns:
-        A dictionary of genes, so we can check variants for inclusion in the set. The dictionary is 
-        indexed by gene ID to the corresponding inheritance value
+        A dictionary of genes, so we can check variants for inclusion in the 
+        set. The dictionary is indexed by gene ID to the corresponding 
+        inheritance value.
     
     Raises:
         IOError: an error when the gene file path is not specified correctly.
@@ -41,7 +42,7 @@ def open_known_genes(path="DDGP-reportable.txt"):
         inheritance_label = "mode"
         mechanism_label = "mech"
     else:
-        raise ValueError("The gene file doesn't contain any expected header column names")
+        raise ValueError("The gene file doesn't contain expected column names")
     
     # get the positions of the columns in the list of header labels
     gene_column = header.index(gene_label)
@@ -50,7 +51,8 @@ def open_known_genes(path="DDGP-reportable.txt"):
     mechanism_column = header.index(mechanism_label)
     
     # only include genes with sufficient DDG2P status
-    allowed_confirmed_statuses = ["Confirmed DD Gene", "Probable DD gene", "Both DD and IF"]
+    allowed_confirmed_statuses = ["Confirmed DD Gene", "Probable DD gene", \
+        "Both DD and IF"]
     
     for line in f:
         line = line.strip().split("\t")
@@ -72,9 +74,10 @@ def open_known_genes(path="DDGP-reportable.txt"):
         known_genes[gene_ID]["inheritance"][gene_inheritance].add(gene_mechanism)
         known_genes[gene_ID]["confirmed_status"].add(gene_confirmed_status)
         
-        # some genes are listed with an inheritance mode of "Both", which means the gene has been
-        # observed in disorders with both monoallelic and biallelic inheritance. Make sure the
-        # monoallelic and biallelic modes are shown for the gene.
+        # some genes are listed with an inheritance mode of "Both", which means 
+        # the gene has been observed in disorders with both monoallelic and 
+        # biallelic inheritance. Make sure the monoallelic and biallelic modes 
+        # are shown for the gene.
         if gene_inheritance == "Both":
             if "Monoallelic" not in known_genes[gene_ID]["inheritance"]:
                 known_genes[gene_ID]["inheritance"]["Monoallelic"] = set()
@@ -91,14 +94,15 @@ def open_known_genes(path="DDGP-reportable.txt"):
 def create_person_ID_mapper(path="/nfs/ddd0/Data/datafreeze/1139trios_20131030/person_sanger_decipher.private.txt"):
     """creates a dictionary of IDs to map between different ID systems.
     
-    We occasionally need to convert between different ID schemas (eg between DDD person IDs and 
-    DECIPHER person IDs). 
+    We occasionally need to convert between different ID schemas (eg between
+    DDD person IDs and DECIPHER person IDs). 
     
     Args:
         path: path to tab-separated file listing the alternate IDs
     
     Returns:
-        dictionary with current ID and alternate ID as key value pairs for different individuals.
+        dictionary with current ID and alternate ID as key value pairs for 
+            different individuals.
     """
     if not os.path.exists(path):
         raise IOError("Path to known ID converter file does not exist")
@@ -117,25 +121,27 @@ def create_person_ID_mapper(path="/nfs/ddd0/Data/datafreeze/1139trios_20131030/p
 def open_filters(path):
     """Opens user-defined criteria for filtering variants.
 
-    Open a tab-separated text file with VCF criteria for variants (such as only including function 
-    altering nonsynonymous variants, or only including variants where any of the 1000 Genomes 
-    cohorts have minor allele frequencies less than 0.01). Each line in the file is for a separate
-    criteria, with the columns being filter_label (corresponding to a VCF INFO category), 
-    filter_type (eg list, greater_than, smaller_than), and the actual criteria (could be a comma-
-    separated list, or a numeric value).
+    Open a tab-separated text file with VCF criteria for variants (such as only 
+    including function altering nonsynonymous variants, or only including 
+    variants where any of the 1000 Genomes cohorts have minor allele frequencies
+    less than 0.01). Each line in the file is for a separate criteria, with the
+    columns being filter_label (corresponding to a VCF INFO category), 
+    filter_type (eg list, greater_than, smaller_than), and the actual criteria 
+    (could be a comma-separated list, or a numeric value).
     
     Args:
         path: path to text file defining the filters.
 
     Returns: 
-        A dictionary of VCF INFO categories with corresponding criteria. For example: 
+        A dictionary of VCF INFO categories with corresponding criteria, e.g.
         
         {"VCQ": "(list", ["ESSENTIAL_SPLICE_SITE", "STOP_GAINED"]), 
         "AF_MAX": ("smaller_than", 0.01)}
 
     Raises:
         IOError: An error when the filter file path is not specified correctly.
-        ValueError: An error when apparently numeric values cannot be converted to floats.
+        ValueError: An error when apparently numeric values cannot be converted
+            to floats.
     """
 
     # check that the file exists
@@ -184,17 +190,18 @@ def open_filters(path):
 def open_tags(path):
     """Opens alternate identifiers for values in nonstandard VCF files.
 
-    The EVA_report needs to know what the GT and GN tags are called in the VCF file. Depending on 
-    where the VCF files has originated from, these can be named differently. This function opens a 
-    tab-separated file, and gets values to map one nomenclature to another. The GT is expected in 
-    the 9 column of the VCF file and its value in the 10th column. The gene ID (GN) is expected in 
+    The report needs to know what the GT and GN tags are called in the VCF file.
+    Depending on where the VCF files has originated from, these can be named 
+    differently. This function opens a tab-separated file, and gets values to 
+    map one nomenclature to another. The GT is expected in the 9 column of the 
+    VCF file and its value in the 10th column. The gene ID (GN) is expected in 
     INFO column (7th column).
 
     Args:
         path: path to tags file (typically named tags.txt)
 
     Returns:
-        Strings for each of the desired tags eg CQ_tag = "CQ", or GN_tag = "VGN".
+        Strings for each of the desired tags eg CQ_tag = "CQ", or GN_tag = "VGN"
     
     Raises:
         IOError: An error when the tags path is not specified correctly.
@@ -222,7 +229,8 @@ def open_tags(path):
         if "," in value:
             value = value.split(",")
         
-        # if there is only a single value, we might as well insert it into a list, for consistency
+        # if there is only a single value, we might as well insert it into a 
+        # list, for consistency
         if type(value) == str:
             value = [value]
         

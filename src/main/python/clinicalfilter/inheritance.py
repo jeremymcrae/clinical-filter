@@ -122,10 +122,7 @@ class Inheritance(object):
         
         # at this point make sure we only deal with genes that have at least 
         # one correct modes of inheritance for the given chromosome type
-        if len(self.inheritance_modes & self.gene_inheritance) > 0:
-            return True
-        
-        return False
+        return len(self.inheritance_modes & self.gene_inheritance) > 0
     
     def set_trio_genotypes(self, variant):
         """ sets the genotypes for the trio as Variant objects
@@ -138,6 +135,8 @@ class Inheritance(object):
             self.dad = variant.father
         else:
             self.child = variant.child
+            self.mom = None
+            self.dad = None
     
     def add_variant_to_appropriate_list(self, variant, check, inheritance):
         """ add processed variants to the appropriate list
@@ -160,7 +159,7 @@ class Inheritance(object):
             
             if variant.is_cnv():
                 cnv_checker = CNVInheritance(variant, self.trio, self.known_genes)
-                check = cnv_checker.check_inheritance()
+                check = cnv_checker.check_single_inheritance()
                 self.log_string = cnv_checker.log_string
                 self.add_variant_to_appropriate_list(variant, check, "unknown")
                 # for inheritance in self.inheritance_modes & self.gene_inheritance:
@@ -206,12 +205,12 @@ class Inheritance(object):
         """
         
         if self.child.is_hom_alt():
-            if self.check_homozygous_variant(inheritance):
+            if self.check_homozygous(inheritance):
                 return "single_variant"
             else:
                 return "nothing"
         elif self.child.is_het():
-            return self.check_heterozygous_variant(inheritance)
+            return self.check_heterozygous(inheritance)
         
         self.log_string = "not hom alt nor het: " + str(self.child) + " with \
                            inheritance" + self.chrom_inheritance
@@ -307,7 +306,7 @@ class Autosomal(Inheritance):
         elif self.child.is_het() and inheritance == "Monoallelic":
             self.add_variant_to_appropriate_list(variant, "single_variant", inheritance)
     
-    def check_heterozygous_variant(self, inheritance):
+    def check_heterozygous(self, inheritance):
         """ checks if a heterozygous genotype could contribute to disease
         """
         
@@ -336,7 +335,7 @@ class Autosomal(Inheritance):
             self.log_string = "typically for trios with non-de novo unaffected parents"
             return "nothing"
         
-    def check_homozygous_variant(self, inheritance):
+    def check_homozygous(self, inheritance):
         """ checks if a homozygous genotype could contribute to disease
         """
         
@@ -394,7 +393,7 @@ class Allosomal(Inheritance):
         elif (self.trio.child.is_female() and self.child.is_het() and inheritance == "Hemizygous"):
             self.add_variant_to_appropriate_list(variant, "hemizygous", inheritance)
     
-    def check_heterozygous_variant(self, inheritance):
+    def check_heterozygous(self, inheritance):
         """ checks if a heterozygous genotype could contribute to disease
         """
         
@@ -433,7 +432,7 @@ class Allosomal(Inheritance):
             self.log_string = "variant not compatible with being causal"
             return "nothing"
         
-    def check_homozygous_variant(self, inheritance):
+    def check_homozygous(self, inheritance):
         """ checks if a homozygous genotype could contribute to disease
         """
         
@@ -484,8 +483,8 @@ class CNVInheritance(object):
         
         self.gene = self.variant.child.gene
     
-    def check_inheritance(self):
-        """
+    def check_single_inheritance(self):
+        """ checks if a CNV could be causal by itself
         """
         
         if self.passes_nonddg2p_filter() or \
@@ -494,44 +493,59 @@ class CNVInheritance(object):
         
         return "nothing"
     
-    def get_CNV_filter_values(self, gene):
+    def check_compound_inheritance(self):
+        """ checks if a CNV could contribute to a compound het
+        """
+        
+        passes = False
+        if self.passes_nonddg2p_filter():
+            passes = True
+        if self.known_genes is not None and self.passes_ddg2p_filter():
+            passes = True
+            
+        if passes:
+            return "single_variant"
+        else:
+            return "nothing"
+    
+    def passes_gene_inheritance(self, gene, inh):
         """ create CNV filter values dependent on DDG2P inheritance mode
         """
         
-        gene_mode = self.known_genes[gene]["inheritance"]
-        
         # set some default parameters
-        required_chrom = "all"
-        required_copy_number = (["0", "1", "3"])
-        required_mechanisms = set(["Uncertain", "Loss of function", \
+        chrom = "all"
+        copy_number = (["0", "1", "3"])
+        mechanisms = set(["Uncertain", "Loss of function", \
             "Dominant negative", "Increased gene dosage"])
         
-        if "Biallelic" in gene_mode:
-            required_copy_number = set(["0"])
-            required_mechanisms = set(["Uncertain", "Loss of function", "Dominant negative"])
-            inheritance = "Biallelic"
-        elif "Monoallelic" in gene_mode:
-            inheritance = "Monoallelic"
-        elif "X-linked dominant" in gene_mode:
-            required_chrom = "X"
-            inheritance = "X-linked dominant"
-        elif "Hemizygous" in gene_mode and self.variant.child.is_male():
-            required_chrom = "X"
-            inheritance = "Hemizygous"
-        elif "Hemizygous" in gene_mode and self.variant.child.is_female():
-            required_chrom = "X"
-            required_copy_number = set(["3"])
-            required_mechanisms = set(["Increased gene dosage"])
-            inheritance = "Hemizygous"
+        if "Biallelic" == inh:
+            copy_number = set(["0"])
+            mechanisms = set(["Uncertain", "Loss of function", "Dominant negative"])
+        elif "Monoallelic" == inh:
+            pass
+        elif "X-linked dominant" == inh:
+            chrom = "X"
+        elif "Hemizygous" == inh and self.variant.child.is_male():
+            chrom = "X"
+        elif "Hemizygous" == inh and self.variant.child.is_female():
+            chrom = "X"
+            copy_number = set(["3"])
+            mechanisms = set(["Increased gene dosage"])
         else:
             # other inheritance modes of "Mosaic", or "Digenic" can be ignored
             # by using impossible criteria
-            required_chrom = "GGG"
-            required_copy_number = set(["999"])
-            required_mechanisms = set(["Nothing"])
-            inheritance = list(set(gene_mode))[0]
+            chrom = "GGG"
+            copy_number = set(["999"])
+            mechanisms = set(["Nothing"])
             
-        return required_chrom, required_copy_number, required_mechanisms, inheritance
+        # print(self.variant, str(chrom), "==", self.variant.get_chrom(), \
+        #     str(copy_number), "==", self.variant.child.info["CNS"], \
+        #     str(mechanisms), "==", self.known_genes[gene]["inheritance"][inh])
+                
+        return (chrom =="all" or 
+            (chrom == "X" and self.variant.get_chrom() == "X")) and \
+            self.variant.child.info["CNS"] in copy_number and \
+            len(self.known_genes[gene]["inheritance"][inh] & mechanisms) > 0
     
     def passes_nonddg2p_filter(self):
         """ checks if a CNV passes the non DDG2P criteria
@@ -557,7 +571,14 @@ class CNVInheritance(object):
                 self.log_string = "non-DDG2P, DUP CNV, unknown inh: " + inh
                 return True
         
-        self.log_string = "non-reported CNV"
+        # print(self.trio.child.get_ID(), self.variant, \
+        #     "nonreported non-DDG2P " + self.variant.child.genotype, \
+        #     "CNV, inh=" + inh, "mom_aff=" + str(self.trio.mother.is_affected()),\
+        #     str(self.trio.mother.get_affected_status()), \
+        #     "len=" + self.variant.child.info["SVLEN"])
+        
+        self.log_string = "nonreported non-DDG2P " + \
+            self.variant.child.genotype + " CNV, inh:" + inh
         return False
     
     def passes_ddg2p_filter(self):
@@ -571,27 +592,25 @@ class CNVInheritance(object):
         else:
             genes  = [self.gene]
         
+        self.log_string = "non-reported CNV"
         for gene in genes:
             gene_passes = True
             if gene in self.known_genes:
+                self.log_string = "non-reported DDG2P CNV"
                 gene_type = self.known_genes[gene]["confirmed_status"]
                 
-                if "Both DD and IF" in gene_type:
-                    self.log_string = "Both DD and IF DDG2P gene"
-                    pass
-                elif "Confirmed DD Gene" in gene_type or "Probable DD gene" in gene_type:
-                    required_chrom, required_copy_number, required_mechanisms, inheritance = self.get_CNV_filter_values(gene)
-                    
-                    if required_chrom == "X" and self.variant.get_chrom() != "X":
-                        gene_passes = False
-                    
-                    if self.variant.child.info["CNS"] not in required_copy_number:
-                        gene_passes = False
-                    
-                    if len(self.known_genes[gene]["inheritance"][inheritance] & required_mechanisms) == 0:
-                        gene_passes = False
-                else:
-                    print(self, "failed some DDG2P CNV criteria")
+                inh_passes = []
+                for inh in self.known_genes[gene]["inheritance"]:
+                
+                    if "Both DD and IF" in gene_type:
+                        self.log_string = "Both DD and IF DDG2P gene"
+                        inh_passes.append(True)
+                    elif "Confirmed DD Gene" in gene_type or "Probable DD gene" in gene_type:
+                        inh_passes.append(self.passes_gene_inheritance(gene, inh))
+                
+                if not any(inh_passes):
+                    gene_passes = False
+                
             else:
                 gene_passes = False
             
@@ -599,7 +618,6 @@ class CNVInheritance(object):
                 self.log_string = "DDG2P CNV"
                 return True
         
-        self.log_string = "non-reported CNV"
         return False
     
     

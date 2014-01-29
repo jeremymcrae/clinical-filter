@@ -169,8 +169,8 @@ class ClinicalFilter(reporting.report):
 class loadDefinitions:
     """Loads the filters, weights, hierarchy and data output definitions files.
     
-    We load this outside the Trios class, so that we don't have to reload the definitions each time 
-    a new trio is examined.
+    We load this outside the Trios class, so that we don't have to reload the 
+    definitions each time a new trio is examined.
     """
     def __init__(self, opts):
         """Sets the paths to the definitions files, and parses the files for
@@ -187,37 +187,40 @@ class loadDefinitions:
         self.load_trio_paths()
         
     def load_definitions_files(self):
-        """loads all the definition filters for the script (eg filters, weights, gene IDs)
+        """loads all the config files for the script (eg filters, gene IDs)
         """
         self.filters = load_files.open_filters(self.filters_path)
         self.tags_dict = load_files.open_tags(self.tags_path)
         
-        # make sure we cover all the possible ways that maximum minor allele frequencies can be
-        # named as in our VCF files. For the MAF values in the file, this should make it so that if 
-        # the MAF value exists for a variant, then the variant has to pass the MAF filter
+        # make sure we cover all the possible ways that maximum minor allele 
+        # frequencies can be named as in our VCF files. For the MAF values in 
+        # the file, this should make it so that if the MAF value exists for a 
+        # variant, then the variant has to pass the MAF filter
         for tag in self.tags_dict["MAX_MAF"]:
             self.filters[tag] = self.filters["MAX_MAF"]
         
-        # make sure we cover all possible ways that the variants consequence ID can be encoded. 
-        # This should make it so that if the consequence ID exists for a variant, then that variant
-        # has to pass the consequence filter (ie have a consequence like "STOP_GAINED", 
+        # make sure we cover all possible ways that the variants consequence ID
+        # can be encoded. This should make it so that if the consequence ID 
+        # exists for a variant, then that variant has to pass the consequence 
+        # filter (ie have a consequence like "STOP_GAINED", 
         # "NON_SYNONYMOUS_CODING", etc)
         for tag in self.tags_dict["consequence"]:
             self.filters[tag] = self.filters["VCQ"]
         
-        # if we have named a gene file, then load a dictionary of genes, and add them to the 
-        # filters, so we can screen variants for being in genes known to be involved with 
-        # disorders
+        # if we have named a gene file, then load a dictionary of genes, and 
+        # add them to the filters, so we can screen variants for being in genes 
+        # known to be involved with disorders
         if self.options.genes_path is not None:
             self.known_genes = load_files.open_known_genes(self.options.genes_path)
-            # include all the possible ways IDs that a gene field can be named in a VCF file
+            # include all the possible ways IDs that a gene field can be named 
+            # in a VCF file
             for tag in self.tags_dict["gene"]:
                 self.filters[tag] = ["list", self.known_genes]
         else:
             self.known_genes = None
         
-        # if we have named an ID mapping file, the load a dictionary of IDs and alternate IDs, so we
-        # can convert between different ID schemes.
+        # if we have named an ID mapping file, the load a dictionary of IDs and
+        # alternate IDs, so we can convert between different ID schemes.
         if self.options.alternate_ids_path is not None:
             self.ID_mapper = load_files.create_person_ID_mapper(self.options.alternate_ids_path)
         else:

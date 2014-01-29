@@ -76,20 +76,19 @@ class CNV(Variant, VcfInfo):
             self.gene = self.info["HGNC"]
     
     def passes_filters(self, filters):
-        """Checks whether a VCF record passes user defined criteria.
+        """Checks whether a VCF variant passes user defined criteria.
         
         Args:
-            filters: dict of filters
-            
+            filters: filtering criteria (used for SNV filtering)
+        
         Returns:
-            boolean value for whether the record passes the filters
+            boolean value for whether the variant passes the filters
         """
         
         self.set_genotype()
-        ddg2p = filters["HGNC"][1]
         
         track_variant = False
-        if self.get_position() == "71295468":
+        if self.get_position() == "186746704":
             track_variant = True
         
         passes = True
@@ -117,7 +116,7 @@ class CNV(Variant, VcfInfo):
             passes = False
             if track_variant:
                 print("failed meanlr2", self.info["MEANLR2"])
-    
+        
         return passes
     
     def fails_cnsolidate(self):

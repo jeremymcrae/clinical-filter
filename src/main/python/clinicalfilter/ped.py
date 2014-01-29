@@ -152,7 +152,7 @@ class Family(object):
         """ define the child to be examined
         """
         for child in self.children:
-            if child.is_analysed() == False:
+            if not child.is_analysed():
                 self.child = child
                 return
         
@@ -167,7 +167,7 @@ class Family(object):
             if child.get_ID() == self.child.get_ID():
                 self.children[child_position].set_analysed()
         
-        self.child = self.set_child()
+        self.set_child()
 
     
 def load_ped_file(path):

@@ -7,7 +7,7 @@ from clinicalfilter.ped import Person
 from clinicalfilter.variant import Variant
 from clinicalfilter.variant_cnv import CNV
 from clinicalfilter.variant_snv import SNV
-from clinicalfilter.inheritance import Inheritance
+from clinicalfilter.inheritance import Autosomal
 from clinicalfilter.vcf_info import VcfInfo
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
@@ -41,7 +41,7 @@ class TestInheritancePy(unittest.TestCase):
         self.known_genes = {"TEST": {"inheritance": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}}
         gene_inh = self.known_genes[var.get_gene()]["inheritance"]
         
-        self.inh = Inheritance(self.variants, self.trio, gene_inh)
+        self.inh = Autosomal(self.variants, self.trio, gene_inh)
     
     def create_snv(self, gender, genotype):
         """ create a default variant
@@ -61,11 +61,13 @@ class TestInheritancePy(unittest.TestCase):
         tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
         
         info = "HGNC=TEST;CQ=missense_variant;random_tag"
-        self.format_keys = "GT:DP"
-        self.sample_values = genotype + ":50"
+        format_keys = "GT:DP"
+        sample_values = genotype + ":50"
         
         var.add_info(info, tags)
+        var.add_format(format_keys, sample_values)
         var.set_gender(gender)
+        var.set_genotype()
         
         return var
     
@@ -85,12 +87,105 @@ class TestInheritancePy(unittest.TestCase):
         """ test that check_inheritance_mode_matches_gene_mode() works correctly
         """
         
+        # check that the default inheritance types have been set up correctly
+        self.assertEqual(self.inh.inheritance_modes, {"Monoallelic", "Biallelic", "Both"})
+        
+        # make sure that the default var and gene inheritance work
         self.assertTrue(self.inh.check_inheritance_mode_matches_gene_mode())
         
+        # check that no gene inheritance overlap fails
+        self.inh.gene_inheritance = {"Mosaic"}
+        self.inh.inheritance_modes = {"Monoallelic", "Biallelic", "Both"}
+        self.assertFalse(self.inh.check_inheritance_mode_matches_gene_mode())
         
-
+        # check that a single inheritance type still works
+        self.inh.gene_inheritance = {"Monoallelic"}
+        self.assertTrue(self.inh.check_inheritance_mode_matches_gene_mode())
+        
+        # check that multiple inheritance types for a gene still work
+        self.inh.gene_inheritance = {"Monoallelic", "Biallelic"}
+        self.assertTrue(self.inh.check_inheritance_mode_matches_gene_mode())
+        
+        # check that extra inheritance modes are included still work
+        self.inh.gene_inheritance = {"Monoallelic", "Biallelic", "Mosaic"}
+        self.assertTrue(self.inh.check_inheritance_mode_matches_gene_mode())
+    
+    def test_set_trio_genotypes(self):
+        """ test that set_trio_genotypes() works correctly
+        """
+        
+        # set the genotypes using the default variant
+        var = self.variants[0]
+        self.inh.set_trio_genotypes(var)
+        
+        # the genotypes for the inh object should match the vars genotypes
+        self.assertEqual(self.inh.child, var.child)
+        self.assertEqual(self.inh.mom, var.mother)
+        self.assertEqual(self.inh.dad, var.father)
+        
+        # now remove the parents before re-setting the genotypes
+        del var.mother
+        del var.father
+        self.inh.trio.father = None
+        self.inh.trio.mother = None
+        self.inh.set_trio_genotypes(var)
+        
+        # the child should match the vars genotypes, but the parent's 
+        # genotypes should be None
+        self.assertEqual(self.inh.child, var.child)
+        self.assertIsNone(self.inh.mom)
+        self.assertIsNone(self.inh.dad)
+    
+    def test_add_variant_to_appropriate_list(self):
+        """ test that add_variant_to_appropriate_list() works correctly
+        """
+        
+        var = self.variants[0]
+        inheritance = "Monoallelic"
+        check = "compound_het"
+        
+        # check that compound_het vars are only added to the compound_het list
+        self.inh.compound_hets = []
+        self.inh.candidates = []
+        self.inh.add_variant_to_appropriate_list(var, check, inheritance)
+        self.assertEqual(self.inh.candidates, [])
+        self.assertEqual(self.inh.compound_hets, [[var, check, inheritance]])
+        
+        # check that hemizygous vars are only added to the compound_het list
+        self.inh.compound_hets = []
+        self.inh.candidates = []
+        check = "hemizygous"
+        self.inh.add_variant_to_appropriate_list(var, check, inheritance)
+        self.assertEqual(self.inh.candidates, [])
+        self.assertEqual(self.inh.compound_hets, [[var, check, inheritance]])
+        
+        # check that single_variant vars are only added to the candidates list
+        self.inh.compound_hets = []
+        self.inh.candidates = []
+        check = "single_variant"
+        self.inh.add_variant_to_appropriate_list(var, check, inheritance)
+        self.assertEqual(self.inh.candidates, [[var, check, inheritance]])
+        self.assertEqual(self.inh.compound_hets, [])
+        
+        # check that other vars aren't added either list
+        self.inh.compound_hets = []
+        self.inh.candidates = []
+        check = "nothing"
+        self.inh.add_variant_to_appropriate_list(var, check, inheritance)
+        self.assertEqual(self.inh.candidates, [])
+        self.assertEqual(self.inh.compound_hets, [])
+    
+    def test_check_heterozygous(self):
+        """ test that check_heterozygous() works correctly
+        """
+        
+        var = self.variants[0]
+        self.inh.set_trio_genotypes(var)
+        self.assertEqual(self.inh.check_heterozygous("Monoallelic"), "single_variant")
+        self.assertEqual(self.inh.check_heterozygous("Biallelic"), "compound_het")
+        
+        
+        
 
 unittest.main()
 
-
-        

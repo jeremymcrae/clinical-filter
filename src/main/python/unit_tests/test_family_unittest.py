@@ -105,11 +105,12 @@ class TestFamily(unittest.TestCase):
         # add one child
         self.family.add_child("child1", "/home/child1.vcf", "2", "1")
         
-        # check that the child can be set correctly, and can ne set as having
+        # check that the child can be set correctly, and can be set as having
         # been examined
         self.family.set_child()
         self.family.set_child_examined()
         self.assertTrue(self.family.children[0].is_analysed())
+        self.assertIsNone(self.family.child)
         
         # add another child, and check that when we set the child, we now pick
         # up this child since the other one has previously been examined
@@ -117,21 +118,18 @@ class TestFamily(unittest.TestCase):
         self.family.set_child()
         self.assertEqual(self.family.child, self.family.children[1])
         
-        # and set child = None once we have analysed all the children 
+        # make sure that set_child_examined() doesn't default to None if we 
+        # have children left to analyse
+        self.family.add_child("child3", "/home/child3.vcf", "2", "2")
+        self.family.set_child()
+        self.family.set_child_examined()
+        self.assertIsNotNone(self.family.child)
+        
+        # and set child = None once we have analysed all the children
+        self.family.set_child()
         self.family.set_child_examined()
         self.assertIsNone(self.family.child)
         
-    
-        
-        
-        
-        
-    
-    
-        
-    
-    
-
 
 
 unittest.main()
