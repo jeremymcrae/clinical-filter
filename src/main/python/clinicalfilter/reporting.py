@@ -137,7 +137,7 @@ class report(object):
         """
         
         # figure out what to do with the header
-        child_lines = self.vcf_loader.header_lines
+        child_lines = self.vcf_loader.child_header
         
         child_lines.insert(-1, '##INFO=<ID=ClinicalFilterType,Number=.,Type=String,Description="The type of clinical filter that passed this variant.">\n')
         child_lines.insert(-1, '##INFO=<ID=ClinicalFilterGeneInheritance,Number=.,Type=String,Description="The inheritance mode (Monoallelic, Biallelic etc) under which the variant was found.">\n')

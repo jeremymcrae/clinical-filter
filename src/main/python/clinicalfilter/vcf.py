@@ -248,6 +248,7 @@ class LoadVCFs(object):
         
         # open the childs VCF file
         self.child_vcf, self.child_defs = self.open_individual(self.family.child, filters=True)
+        self.child_header = self.header_lines
         self.cnv_matcher = MatchCNVs(self.child_vcf)
         
         if self.family.has_parents():
