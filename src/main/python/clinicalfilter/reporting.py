@@ -126,7 +126,7 @@ class report(object):
             list of lines to add to VCF file
         """
         
-        ID = "##UberVCF_" + member + "_id=" + provenance[1].split(".")[0] + "\n"
+        ID = "##UberVCF_" + member + "_Id=" + provenance[1].split(".")[0] + "\n"
         checksum = "##UberVCF_" + member + "_Checksum=" + provenance[0] + "\n"
         basename = "##UberVCF_" + member + "_Basename=" + provenance[1] + "\n"
         date = "##UberVCF_" + member + "_Date=" + provenance[2] + "\n"
