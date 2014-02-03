@@ -152,6 +152,8 @@ class VcfInfo(object):
         return str(max_allele_frequency)
     
     def show_fail(self, key, value, condition, filter_values):
+        """ prints why a named variant has failed filtering
+        """
         print(str(key) + ": " + str(value) + " not " + str(condition) + \
                   " " + str(filter_values))
     
@@ -166,8 +168,8 @@ class VcfInfo(object):
         """
         
         self.show_fail_point = False
-        if self.get_chrom() == "X" and self.get_position() == "76856021":
-            show_fail_point = True
+        if self.get_chrom() == "11" and self.get_position() == "118343368":
+            self.show_fail_point = True
         
         passes = True
         for key in self.info:

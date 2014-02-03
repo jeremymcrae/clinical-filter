@@ -114,7 +114,7 @@ class ClinicalFilter(reporting.report):
         # export the results to either tab-separated table or VCF format
         if self.output_path is not None:
             self.save_results()
-        if self.export_vcf:
+        if self.export_vcf is not None:
             self.save_vcf()
         self.first_run = False
     
@@ -267,7 +267,7 @@ def get_options():
     parser.add_option("--known-genes", dest="genes_path", help="path to list of known disease causative genes, eg DDG2P-reportable.txt")
     parser.add_option("--alternate-ids", dest="alternate_ids_path", help="path to list of alternate IDs, eg personid_decipher_id_sangerid.txt")
     parser.add_option("-o", "--output", dest="output_path", default="clinical_reporting.txt", help="filename to output variant data to")
-    parser.add_option("--export-vcf", dest="export_vcf", action="store_true", default=False, help="whether to export identified variants to a VCF file")
+    parser.add_option("--export-vcf", dest="export_vcf", help="Folder or filename in which to export a VCF file for a proband. The script does not export a gzipped VCF file if this option is not used.")
     parser.add_option("--log", dest="loglevel", default="debug", help="level of logging to use, choose from: debug, info, warning, error or critical")
     
     (opts, args) = parser.parse_args()

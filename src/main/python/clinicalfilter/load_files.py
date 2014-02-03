@@ -41,6 +41,8 @@ def open_known_genes(path="DDGP-reportable.txt"):
         confirmed_status_label = "type"
         inheritance_label = "mode"
         mechanism_label = "mech"
+        start_label = "start"
+        stop_label = "stop"
     else:
         raise ValueError("The gene file doesn't contain expected column names")
     
@@ -49,6 +51,8 @@ def open_known_genes(path="DDGP-reportable.txt"):
     confirmed_status_column = header.index(confirmed_status_label)
     inheritance_column = header.index(inheritance_label)
     mechanism_column = header.index(mechanism_label)
+    start_column = header.index(start_label)
+    stop_column = header.index(stop_label)
     
     # only include genes with sufficient DDG2P status
     allowed_confirmed_statuses = ["Confirmed DD Gene", "Probable DD gene", \
@@ -60,6 +64,8 @@ def open_known_genes(path="DDGP-reportable.txt"):
         gene_confirmed_status = line[confirmed_status_column]
         gene_inheritance = line[inheritance_column]
         gene_mechanism = line[mechanism_column]
+        gene_start = line[start_column]
+        gene_stop= line[stop_column]
         
         # ignore genes with insufficient evidence
         if gene_confirmed_status not in allowed_confirmed_statuses:
@@ -73,6 +79,8 @@ def open_known_genes(path="DDGP-reportable.txt"):
         
         known_genes[gene_ID]["inheritance"][gene_inheritance].add(gene_mechanism)
         known_genes[gene_ID]["confirmed_status"].add(gene_confirmed_status)
+        known_genes[gene_ID]["start"] = gene_start
+        known_genes[gene_ID]["stop"] = gene_stop
         
         # some genes are listed with an inheritance mode of "Both", which means 
         # the gene has been observed in disorders with both monoallelic and 

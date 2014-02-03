@@ -7,6 +7,7 @@ import datetime
 import gzip
 import importlib
 import sys
+import os
 
 class report(object):
     """A class to report candidate variants.
@@ -131,7 +132,26 @@ class report(object):
         date = "##UberVCF_" + member + "_Date=" + provenance[2] + "\n"
         
         return [ID, checksum, basename, date]
+    
+    def get_vcf_export_path(self):
+        """ get the path for writing a VCF file
+        """
         
+        vcf_path = self.export_vcf
+        proband_filename = self.family.child.get_ID() + ".vcf.gz"
+        # check if we have named what looks like a VCF file
+        if "vcf" in vcf_path[-7:] or vcf_path.endswith("gz"):
+            # make sure we haven't named a nonexistent folder
+            if not os.path.lexists(os.path.dirname(vcf_path)):
+                raise ValueError("Cannot find the folder to export the VCF file")
+        # if we have named a folder path, add the proband ID for the filename
+        elif os.path.isdir(vcf_path):
+            vcf_path = os.path.join(vcf_path, proband_filename)
+        else:
+            raise ValueError("Cannot find the path to export the VCF file")
+        
+        return vcf_path
+    
     def save_vcf(self):
         """ exports a VCF file for the childs candidate variants.
         """
@@ -196,17 +216,18 @@ class report(object):
             
             var_lines.append("\t".join(vcf_line) + "\n")
         
-        filter_string = "##ClinicalFilterHistory=" + ";".join(sorted(list(filter_strings))) + "\n"
+        filter_string = "##ClinicalFilterHistory=single_variant,compound_het"
         child_lines.insert(-1, filter_string)
         
         child_lines += var_lines
         
+        vcf_path = self.get_vcf_export_path()
         # join the list of lines for the VCF file into a single string
         child_lines = "".join(child_lines)
         if platform.python_version_tuple()[0] == "2":
-            with gzip.open(self.family.child.get_ID() + ".vcf.gz", 'wb') as f:
+            with gzip.open(vcf_path, 'wb') as f:
                 f.write(child_lines)
         else:
-            with gzip.open(self.family.child.get_ID() + ".vcf.gz", 'wt') as f:
+            with gzip.open(vcf_path, 'wt') as f:
                 f.write(child_lines)
         

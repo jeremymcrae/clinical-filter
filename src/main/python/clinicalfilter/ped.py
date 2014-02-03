@@ -173,8 +173,8 @@ class Family(object):
 def load_ped_file(path):
     """Loads a PED file containing details for multiple trios.
     
-    The PED file is in LINKAGE PED format, with the first six columns s
-    pecfifying the indivudual and how they are related to toher individuals. In 
+    The PED file is in LINKAGE PED format, with the first six columns
+    specfifying the indivudual and how they are related to toher individuals. In 
     contrast to other PED files, the genotypes are specified as a path to a VCF 
     file for the individual.
     
