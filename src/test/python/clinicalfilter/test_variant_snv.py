@@ -236,7 +236,6 @@ class TestVariantSnvPy(unittest.TestCase):
             self.var.set_genotype()
             self.assertEqual(self.var.is_not_alt(), result)
     
-    
 
-unittest.main()
+# unittest.main()
 

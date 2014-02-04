@@ -264,8 +264,7 @@ class TestVcfInfoPy(unittest.TestCase):
         # check that missense vars with NA mutation IDs and high MAF fail
         self.var.info["AF_AFR"] = "0.00501"
         self.assertFalse(self.var.passes_multiple_filter())
-        
 
 
-unittest.main()
+# unittest.main()
 

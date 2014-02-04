@@ -123,5 +123,5 @@ class TestVariantPy(unittest.TestCase):
     # TODO: check add_format
 
 
-unittest.main()
+# unittest.main()
 

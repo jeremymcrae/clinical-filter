@@ -175,17 +175,12 @@ class TestInheritancePy(unittest.TestCase):
         self.assertEqual(self.inh.candidates, [])
         self.assertEqual(self.inh.compound_hets, [])
     
-    def test_check_heterozygous(self):
-        """ test that check_heterozygous() works correctly
-        """
+    # def test_check_compound_hets(self):
+    #     """ test that check_compound_hets() works correctly
+    #     """
         
-        var = self.variants[0]
-        self.inh.set_trio_genotypes(var)
-        self.assertEqual(self.inh.check_heterozygous("Monoallelic"), "single_variant")
-        self.assertEqual(self.inh.check_heterozygous("Biallelic"), "compound_het")
-        
-        
-        
+    #     pass
 
-unittest.main()
+
+# unittest.main()
 

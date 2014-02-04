@@ -158,7 +158,7 @@ class Inheritance(object):
         """
         
         if not self.trio.has_parents():
-            return self.check_variant_without_parents(variant, inheritance)
+            return self.check_variant_without_parents(inheritance)
         
         if variant.is_cnv():
             cnv_checker = CNVInheritance(variant, self.trio, self.known_genes)
@@ -258,20 +258,17 @@ class Autosomal(Inheritance):
         
         self.inheritance_modes = set(["Monoallelic", "Biallelic", "Both"])
     
-    def check_variant_without_parents(self, variant, inheritance):
+    def check_variant_without_parents(self, inheritance):
         """ test variants in children where we lack parental genotypes
         """
         
         self.log_string = "autosomal without parents"
         if self.child.is_het() and inheritance == "Biallelic":
             return "compound_het"
-            # self.add_variant_to_appropriate_list(variant, "compound_het", inheritance)
         elif self.child.is_hom_alt() and inheritance == "Biallelic":
             return "single_variant"
-            # self.add_variant_to_appropriate_list(variant, "single_variant", inheritance)
         elif self.child.is_het() and inheritance == "Monoallelic":
             return "single_variant"
-            # self.add_variant_to_appropriate_list(variant, "single_variant", inheritance)
         
         return "nothing"
     
@@ -298,6 +295,7 @@ class Autosomal(Inheritance):
         elif "Biallelic" == inheritance and \
              ((self.dad.is_not_alt() or self.father_affected) and \
              (self.mom.is_not_alt() or self.mother_affected)):
+            # TODO: could simplify this check
             self.log_string = "het-check for recessive genes and unaff parents not homoz"
             return report
         else:
@@ -310,11 +308,11 @@ class Autosomal(Inheritance):
         
         if self.dad.is_hom_ref() or self.mom.is_hom_ref():
             #NB: will miss one inherited copy and one de-novo at same site
-            self.log_string = "child hom alt and parents hom ref, which is non-mendelian"
+            self.log_string = "non-mendelian trio"
             return "nothing"
         elif "Biallelic" == inheritance:
-            if (self.mom.is_het() and self.dad.is_het()):
-                self.log_string = "both parents het"
+            if self.mom.is_het() and self.dad.is_het():
+                self.log_string = "both parents het in biallelic gene"
                 return "single_variant"
             elif (((self.mom.is_hom_alt() and self.mother_affected) and \
                 (self.dad.is_not_alt() or self.father_affected)) or \
@@ -323,15 +321,11 @@ class Autosomal(Inheritance):
                 self.log_string = "homoz parent aff"
                 return "single_variant"
         elif "Monoallelic" == inheritance:
-            # dominant
-            if (((self.dad.is_not_ref() and self.father_affected) and \
-                (self.mom.is_hom_ref() or self.mother_affected)) or \
-                ((self.mom.is_not_ref() and self.mother_affected) and \
-                (self.dad.is_hom_ref() or self.father_affected))):
-                self.log_string = "transmitted from aff, other parent non-carrier or aff"
+            if self.father_affected and self.mother_affected:
+                self.log_string = "transmitted from affected parents"
                 return "single_variant"
         
-        self.log_string = "variant not compatible with being causal"
+        self.log_string = "non-causal homozygous variant"
         return "nothing"
 
 
@@ -350,21 +344,17 @@ class Allosomal(Inheritance):
             self.gene_inheritance.add("X-linked dominant")
             self.gene_inheritance.remove("Monoallelic")
     
-    def check_variant_without_parents(self, variant, inheritance):
+    def check_variant_without_parents(self, inheritance):
         """ test variants in children where we lack parental genotypes
         """
         
         self.log_string = "allosomal without parents"
-        if (self.child.is_hom_alt() and inheritance == "X-linked dominant") or \
-           (self.trio.child.is_female() and self.child.is_het() and inheritance == "X-linked dominant"):
-           return "single_variant"
-            # self.add_variant_to_appropriate_list(variant, "single_variant", inheritance)
-        elif (self.child.is_hom_alt() and inheritance == "Hemizygous"):
+        if inheritance == "X-linked dominant":
             return "single_variant"
-            # self.add_variant_to_appropriate_list(variant, "single_variant", inheritance)
-        elif (self.trio.child.is_female() and self.child.is_het() and inheritance == "Hemizygous"):
-            return "hemizygous"
-            # self.add_variant_to_appropriate_list(variant, "hemizygous", inheritance)
+        elif inheritance == "Hemizygous":
+            if self.child.is_het():
+                return "hemizygous"
+            return "single_variant"
         
         return "nothing"
     
@@ -372,14 +362,11 @@ class Allosomal(Inheritance):
         """ checks if a heterozygous genotype could contribute to disease
         """
         
-        if "X-linked dominant" == inheritance or "Monoallelic" == inheritance:
+        if "X-linked dominant" == inheritance:
             report = "single_variant"
         elif "Hemizygous" == inheritance:
             # recessive: should be marked for compound-het screen
             report = "hemizygous"
-        elif "X-linked over-dominance" == inheritance:
-            report = "X-linked over dominance not currently supported"
-            return "nothing"
         else:
             raise ValueError("unknown gene inheritance status: " + str(inheritance))
         
@@ -392,13 +379,13 @@ class Allosomal(Inheritance):
              (self.dad.is_hom_ref() or self.father_affected):
             self.log_string = "x chrom transmitted from aff, other parent non-carrier or aff"
             return report
-        elif inheritance == "X-linked over-dominance" and not \
-              self.father_affected and \
-             ((self.mom.is_hom_ref() and self.dad.is_hom_alt()) or \
-             self.mom.is_het() and self.mother_affected):
-            self.log_string = "X-linked inheritance with unaffected hom alt \
-                males and females, but affected het females (eg PCDH19)"
-            return report
+        # elif inheritance == "X-linked over-dominance" and not \
+        #       self.father_affected and \
+        #      ((self.mom.is_hom_ref() and self.dad.is_hom_alt()) or \
+        #      self.mom.is_het() and self.mother_affected):
+        #     self.log_string = "X-linked inheritance with unaffected hom alt \
+        #         males and females, but affected het females (eg PCDH19)"
+        #     return report
         else:
             self.log_string = "variant not compatible with being causal"
             return "nothing"
@@ -407,15 +394,7 @@ class Allosomal(Inheritance):
         """ checks if a homozygous genotype could contribute to disease
         """
         
-        if "X-linked dominant" == inheritance:
-            report = "single_variant"
-        elif "Hemizygous" == inheritance:
-            # recessive: should be marked for compound-het screen
-            report = "hemizygous"
-        elif inheritance == "X-linked over-dominance":
-            self.log_string = "X-linked over dominance not currently supported"
-            return "nothing"
-        else:
+        if inheritance not in ["X-linked dominant", "Hemizygous"]:
             raise ValueError("unknown gene inheritance: " + str(inheritance))
         
         # treat male sex inheritance differently from female sex inheritance

@@ -162,10 +162,7 @@ class TestTrioGenotypesPy(unittest.TestCase):
         
         # check that a Y chrom works
         self.assertEqual(self.var.convert_chrom_to_int("chrY"), 24)
-        
-    
 
 
-
-unittest.main()
+# unittest.main()
 

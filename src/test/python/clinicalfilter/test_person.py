@@ -136,15 +136,7 @@ class TestPerson(unittest.TestCase):
         self.person.gender = "NA"
         with self.assertRaises(ValueError):
             self.person.check_gender("2")
-        
-    
-        
-        
-    
-    
 
 
-
-
-unittest.main()
+# unittest.main()
 

@@ -224,11 +224,6 @@ class TestVariantCnvPy(unittest.TestCase):
         # check that del passes with MEANLR2 > -0.41
         self.var.info["MEANLR2"] = "-0.409"
         self.assertTrue(self.var.fails_meanlr2())
-    
-    
-        
-        
-    
 
-unittest.main()
+# unittest.main()
 

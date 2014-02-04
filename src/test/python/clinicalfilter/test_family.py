@@ -129,8 +129,7 @@ class TestFamily(unittest.TestCase):
         self.family.set_child()
         self.family.set_child_examined()
         self.assertIsNone(self.family.child)
-        
 
 
-unittest.main()
+# unittest.main()
 
