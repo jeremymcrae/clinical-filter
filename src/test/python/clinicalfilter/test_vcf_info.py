@@ -266,5 +266,7 @@ class TestVcfInfoPy(unittest.TestCase):
         self.assertFalse(self.var.passes_multiple_filter())
 
 
-# unittest.main()
+if __name__ == '__main__':
+    unittest.main()
+
 

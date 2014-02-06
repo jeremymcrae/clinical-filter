@@ -237,5 +237,7 @@ class TestVariantSnvPy(unittest.TestCase):
             self.assertEqual(self.var.is_not_alt(), result)
     
 
-# unittest.main()
+if __name__ == '__main__':
+    unittest.main()
+
 

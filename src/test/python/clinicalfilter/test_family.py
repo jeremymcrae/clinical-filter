@@ -131,5 +131,7 @@ class TestFamily(unittest.TestCase):
         self.assertIsNone(self.family.child)
 
 
-# unittest.main()
+if __name__ == '__main__':
+    unittest.main()
+
 

@@ -33,6 +33,7 @@ class TestVariantCnvPy(unittest.TestCase):
         
         self.var.add_info(info, tags)
         self.var.add_format(format_keys, sample_values)
+        self.var.set_gender("F")
     
     def test_set_genotype(self):
         """ test that set_genotype() operates correctly
@@ -49,9 +50,35 @@ class TestVariantCnvPy(unittest.TestCase):
         self.assertEqual(self.var.genotype, "DEL")
         
         # check that other genotypes raise an error
-        self.var.alt_allele = ""
+        self.var.alt_allele = "G"
         with self.assertRaises(ValueError):
             self.var.set_genotype()
+        
+        # and check that we raise an error for female Y chrom CNVs
+        self.var.chrom = "Y"
+        self.var.set_gender("F")
+        with self.assertRaises(ValueError):
+            self.var.set_genotype()
+    
+    def test_set_genotype_across_pseudoautosomal(self):
+        """ test that set_genotype() works correctly across pseudoautosomal regions
+        """
+        
+        pseudoautosomal_region_start = 60002
+        pseudoautosomal_region_end = 2699520
+        
+        # set a CNV that lies within a pseudoautosomal region
+        self.var.chrom = "X"
+        self.var.position = str(pseudoautosomal_region_start + 1000)
+        self.var.info["END"] = str(pseudoautosomal_region_end - 1000)
+        self.var.set_gender("F")
+        
+        self.var.alt_allele = "<DUP>"
+        self.var.set_genotype()
+        self.assertEqual(self.var.genotype, "DUP")
+        self.assertEqual(self.var.get_inheritance_type(), "autosomal")
+        
+        
     
     def test_set_range(self):
         """ test that set_range() operates correctly
@@ -101,6 +128,16 @@ class TestVariantCnvPy(unittest.TestCase):
         del self.var.info["NUMBERGENES"]
         self.var.add_gene_from_info()
         self.assertIsNone(self.var.gene)
+    
+    def test_fails_y_chrom_female(self):
+        """ test that passes_filters() works correctly for female Y chrom CNVs
+        """
+        
+        self.var.chrom = "Y"
+        self.var.set_gender("F")
+        
+        filters = "temp"
+        self.assertFalse(self.var.passes_filters(filters))
     
     def test_fails_cnsolidate(self):
         """ test that fails_cnsolidate() works correctly
@@ -225,5 +262,8 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.info["MEANLR2"] = "-0.409"
         self.assertTrue(self.var.fails_meanlr2())
 
-# unittest.main()
+
+if __name__ == '__main__':
+    unittest.main()
+
 

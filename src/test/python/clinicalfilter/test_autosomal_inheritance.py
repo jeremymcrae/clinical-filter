@@ -341,8 +341,9 @@ class TestAutosomalPy(unittest.TestCase):
         self.inh.mother_affected = True
         self.assertEqual(self.inh.check_homozygous("Monoallelic"), "single_variant")
         self.assertEqual(self.inh.log_string, "transmitted from affected parents")
-        
-  
 
-# unittest.main()
+
+if __name__ == '__main__':
+    unittest.main()
+
 

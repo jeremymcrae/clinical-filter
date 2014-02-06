@@ -138,5 +138,7 @@ class TestPerson(unittest.TestCase):
             self.person.check_gender("2")
 
 
-# unittest.main()
+if __name__ == '__main__':
+    unittest.main()
+
 

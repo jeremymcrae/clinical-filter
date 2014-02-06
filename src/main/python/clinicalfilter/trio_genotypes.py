@@ -66,6 +66,9 @@ class TrioGenotypes(object):
         
         return "chr%s: %s - %s%s%s" % (chrom, position, child, mother, father)
     
+    def __hash__(self):
+        return hash(self.__repr__())
+        
     def is_cnv(self):
         """ checks whether the variant is for a CNV
         """

@@ -51,6 +51,14 @@ class TestVariantPy(unittest.TestCase):
         
         self.var.set_gender("female")
         self.assertEqual(self.var.get_inheritance_type(), "XChrFemale")
+        
+         # check the allosomal chroms
+        self.var.chrom = "Y"
+        self.var.set_gender("male")
+        self.assertEqual(self.var.get_inheritance_type(), "YChrMale")
+        
+        self.var.set_gender("female")
+        self.assertEqual(self.var.get_inheritance_type(), "YChrFemale")
     
     def test_set_gender_pseudoautosomal(self):
         """ test gender on a pseudoautosomal region
@@ -123,5 +131,7 @@ class TestVariantPy(unittest.TestCase):
     # TODO: check add_format
 
 
-# unittest.main()
+if __name__ == '__main__':
+    unittest.main()
+
 

@@ -36,7 +36,7 @@ class TestTrioGenotypesPy(unittest.TestCase):
         self.var = TrioGenotypes(child_var)
         self.var.add_mother_variant(mom_var)
         self.var.add_father_variant(dad_var)
-        
+    
     def create_snv(self, gender, genotype):
         """ create a default variant
         """
@@ -164,5 +164,7 @@ class TestTrioGenotypesPy(unittest.TestCase):
         self.assertEqual(self.var.convert_chrom_to_int("chrY"), 24)
 
 
-# unittest.main()
+if __name__ == '__main__':
+    unittest.main()
+
 

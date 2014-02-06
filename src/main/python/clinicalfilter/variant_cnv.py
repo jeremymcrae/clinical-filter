@@ -12,8 +12,34 @@ class CNV(Variant, VcfInfo):
         """ sets the genotype of the variant
         """
         
+        # make sure the inheritance type ("autosomal", "XChrMale" etc) is
+        # set correctly for allosomal CNVs, since they may lie across both 
+        # allosomal and pseudoautosomal regions.
+        if self.get_chrom() in ["chrX", "ChrX", "X", "chrY", "ChrY", "Y"]:
+            cnv_start = self.get_position()
+            cnv_start_inh = self.get_inheritance_type()
+            
+            cnv_end = self.info["END"]
+            self.position = cnv_end
+            self.set_inheritance_type()
+            cnv_end_inh = self.get_inheritance_type()
+            
+            # restore the CNVs initial position
+            self.position = cnv_start
+            
+            # if the start and end positions have different inheritance types, 
+            # swap ourselves over to the allosomal inheritance type
+            if cnv_start_inh != cnv_end_inh:
+                # currently we are using the end inh type, so we only need to
+                # swap to the start type if that is the allosomal end
+                if cnv_start_inh != "autosomal":
+                    self.set_inheritance_type()
+        
         self.ref_genotypes = set(["REF"])
         self.alt_genotypes = set(["DEL", "DUP"])
+        
+        if self.get_inheritance_type() == "YChrFemale":
+            raise ValueError("cannot have CNV on female Y chromosome")
         
         if self.alt_allele == "<DUP>":
             self.genotype = "DUP"
@@ -85,7 +111,11 @@ class CNV(Variant, VcfInfo):
             boolean value for whether the variant passes the filters
         """
         
-        self.set_genotype()
+        # some CNVs are on female Y chrom, which give errors, fail those CNVs
+        try:
+            self.set_genotype()
+        except ValueError:
+            return False
         
         track_variant = False
         if self.get_position() == "186746704":

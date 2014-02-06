@@ -24,8 +24,9 @@ class Variant(object):
         self.male_codes = set(["1", "m", "M", "male"])
         self.female_codes = set(["2", "f", "F", "female"])
         
-        self.pseudoautosomal_regions = [(1,2699520), (154930290,155260560), \
-            (88456802,92375509)]
+        self.x_pseudoautosomal_regions = [(60001, 2699520), (154930290, 155260560), \
+            (88456802, 92375509)]
+        self.y_pseudoautosomal_regions = [(10001, 2649520), (59034050, 59363566)]
         
     def set_gender(self, gender):
         """ sets the gender of the individual for the variant
@@ -122,12 +123,12 @@ class Variant(object):
         specified as "X" or "Y", not "23" or "24".
         """
         
-        if self.chrom not in ["chrX", "ChrX", "X"]:
+        if self.chrom not in ["chrX", "ChrX", "X", "chrY", "ChrY", "Y"]:
             self.inheritance_type = "autosomal"
-        else:
+        elif self.chrom in ["chrX", "ChrX", "X"]:
             # check if the gene lies within a pseudoautosomal region
-            for start, end in self.pseudoautosomal_regions:
-                if start < int(self.position) < end or start < int(self.position) < end:
+            for start, end in self.x_pseudoautosomal_regions:
+                if start < int(self.position) < end:
                     self.inheritance_type = "autosomal"
                     return
             
@@ -135,6 +136,16 @@ class Variant(object):
                 self.inheritance_type =  "XChrMale"
             elif self.is_female():
                 self.inheritance_type = "XChrFemale"
+        elif self.chrom in ["chrY", "ChrY", "Y"]:
+            # check if the gene lies within a pseudoautosomal region
+            for start, end in self.y_pseudoautosomal_regions:
+                if start < int(self.position) < end:
+                    self.inheritance_type = "autosomal"
+                    return
+            if self.is_male():
+                self.inheritance_type =  "YChrMale"
+            elif self.is_female():
+                self.inheritance_type = "YChrFemale"
     
     def get_inheritance_type(self):
         """ return the variant chromosomal inheritance type

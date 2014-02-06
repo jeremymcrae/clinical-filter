@@ -166,7 +166,7 @@ class TestAllosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.log_string, "female x chrom de novo")
         
         # check for biallelic inheritance
-        self.assertEqual(self.inh.check_heterozygous("Hemizygous"), "hemizygous")
+        self.assertEqual(self.inh.check_heterozygous("Hemizygous"), "single_variant")
         
         with self.assertRaises(ValueError):
             self.inh.check_heterozygous("X-linked over-dominance")
@@ -197,6 +197,9 @@ class TestAllosomalPy(unittest.TestCase):
         self.inh.father_affected = True
         self.inh.check_heterozygous("X-linked dominant")
         self.assertEqual(self.inh.log_string, "x chrom transmitted from aff, other parent non-carrier or aff")
+        
+        # and check that hemizgygous vars return as "compound_het"
+        self.assertEqual(self.inh.check_heterozygous("Hemizygous"), "compound_het")
     
     def test_check_heterozygous_affected_father(self):
         """ test that check_heterozygous() works correctly for affected fathers
@@ -313,5 +316,7 @@ class TestAllosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.log_string, "variant not compatible with being causal")
 
 
-# unittest.main()
+if __name__ == '__main__':
+    unittest.main()
+
 
