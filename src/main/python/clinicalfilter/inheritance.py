@@ -64,7 +64,7 @@ class Inheritance(object):
         self.compound_hets = []
         self.candidates = []
     
-    def get_candidiate_variants(self):
+    def get_candidate_variants(self):
         """ screen for variants that might contribute to a childs disorder
         """
         
@@ -491,32 +491,28 @@ class CNVInheritance(object):
         """ create CNV filter values dependent on DDG2P inheritance mode
         """
         
-        # set some default parameters
-        chrom = "all"
-        copy_number = {"DEL": {"0", "1"}, "DUP": {"3"}}
-        mechanisms = {"0": {"Uncertain", "Loss of function", \
+        copy_number_dict = {"DEL": {"0", "1"}, "DUP": {"3"}}
+        mech_dict = {"0": {"Uncertain", "Loss of function", \
             "Dominant negative"}, "1": {"Uncertain", "Loss of function", \
             "Dominant negative"}, "3": {"Uncertain", "Increased gene dosage"}}
         
-        copy_number = copy_number[self.variant.child.genotype]
-        cnv_mech = mechanisms[self.variant.child.info["CNS"]]
+        chrom = "all"
+        copy_number = copy_number_dict[self.variant.child.genotype]
+        cnv_mech = mech_dict[self.variant.child.info["CNS"]]
+        
         if inh == "Biallelic":
             copy_number = {"0"}
         elif inh == "Monoallelic":
             pass
         elif inh == "X-linked dominant":
             chrom = "X"
-        elif inh == "Hemizygous" and self.variant.child.is_male():
+        elif inh == "Hemizygous":
             chrom = "X"
-        elif inh == "Hemizygous" and self.variant.child.is_female():
-            chrom = "X"
-            copy_number = {"3"}
+            if self.variant.child.is_female():
+                copy_number = {"3"}
         else:
-            # other inheritance modes of "Mosaic", or "Digenic" can be ignored
-            # by using impossible criteria
-            chrom = "GGG"
-            copy_number = {"999"}
-            cnv_mech = {"Nothing"}
+            # exclude other inheritance modes (Mosaic etc) with impossible criteria
+            copy_number = {"XXXX"}
         
         # cnv_encompasses = True
         # if self.variant.child.genotype == "DUP":

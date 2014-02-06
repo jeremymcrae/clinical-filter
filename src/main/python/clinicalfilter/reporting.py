@@ -9,7 +9,7 @@ import importlib
 import sys
 import os
 
-class report(object):
+class Report(object):
     """A class to report candidate variants.
     """
 
