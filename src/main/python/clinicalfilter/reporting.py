@@ -58,7 +58,7 @@ class Report(object):
         self.printFileContent(self.filters_path)
         logging.info(75 * "#")
     
-    def save_results(self):
+    def save_results(self, found_vars):
         """exports candidate variants and their details
         """
         
@@ -83,7 +83,7 @@ class Report(object):
             alternate_ID = 'no_alternate_ID'
         
         reported_some_variants = False
-        for candidate in sorted(self.found_variants):
+        for candidate in sorted(found_vars):
             var = candidate[0]
             filter_type = candidate[1]
             inheritance_type = candidate[2]
@@ -152,7 +152,7 @@ class Report(object):
         
         return vcf_path
     
-    def save_vcf(self):
+    def save_vcf(self, found_vars):
         """ exports a VCF file for the childs candidate variants.
         """
         
@@ -176,7 +176,7 @@ class Report(object):
         
         var_lines = []
         filter_strings = set([])
-        for candidate in sorted(self.found_variants):
+        for candidate in sorted(found_vars):
             var = candidate[0]
             filter_type = candidate[1]
             gene_inheritance = candidate[2]

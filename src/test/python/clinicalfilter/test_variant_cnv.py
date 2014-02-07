@@ -129,6 +129,25 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.add_gene_from_info()
         self.assertIsNone(self.var.gene)
     
+    def test_get_genes(self):
+        """ test that get_genes() works correctly
+        """
+        
+        self.var.gene = None
+        self.assertEqual(self.var.get_genes(), [])
+        
+        self.var.gene = "TEST"
+        self.assertEqual(self.var.get_genes(), ["TEST"])
+        
+        self.var.gene = "TEST1,TEST2"
+        self.assertEqual(self.var.get_genes(), ["TEST1", "TEST2"])
+        
+        self.var.gene = "."
+        self.assertEqual(self.var.get_genes(), ["."])
+        
+        self.var.gene = ","
+        self.assertEqual(self.var.get_genes(), ["", ""])
+    
     def test_fails_y_chrom_female(self):
         """ test that passes_filters() works correctly for female Y chrom CNVs
         """

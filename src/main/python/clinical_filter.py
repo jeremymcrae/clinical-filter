@@ -24,7 +24,6 @@ Turki (sa9@sanger.ac.uk).
 """
 
 import sys
-import optparse
 import logging
 
 from clinicalfilter import vcf
@@ -41,7 +40,6 @@ class ClinicalFilter(LoadOptions, Report):
         """intialise the class with the some definitions
         """
         
-        # set some definitions
         self.set_definitions(opts)
         self.first_run = True
         self.counter = 0
@@ -64,9 +62,9 @@ class ClinicalFilter(LoadOptions, Report):
                 if self.family.child.is_affected():
                     self.vcf_loader = vcf.LoadVCFs(self.family, self.counter, \
                         len(self.families), self.filters, self.tags_dict)
-                    self.variants = self.vcf_loader.get_trio_variants()
+                    variants = self.vcf_loader.get_trio_variants()
                     self.vcf_provenance = self.vcf_loader.get_vcf_provenance()
-                    self.analyse_trio()
+                    self.analyse_trio(variants)
                 
                 self.family.set_child_examined()
             self.counter += 1
@@ -77,7 +75,7 @@ class ClinicalFilter(LoadOptions, Report):
         
         sys.exit(0)
     
-    def analyse_trio(self):
+    def analyse_trio(self, variants):
         """identify candidate variants in exome data for a single trio.
         """
         
@@ -87,32 +85,45 @@ class ClinicalFilter(LoadOptions, Report):
         
         # organise variants by gene, then find variants that fit
         # different inheritance models
-        self.create_gene_dict()
-        self.found_variants = []
-        for gene in self.genes_dict:
-            variants = self.genes_dict[gene]
-            self.found_variants += self.find_variants(variants, gene)
+        genes_dict = self.create_gene_dict(variants)
+        found_vars = []
+        for gene in genes_dict:
+            gene_vars = genes_dict[gene]
+            found_vars += self.find_variants(gene_vars, gene)
+        
+        # remove any duplicate variants (which might ocur due to CNVs being 
+        # checked against all the genes that they encompass)
+        found_vars = self.exclude_duplicates(found_vars)
         
         # export the results to either tab-separated table or VCF format
         if self.output_path is not None:
-            self.save_results()
+            self.save_results(found_vars)
         if self.export_vcf is not None:
-            self.save_vcf()
+            self.save_vcf(found_vars)
         self.first_run = False
     
-    def create_gene_dict(self):
+    def create_gene_dict(self, variants):
         """creates dictionary of variants indexed by gene
         """
         
         # organise the variants into entries for each gene
-        self.genes_dict = {}
-        for var in self.variants:
-             # make sure that gene is in self.genes_dict
-            if var.get_gene() not in self.genes_dict:
-                self.genes_dict[var.get_gene()] = []
+        genes_dict = {}
+        for var in variants:
+            if var.is_cnv():
+                for gene in var.child.get_genes():
+                    if gene not in genes_dict:
+                        genes_dict[gene] = []
+                    # add the variant to the gene entry
+                    genes_dict[gene].append(var)
+                continue
+            # make sure that gene is in genes_dict
+            if var.get_gene() not in genes_dict:
+                genes_dict[var.get_gene()] = []
             
             # add the variant to the gene entry
-            self.genes_dict[var.get_gene()].append(var)
+            genes_dict[var.get_gene()].append(var)
+        
+        return genes_dict
         
     def find_variants(self, variants, gene):
         """ finds variants that fit inheritance models
@@ -144,19 +155,52 @@ class ClinicalFilter(LoadOptions, Report):
             finder = Allosomal(variants, self.family, self.known_genes, gene_inh)
         
         return finder.get_candidate_variants()
+    
+    def exclude_duplicates(self, variants):
+        """ rejig variants included under multiple inheritance mechanisms
+        
+        Args:
+            variants: list of candidate variants
+        
+        Returns:
+            list of (variant, check_type, inheritance), with duplicates 
+            excluded, and originals modified to show both mechanisms
+        """
+        
+        unique_vars = {}
+        for variant in variants:
+            key = variant[0].child.get_key()
+            if key not in unique_vars:
+                unique_vars[key] = list(variant)
+            else:
+                result = variant[1]
+                inh = variant[2]
+                
+                # append the check type and inheritance type to the first
+                # instance of the variant
+                if result not in unique_vars[key][1]:
+                    unique_vars[key][1] += "," + result
+                if inh not in unique_vars[key][2]:
+                    unique_vars[key][2] += "," +  inh
+        
+        unique_vars = [tuple(unique_vars[x]) for x in unique_vars] 
+        
+        return unique_vars
 
 
 def main():
+    """ run the clinical filtering analyses
+    """
     
     options = get_options()
     
     # set the level of logging to generate
-    loglevel = opts.loglevel
+    loglevel = options.loglevel
     numeric_level = getattr(logging, loglevel.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError("Invalid log level: %s" % loglevel)
-    if opts.ped_path is not None:
-        log_filename = opts.ped_path + ".log"
+    if options.ped_path is not None:
+        log_filename = options.ped_path + ".log"
     else:
         log_filename = "clinical-filter.log"
     logging.basicConfig(level=numeric_level, filename=log_filename)
