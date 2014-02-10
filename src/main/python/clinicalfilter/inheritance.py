@@ -433,12 +433,13 @@ class CNVInheritance(object):
         """ checks if a CNV could contribute to a compound het
         """
         
+        # return True
+        
         # we don't want CNVs that don't have copy number of 1 or 3, since 
         # copy number = 1 or 3 are the only ones that could operate as compound
         # hets (other copy numbers such as 0 are implicitly dominant)
         if self.variant.child.info["CNS"] not in {"1", "3"}:
             return False
-            # return True
         
         # for compound hets, we don't have to worry about checking whether the 
         # inheritance ststaus is consistent with the parental affected status
@@ -455,14 +456,13 @@ class CNVInheritance(object):
         genes = self.variant.child.get_genes()
         for gene in genes:
             if self.known_genes is not None and gene in self.known_genes:
-                if "Biallelic" in self.known_genes[gene] or \
+                if "Biallelic" in self.known_genes[gene]["inheritance"] or \
                     (self.variant.get_chrom() == "X" and \
-                    "Hemizygous" in self.known_genes[gene] and \
+                    "Hemizygous" in self.known_genes[gene]["inheritance"] and \
                     self.trio.child.is_female() and \
                     self.variant.child.info["CNS"] == "1"):
                    return True
         
-        # return True
         return False
     
     def check_variant_without_parents(self):

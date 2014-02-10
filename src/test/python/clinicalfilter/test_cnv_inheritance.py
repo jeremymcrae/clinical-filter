@@ -50,7 +50,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
         
         info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000"
-        format_keys = "inheritance:DP"
+        format_keys = "INHERITANCE:DP"
         sample_values = inh + ":50"
         
         var.add_info(info, tags)
@@ -65,9 +65,9 @@ class TestCNVInheritancePy(unittest.TestCase):
         """
         
         # generate a test variant
-        child_var = self.create_cnv(child_gender, "0/1", chrom, position)
-        mom_var = self.create_cnv("F", "0/0", chrom, position)
-        dad_var = self.create_cnv("M", "0/0", chrom, position)
+        child_var = self.create_cnv(child_gender, "unknown", chrom, position)
+        mom_var = self.create_cnv("F", "unknown", chrom, position)
+        dad_var = self.create_cnv("M", "unknown", chrom, position)
         
         var = TrioGenotypes(child_var)
         var.add_mother_variant(mom_var)
@@ -336,6 +336,78 @@ class TestCNVInheritancePy(unittest.TestCase):
         # the variant
         self.inh.variant.child.gene = "TEST,TEST2"
         self.assertTrue(self.inh.passes_ddg2p_filter())
+        
+    def test_check_compound_inheritance(self):
+        """ test that check_compound_inheritance() works correctly
+        """
+        
+        gene_inh = {"TEST": {"inheritance": {"Biallelic": \
+            {"Increased gene dosage"}}, "confirmed_status": {"Confirmed DD Gene"}}}
+        
+        self.inh.known_genes = gene_inh
+        self.inh.variant.chrom = "1"
+        self.inh.variant.child.info["CNS"] = "3"
+        self.inh.variant.child.info["SVLEN"] = "500001"
+        
+        # check that a standard CNV passes
+        self.assertTrue(self.inh.check_compound_inheritance())
+        
+        # check that copy number = 0 passes
+        self.inh.variant.child.info["CNS"] = "1"
+        self.assertTrue(self.inh.check_compound_inheritance())
+        
+        # check that copy number = 0 fails
+        self.inh.variant.child.info["CNS"] = "0"
+        self.assertFalse(self.inh.check_compound_inheritance())
+        
+        # check that low SVLEN doesn't fail if the DDG2P route passes
+        self.inh.variant.child.info["CNS"] = "1"
+        self.inh.variant.child.info["SVLEN"] = "499999"
+        self.assertTrue(self.inh.check_compound_inheritance())
+        
+        # check that low SVLEN combined with no DDG2P match fails
+        del self.inh.known_genes["TEST"]["inheritance"]["Biallelic"]
+        self.assertFalse(self.inh.check_compound_inheritance())
+        
+        # check that high SVLEN can overcome not having a DDG2P match
+        self.inh.variant.child.info["SVLEN"] = "500001"
+        self.assertTrue(self.inh.check_compound_inheritance())
+        
+    def test_check_compound_inheritance_hemizygous(self):
+        """ test that check_compound_inheritance() works correctly
+        """
+        
+        gene_inh = {"TEST": {"inheritance": {"Hemizygous": \
+            {"Increased gene dosage"}}, "confirmed_status": {"Confirmed DD Gene"}}}
+        
+        self.inh.known_genes = gene_inh
+        self.inh.variant.chrom = "X"
+        self.inh.variant.child.info["CNS"] = "1"
+        self.inh.variant.child.info["SVLEN"] = "500001"
+        
+        # check that a standard CNV passes
+        self.assertTrue(self.inh.check_compound_inheritance())
+        
+        # check that low SVLEN doesn't fail if the DDG2P route passes
+        self.inh.variant.child.info["SVLEN"] = "499999"
+        self.assertTrue(self.inh.check_compound_inheritance())
+        
+        # check that low SVLEN combined with incorrect chrom fails
+        self.inh.variant.chrom = "1"
+        self.assertFalse(self.inh.check_compound_inheritance())
+        
+        # check that low SVLEN combined with incorrect sex fails
+        self.inh.variant.chrom = "X"
+        self.inh.trio.child.gender = "M"
+        self.assertFalse(self.inh.check_compound_inheritance())
+        
+        # check that low SVLEN combined with incorrect copy number fails
+        self.inh.trio.child.gender = "F"
+        self.inh.variant.child.info["CNS"] = "3"
+        self.assertFalse(self.inh.check_compound_inheritance())
+        
+        
+        
         
         
         
