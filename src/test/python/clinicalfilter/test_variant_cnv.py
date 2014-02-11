@@ -27,7 +27,7 @@ class TestVariantCnvPy(unittest.TestCase):
         tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": \
             ["VCQ", "CQ"]}
         
-        info = "HGNC=ATRX;HGNC_ALL=ATRX,OR5A1;CQ=missense_variant;CNSOLIDATE;WSCORE=0.5;CALLP=0.000;COMMONFORWARDS=0.000;MEANLR2=0.5;MADL2R=0.02;END=16000000;SVLEN=1000000"
+        info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;CNSOLIDATE;WSCORE=0.5;CALLP=0.000;COMMONFORWARDS=0.000;MEANLR2=0.5;MADL2R=0.02;END=16000000;SVLEN=1000000"
         format_keys = "inheritance:DP"
         sample_values = "deNovo:50"
         
@@ -60,8 +60,8 @@ class TestVariantCnvPy(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.var.set_genotype()
     
-    def test_set_genotype_across_pseudoautosomal(self):
-        """ test that set_genotype() works correctly across pseudoautosomal regions
+    def test_set_genotype_pseudoautosomal(self):
+        """ test that set_genotype() works correctly in pseudoautosomal regions
         """
         
         pseudoautosomal_region_start = 60002
@@ -78,8 +78,6 @@ class TestVariantCnvPy(unittest.TestCase):
         self.assertEqual(self.var.genotype, "DUP")
         self.assertEqual(self.var.get_inheritance_type(), "autosomal")
         
-        
-    
     def test_set_range(self):
         """ test that set_range() operates correctly
         """
@@ -94,6 +92,40 @@ class TestVariantCnvPy(unittest.TestCase):
         del self.var.info
         self.var.set_range()
         self.assertEqual(self.var.range, ("1000", "11000"))
+    
+    def test_fix_gene_IDs(self):
+        """ test that fix_gene_IDs() works correctly
+        """
+        
+        known_genes = {"TEST": {"start": "1000", "end": "2000", "chrom": "5"}}
+        
+        # make a CNV that will overlap with the known gene set
+        self.var.gene = "TEST"
+        self.var.position = "1000"
+        self.var.info["END"] = "1500"
+        
+        # check that fixing gene names does not alter anything for a CNV in a 
+        # single known gene
+        self.var.fix_gene_IDs(known_genes)
+        self.assertEqual(self.var.gene, "TEST")
+        
+        # check that fixing gene names does not alter names not in the gene dict
+        self.var.gene = "TEST,TEST2"
+        self.var.fix_gene_IDs(known_genes)
+        self.assertEqual(self.var.gene, "TEST,TEST2")
+        
+        # check that fixing gene names drop name of genes where the name is in 
+        # the known genes dict, and the CNV and gene do not overlap
+        self.var.position = "900"
+        self.var.info["END"] = "950"
+        self.var.fix_gene_IDs(known_genes)
+        self.assertEqual(self.var.gene, "TEST2")
+        
+        # check that when we do not have any known genes, the gene names are 
+        # unaltered
+        self.var.gene = "TEST,TEST2"
+        self.var.fix_gene_IDs(None)
+        self.assertEqual(self.var.gene, "TEST,TEST2")
     
     def test_add_gene_from_info_cnv(self):
         """ test that test_add_gene_from_info() works correctly
@@ -280,6 +312,16 @@ class TestVariantCnvPy(unittest.TestCase):
         # check that del passes with MEANLR2 > -0.41
         self.var.info["MEANLR2"] = "-0.409"
         self.assertTrue(self.var.fails_meanlr2())
+    
+    def test_fails_no_exons(self):
+        """ test that fails_no_exons() works correctly
+        """
+        
+        self.var.info["NUMBEREXONS"] = "1"
+        self.assertFalse(self.var.fails_no_exons())
+
+        self.var.info["NUMBEREXONS"] = "0"
+        self.assertTrue(self.var.fails_no_exons())
 
 
 if __name__ == '__main__':

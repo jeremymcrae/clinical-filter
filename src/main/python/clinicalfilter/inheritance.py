@@ -606,7 +606,7 @@ class CNVInheritance(object):
         # if self.variant.child.genotype == "DUP":
         #     if "Increased gene dosage" in self.known_genes[gene]["inheritance"][inh]:
         #         if int(self.variant.get_position()) >= int(self.known_genes[gene]["start"]) or \
-        #             int(self.variant.child.info["END"]) <= int(self.known_genes[gene]["stop"]):
+        #             int(self.variant.child.info["END"]) <= int(self.known_genes[gene]["end"]):
         #             cnv_encompasses = False
          
         return (chrom =="all" or 

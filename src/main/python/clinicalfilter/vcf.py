@@ -217,6 +217,7 @@ class LoadVCFs(object):
                 var.add_info(self.info_values, self.tags_dict)
                 var.set_gender(gender)
                 var.add_format(self.format_keys, self.sample_values)
+                var.fix_gene_IDs(self.filters["HGNC"][1])
             else:
                 var = SNV(self.chrom, self.position, self.snp_id, \
                     self.ref_allele, self.alt_allele, self.quality, \

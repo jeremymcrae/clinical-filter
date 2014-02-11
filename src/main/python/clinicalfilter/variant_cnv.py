@@ -81,6 +81,40 @@ class CNV(Variant, VcfInfo):
         
         return (self.chrom, self.start_position, self.end_position)
     
+    def fix_gene_IDs(self, known_genes):
+        """ find the genes that the CNV overlaps from a dict of known genes
+        
+        Sometimes the gene annotation for a CNV is incorrect - VEP annotated
+        that the CNV overlaps a gene when other tools show there is not overlap.
+        We correct for these by checking against a set of known genes 
+        (currently the DDG2P set).
+        
+        Args:
+            known_genes: dictionary of known genes, indexed by gene name, 
+                or None
+        """
+        
+        self.set_range()
+        
+        genes = []
+        for gene in self.get_genes():
+            # if the gene isn't in the DDG2P set we just include it as is, in
+            # order to allow for non DDG2P variant analyses.
+            # TODO: ideally we would match against all gencode positions
+            if known_genes is None or gene not in known_genes:
+                genes.append(gene)
+            else:
+                start = int(known_genes[gene]["start"])
+                end = int(known_genes[gene]["end"])
+                
+                # only add the known gene if the DDG2P GENCODE positions
+                # indicate that it overlaps with the CNV, otherwise exclude it.
+                if int(self.start_position) <= end and int(self.end_position) >= start:
+                    genes.append(gene)
+        
+        if len(genes) > 0:
+            self.gene = ",".join(genes)
+    
     def add_gene_from_info(self):
         """ adds a gene to the var using the info. CNVs and SNVs act differently
         """
@@ -162,6 +196,10 @@ class CNV(Variant, VcfInfo):
             passes = False
             if track_variant:
                 print("failed meanlr2", self.info["MEANLR2"])
+        elif self.fails_no_exons():
+            passes = False
+            if track_variant:
+                print("failed no exons", self.info["NUMBEREXONS"])
         
         return passes
     
@@ -208,6 +246,12 @@ class CNV(Variant, VcfInfo):
             return float(self.info["MEANLR2"]) > -0.41
         
         return False
+    
+    def fails_no_exons(self):
+        """ checks that the CNV overlaps at least one exon
+        """
+        
+        return float(self.info["NUMBEREXONS"]) < 1
         
     def is_het(self):
         # return False

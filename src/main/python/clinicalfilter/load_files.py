@@ -43,6 +43,7 @@ def open_known_genes(path="DDGP-reportable.txt"):
         mechanism_label = "mech"
         start_label = "start"
         stop_label = "stop"
+        chrom_label = "chr"
     else:
         raise ValueError("The gene file doesn't contain expected column names")
     
@@ -53,6 +54,7 @@ def open_known_genes(path="DDGP-reportable.txt"):
     mechanism_column = header.index(mechanism_label)
     start_column = header.index(start_label)
     stop_column = header.index(stop_label)
+    chrom_column = header.index(chrom_label)
     
     # only include genes with sufficient DDG2P status
     allowed_confirmed_statuses = ["Confirmed DD Gene", "Probable DD gene", \
@@ -60,39 +62,38 @@ def open_known_genes(path="DDGP-reportable.txt"):
     
     for line in f:
         line = line.strip().split("\t")
-        gene_ID = line[gene_column]
+        gene = line[gene_column]
         gene_confirmed_status = line[confirmed_status_column]
         gene_inheritance = line[inheritance_column]
         gene_mechanism = line[mechanism_column]
-        gene_start = line[start_column]
-        gene_stop= line[stop_column]
         
         # ignore genes with insufficient evidence
         if gene_confirmed_status not in allowed_confirmed_statuses:
             continue 
         
-        if gene_ID not in known_genes:
-            known_genes[gene_ID] = {"inheritance": {}, "confirmed_status": set()}
+        if gene not in known_genes:
+            known_genes[gene] = {"inheritance": {}, "confirmed_status": set()}
         
-        if gene_inheritance not in known_genes[gene_ID]["inheritance"]:
-            known_genes[gene_ID]["inheritance"][gene_inheritance] = set()
+        if gene_inheritance not in known_genes[gene]["inheritance"]:
+            known_genes[gene]["inheritance"][gene_inheritance] = set()
         
-        known_genes[gene_ID]["inheritance"][gene_inheritance].add(gene_mechanism)
-        known_genes[gene_ID]["confirmed_status"].add(gene_confirmed_status)
-        known_genes[gene_ID]["start"] = gene_start
-        known_genes[gene_ID]["stop"] = gene_stop
+        known_genes[gene]["inheritance"][gene_inheritance].add(gene_mechanism)
+        known_genes[gene]["confirmed_status"].add(gene_confirmed_status)
+        known_genes[gene]["start"] = line[start_column]
+        known_genes[gene]["end"] = line[stop_column]
+        known_genes[gene]["chrom"] = line[chrom_column]
         
         # some genes are listed with an inheritance mode of "Both", which means 
         # the gene has been observed in disorders with both monoallelic and 
         # biallelic inheritance. Make sure the monoallelic and biallelic modes 
         # are shown for the gene.
         if gene_inheritance == "Both":
-            if "Monoallelic" not in known_genes[gene_ID]["inheritance"]:
-                known_genes[gene_ID]["inheritance"]["Monoallelic"] = set()
-            if "Biallelic" not in known_genes[gene_ID]["inheritance"]:
-                known_genes[gene_ID]["inheritance"]["Biallelic"] = set()
-            known_genes[gene_ID]["inheritance"]["Monoallelic"].add(gene_mechanism)
-            known_genes[gene_ID]["inheritance"]["Biallelic"].add(gene_mechanism)
+            if "Monoallelic" not in known_genes[gene]["inheritance"]:
+                known_genes[gene]["inheritance"]["Monoallelic"] = set()
+            if "Biallelic" not in known_genes[gene]["inheritance"]:
+                known_genes[gene]["inheritance"]["Biallelic"] = set()
+            known_genes[gene]["inheritance"]["Monoallelic"].add(gene_mechanism)
+            known_genes[gene]["inheritance"]["Biallelic"].add(gene_mechanism)
     
     if len(known_genes) == 0:
         raise ValueError("No genes found in the file, check the line endings")
