@@ -6,6 +6,7 @@ from clinicalfilter.ped import Family
 from clinicalfilter.ped import Person
 from clinicalfilter.variant import Variant
 from clinicalfilter.variant_snv import SNV
+from clinicalfilter.variant_cnv import CNV
 from clinicalfilter.inheritance import Autosomal
 from clinicalfilter.inheritance import Allosomal
 from clinicalfilter.vcf_info import VcfInfo
@@ -55,6 +56,32 @@ class TestInheritancePy(unittest.TestCase):
         info = "HGNC=TEST;CQ=missense_variant;random_tag"
         format_keys = "GT:DP"
         sample_values = genotype + ":50"
+        
+        var.add_info(info, tags)
+        var.add_format(format_keys, sample_values)
+        var.set_gender(gender)
+        var.set_genotype()
+        
+        return var
+    
+    def create_cnv(self, gender, inh, chrom, pos):
+        """ create a default variant
+        """
+        
+        snp_id = "."
+        ref = "A"
+        alt = "<DUP>"
+        qual = "50"
+        filt = "PASS"
+        
+        # set up a SNV object, since SNV inherits VcfInfo
+        var = CNV(chrom, pos, snp_id, ref, alt, qual, filt)
+        
+        tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
+        
+        info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000"
+        format_keys = "INHERITANCE:DP"
+        sample_values = inh + ":50"
         
         var.add_info(info, tags)
         var.add_format(format_keys, sample_values)
@@ -173,6 +200,28 @@ class TestInheritancePy(unittest.TestCase):
         self.inh.add_variant_to_appropriate_list(var, check, inheritance)
         self.assertEqual(self.inh.candidates, [])
         self.assertEqual(self.inh.compound_hets, [])
+    
+    def test_check_if_any_variant_is_cnv(self):
+        """ test if check_if_any_variant_is_cnv() works correctly
+        """
+        
+        # generate a test variant
+        chrom = "1"
+        position = "60000"
+        child_var = self.create_cnv("F", "unknown", chrom, position)
+        mom_var = self.create_cnv("F", "unknown", chrom, position)
+        dad_var = self.create_cnv("M", "unknown", chrom, position)
+        
+        cnv_var = TrioGenotypes(child_var)
+        cnv_var.add_mother_variant(mom_var)
+        cnv_var.add_father_variant(dad_var)
+        
+        # check that all variants=SNV returns False
+        self.assertFalse(self.inh.check_if_any_variant_is_cnv())
+        
+        # add a CNV to the variants, then check that we find a CNV
+        self.inh.variants.append(cnv_var)
+        self.assertTrue(self.inh.check_if_any_variant_is_cnv())
     
     def set_compound_het_var(self, var, geno, compound_type):
         """ convenience function to set the trio genotypes for a variant

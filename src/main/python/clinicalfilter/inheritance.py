@@ -146,6 +146,16 @@ class Inheritance(object):
                            
         return "nothing"    
     
+    def check_if_any_variant_is_cnv(self):
+        """ checks if any of the variants in a gene are CNVs
+        """
+        
+        for var in self.variants:
+            if var.is_cnv():
+                return True
+        
+        return False
+        
     def check_compound_hets(self, variants):
         """ checks for compound hets within a gene
         """
@@ -264,9 +274,15 @@ class Autosomal(Inheritance):
         """
         
         if self.dad.is_hom_ref() or self.mom.is_hom_ref():
-            #NB: will miss one inherited copy and one de-novo at same site
-            self.log_string = "non-mendelian trio"
-            return "nothing"
+            # some hom alts might occur as CNV DELs change a het call to a hom,
+            # catch these if a non-mendelian hom alt overlaps a CNV
+            if self.check_if_any_variant_is_cnv():
+                self.log_string = "non-mendelian, but CNV might affect call"
+                return "compound_het"
+            else:
+                #NB: will miss one inherited copy and one de-novo at same site
+                self.log_string = "non-mendelian trio"
+                return "nothing"
         elif "Biallelic" == inheritance:
             if self.mom.is_het() and self.dad.is_het():
                 self.log_string = "both parents het in biallelic gene"
@@ -368,8 +384,14 @@ class Allosomal(Inheritance):
         
         elif self.trio.child.is_female():
             if self.dad.is_hom_ref() or self.mom.is_hom_ref():
-                self.log_string = "female child hom alt and father hom ref, which is non-mendelian"
-                return "nothing"
+                # some hom alts might occur as CNV DELs change a het call to a hom,
+                # catch these if a non-mendelian hom alt overlaps a CNV
+                if self.check_if_any_variant_is_cnv():
+                    self.log_string = "non-mendelian, but CNV might affect call"
+                    return "compound_het"
+                else:
+                    self.log_string = "non-mendelian trio"
+                    return "nothing"
             elif (self.mom.is_het() or \
                  (self.mom.is_hom_alt() and self.mother_affected)) and \
                  (self.dad.is_hom_alt() and self.father_affected):
@@ -431,6 +453,34 @@ class CNVInheritance(object):
     
     def check_compound_inheritance(self):
         """ checks if a CNV could contribute to a compound het
+        
+        Compound CNVs can occur with CNVs with copy number of 1 or 3, and if in 
+        a DDG2P gene, the disorder relating to the gene must be inherited in a 
+        biallelic or hemizygous mode. For non-compound filtering, CNVs are 
+        checked to see if their inheritance state (paternal, maternal) matches 
+        the parents affected status (maternally affected requires. In contrast, 
+        compound CNVs do not require inheritance = affected status, as the 
+        compound variant is typically incomplete in the parents, and therefore 
+        is not expected to alter their affected status.
+        
+        Candidates for compound CNVs undergo similar filtering to single CNVs. 
+          - CNVs covering a DDG2P gene are included if the DDG2P gene is 
+            biallelic or hemizygous. In comparison to the single variant 
+            filtering, compound biallelic CNVs can have copy number 1 or 3, 
+            rather than requiring a copy number of 0. If the DDG2P gene is 
+            hemizygous, the CNV has to be on chr X, in a female proband, and 
+            with a copy number status of 1 (since CN = 3 is captured as single 
+            variant).
+          - CNVs not in DDG2P genes are included if they span > 500000 bp.
+        
+        Candidate compound CNVs are checked against all of the genes that they 
+        span, so that if they overlap another candidate compound variant (CNV 
+        or SNV), the variants are included in the clinical filtering output.
+        
+        Note that CNVs might change the aparent state of SNVs within their 
+        boundaries, so that a deletion might alter a heterozygous SNV to a 
+        homozygous alternate allele genotype. We make some checks of hom alt
+        SNVs to see if their gene includes a CNV variant.
         """
         
         # return True

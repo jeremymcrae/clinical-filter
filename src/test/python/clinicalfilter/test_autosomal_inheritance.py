@@ -70,6 +70,32 @@ class TestAutosomalPy(unittest.TestCase):
         var.set_genotype()
         
         return var
+        
+    def create_cnv(self, gender, inh, chrom, pos):
+        """ create a default variant
+        """
+        
+        snp_id = "."
+        ref = "A"
+        alt = "<DUP>"
+        qual = "50"
+        filt = "PASS"
+        
+        # set up a SNV object, since SNV inherits VcfInfo
+        var = CNV(chrom, pos, snp_id, ref, alt, qual, filt)
+        
+        tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
+        
+        info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000"
+        format_keys = "INHERITANCE:DP"
+        sample_values = inh + ":50"
+        
+        var.add_info(info, tags)
+        var.add_format(format_keys, sample_values)
+        var.set_gender(gender)
+        var.set_genotype()
+        
+        return var
     
     def create_family(self, child_gender, mom_aff, dad_aff):
         """ create a default family, with optional gender and parental statuses
@@ -282,6 +308,33 @@ class TestAutosomalPy(unittest.TestCase):
         self.set_trio_genos(var, "210")
         self.assertEqual(self.inh.check_homozygous("Biallelic"), "nothing")
         self.assertEqual(self.inh.log_string, "non-mendelian trio")
+        
+    def test_check_homozygous_with_cnv(self):
+        """ test that check_homozygous() works correctly for variant lists with CNVs
+        """
+        
+        # generate a test variant
+        chrom = "1"
+        position = "60000"
+        child_var = self.create_cnv("F", "unknown", chrom, position)
+        mom_var = self.create_cnv("F", "unknown", chrom, position)
+        dad_var = self.create_cnv("M", "unknown", chrom, position)
+        
+        cnv_var = TrioGenotypes(child_var)
+        cnv_var.add_mother_variant(mom_var)
+        cnv_var.add_father_variant(dad_var)
+        
+        var = self.variants[0]
+        
+        # check for trio = 200, which is non-mendelian
+        self.set_trio_genos(var, "200")
+        self.assertEqual(self.inh.check_homozygous("Biallelic"), "nothing")
+        self.assertEqual(self.inh.log_string, "non-mendelian trio")
+        
+        # check when a CNV is in the variants list
+        self.inh.variants.append(cnv_var)
+        self.assertEqual(self.inh.check_homozygous("Biallelic"), "compound_het")
+        self.assertEqual(self.inh.log_string, "non-mendelian, but CNV might affect call")
     
     def test_check_homozygous_biallelic(self):
         """ test that check_homozygous() works correctly for biallelic genes
