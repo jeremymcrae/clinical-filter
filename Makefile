@@ -49,7 +49,7 @@ install-python:
 	rsync -rp --chmod=$(CHMOD) $(SRCDIR)/src/main/python/ $(CLINICAL_FILTER_PREFIX)
 
 clean-tmpdir:
-	rm $(TMPDIR)
+	rm -r $(TMPDIR)
 
 test:
 	export PYTHONPATH="src/main/python:src/test/python:${PYTHONPATH}" && python3 -m unittest discover ./src/test/python/clinicalfilter
