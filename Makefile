@@ -26,7 +26,7 @@ clinical-filter-version:
 	@if [ -n "${CLINICAL_FILTER_VERSION}" ]; then echo "Installing clinical-filter-${CLINICAL_FILTER_VERSION}"; else echo "Usage: CLINICAL_FILTER_VERSION=X.X.X install";exit 1; fi
 
 install: clinical-filter-version $(SRCDIR)
-	$(MAKE) -C $(SRCDIR) -f install TMPDIR=$(TMPDIR) CLINICAL_FILTER_VERSION=$(CLINICAL_FILTER_VERSION) add-version clean-srcdir-git install-config install-python
+	$(MAKE) -C $(SRCDIR) TMPDIR=$(TMPDIR) CLINICAL_FILTER_VERSION=$(CLINICAL_FILTER_VERSION) add-version clean-srcdir-git install-config install-python
 
 
 $(SRCDIR): $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip
