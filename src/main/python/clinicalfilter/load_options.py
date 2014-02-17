@@ -23,6 +23,7 @@ def get_options():
     parser.add_option("-l", "--filter", dest="filters_path", help="path to filter file (eg filters.txt)")
     parser.add_option("-t", "--tags", dest="tags_path", help="path to tags.txt (eg tags.txt)")
     parser.add_option("--known-genes", dest="genes_path", help="path to list of known disease causative genes, eg DDG2P-reportable.txt")
+    parser.add_option("--known-genes-date", dest="genes_date", help="Date that the list of known disease causative genes was last updated")
     parser.add_option("--alternate-ids", dest="alternate_ids_path", help="path to list of alternate IDs, eg personid_decipher_id_sangerid.txt")
     parser.add_option("-o", "--output", dest="output_path", default="clinical_reporting.txt", help="filename to output variant data to")
     parser.add_option("--export-vcf", dest="export_vcf", help="Folder or filename in which to export a VCF file for a proband. The script does not export a gzipped VCF file if this option is not used.")
@@ -90,6 +91,11 @@ class LoadOptions(object):
             # in a VCF file
             for tag in self.tags_dict["gene"]:
                 self.filters[tag] = ["list", self.known_genes]
+            
+            # Attempt to recover a date for the dictionary of genes
+            if self.options.genes_date is not None:
+                self.known_genes_date = self.options.genes_date
+
         else:
             self.known_genes = None
         

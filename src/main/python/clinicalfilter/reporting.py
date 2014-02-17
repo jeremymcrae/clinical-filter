@@ -170,6 +170,9 @@ class Report(object):
         child_lines.insert(-1, "##ClinicalFilterRunDate={0}\n".format(datetime.date.today()))
         child_lines.insert(-1, "##ClinicalFilterVersion={0}\n".format(self.clinicalFilterVersion()))
         
+        if hasattr(self, "known_genes_date"): 
+            child_lines.insert(-1, "##KnownGenesDate={0}\n".format(self.known_genes_date))
+        
         child_lines = child_lines[:-1] + self.include_vcf_provenance(self.vcf_provenance[0], "proband") + child_lines[-1:]
         child_lines = child_lines[:-1] + self.include_vcf_provenance(self.vcf_provenance[1], "maternal") + child_lines[-1:]
         child_lines = child_lines[:-1] + self.include_vcf_provenance(self.vcf_provenance[2], "paternal") + child_lines[-1:]
@@ -216,7 +219,7 @@ class Report(object):
             
             var_lines.append("\t".join(vcf_line) + "\n")
         
-        filter_string = "##ClinicalFilterHistory=single_variant,compound_het"
+        filter_string = "##ClinicalFilterHistory=single_variant,compound_het\n"
         child_lines.insert(-1, filter_string)
         
         child_lines += var_lines
