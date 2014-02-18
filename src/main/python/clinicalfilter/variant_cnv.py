@@ -3,6 +3,8 @@
 
 from clinicalfilter.vcf_info import VcfInfo
 from clinicalfilter.variant import Variant
+# from clinicalfilter.variant_cnv_acgh_filter import ACGH_CNV
+# from clinicalfilter.variant_cnv_exome_filter import ExomeCNV
 
 class CNV(Variant, VcfInfo):
     """  class to take CNV data for an individual, and
@@ -200,6 +202,17 @@ class CNV(Variant, VcfInfo):
             passes = False
             if track_variant:
                 print("failed no exons", self.info["NUMBEREXONS"])
+        
+        # if "CONVEX" in self.info and "CNSOLIDATE" not in self.info:
+        #     filt = ExomeCNV(self)
+        #     passes = filt.filter_cnv(track_variant)
+        # if "CNSOLIDATE" in self.info:
+        #     filt = ACGH_CNV(self)
+        #     passes = filt.filter_cnv(track_variant)
+        # else:
+        #     if track_variant:
+        #          print("CNV is not an aCGH or exome CNV")
+        #     passes = False
         
         return passes
     

@@ -23,6 +23,7 @@ class LoadVCFs(object):
         """ intitalise the class with the filters and trio details etc
         """
         
+        self.variants = []
         self.family = family
         self.counter = counter
         self.total_trios = total_trios
@@ -47,8 +48,6 @@ class LoadVCFs(object):
             
             logging.error("trio with missing file - child: " + self.family.child.get_ID() \
                 + ", mother: " + mother_ID + ", father: " + father_ID + ". " + str(error))
-            
-            self.variants = []
         
         return self.variants
     
@@ -270,7 +269,6 @@ class LoadVCFs(object):
         mother_cnv_matcher = MatchCNVs(self.mother_vcf)
         father_cnv_matcher = MatchCNVs(self.father_vcf)
         
-        self.variants = []
         for key in self.child_vcf:
             var = self.child_vcf[key]
             trio = TrioGenotypes(var)
