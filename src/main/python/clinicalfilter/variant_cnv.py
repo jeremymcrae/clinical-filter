@@ -3,8 +3,8 @@
 
 from clinicalfilter.vcf_info import VcfInfo
 from clinicalfilter.variant import Variant
-# from clinicalfilter.variant_cnv_acgh_filter import ACGH_CNV
-# from clinicalfilter.variant_cnv_exome_filter import ExomeCNV
+from clinicalfilter.variant_cnv_acgh_filter import ACGH_CNV
+from clinicalfilter.variant_cnv_exome_filter import ExomeCNV
 
 class CNV(Variant, VcfInfo):
     """  class to take CNV data for an individual, and
@@ -174,45 +174,45 @@ class CNV(Variant, VcfInfo):
             track_variant = True
         
         passes = True
-        if self.fails_cnsolidate():
-            passes = False
-            if track_variant:
-                print("failed CNSOLIDATE", self)
-        elif self.fails_mad_ratio():
-            passes = False
-            if track_variant:
-                print("failed mad ratio", self.info["MEANLR2"], self.info["MADL2R"])
-        elif self.fails_wscore():
-            passes = False
-            if track_variant:
-                print("failed wscore", self.info["WSCORE"])
-        elif self.fails_callp():
-            passes = False
-            if track_variant:
-                print("failed callp", self.info["CALLP"])
-        elif self.fails_commmon_forwards():
-            passes = False
-            if track_variant:
-                print("failed commonforwards", self.info["COMMONFORWARDS"])
-        elif self.fails_meanlr2():
-            passes = False
-            if track_variant:
-                print("failed meanlr2", self.info["MEANLR2"])
-        elif self.fails_no_exons():
-            passes = False
-            if track_variant:
-                print("failed no exons", self.info["NUMBEREXONS"])
-        
-        # if "CONVEX" in self.info and "CNSOLIDATE" not in self.info:
-        #     filt = ExomeCNV(self)
-        #     passes = filt.filter_cnv(track_variant)
-        # if "CNSOLIDATE" in self.info:
-        #     filt = ACGH_CNV(self)
-        #     passes = filt.filter_cnv(track_variant)
-        # else:
-        #     if track_variant:
-        #          print("CNV is not an aCGH or exome CNV")
+        # if self.fails_cnsolidate():
         #     passes = False
+        #     if track_variant:
+        #         print("failed CNSOLIDATE", self)
+        # elif self.fails_mad_ratio():
+        #     passes = False
+        #     if track_variant:
+        #         print("failed mad ratio", self.info["MEANLR2"], self.info["MADL2R"])
+        # elif self.fails_wscore():
+        #     passes = False
+        #     if track_variant:
+        #         print("failed wscore", self.info["WSCORE"])
+        # elif self.fails_callp():
+        #     passes = False
+        #     if track_variant:
+        #         print("failed callp", self.info["CALLP"])
+        # elif self.fails_commmon_forwards():
+        #     passes = False
+        #     if track_variant:
+        #         print("failed commonforwards", self.info["COMMONFORWARDS"])
+        # elif self.fails_meanlr2():
+        #     passes = False
+        #     if track_variant:
+        #         print("failed meanlr2", self.info["MEANLR2"])
+        # elif self.fails_no_exons():
+        #     passes = False
+        #     if track_variant:
+        #         print("failed no exons", self.info["NUMBEREXONS"])
+        
+        if "CONVEX" in self.info and "CNSOLIDATE" not in self.info:
+            filt = ExomeCNV(self)
+            passes = filt.filter_cnv(track_variant)
+        if "CNSOLIDATE" in self.info:
+            filt = ACGH_CNV(self)
+            passes = filt.filter_cnv(track_variant)
+        else:
+            if track_variant:
+                 print("CNV is not an aCGH or exome CNV")
+            passes = False
         
         return passes
     

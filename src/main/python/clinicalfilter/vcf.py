@@ -65,7 +65,7 @@ class LoadVCFs(object):
         """
         
         if not os.path.exists(path):
-            raise IOError("VCF file not found at: " + path)
+            raise OSError("VCF file not found at: " + path)
         
         if path.endswith(".gz"):
             # python2 gzip opens in text, but same mode in python3 opens as

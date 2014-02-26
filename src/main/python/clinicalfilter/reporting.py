@@ -213,16 +213,13 @@ class Report(object):
                 parental_inheritance = "unknown"
             
             if "INHERITANCE" not in vcf_line[8]:
-                vcf_line[8].append("INHERITANCE")
-                vcf_line[9].append(parental_inheritance)
+                vcf_line[8] += ":INHERITANCE"
+                vcf_line[9] += ":" + parental_inheritance
             
-            if not var.child.is_cnv():
+            if not var.is_cnv():
                 trio_genotype = "%s,%s,%s" % var.get_trio_genotype()
-                vcf_line[8].append("INHERITANCE_GENOTYPE")
-                vcf_line[9].append(trio_genotype)
-            
-            vcf_line[8] = ":".join(vcf_line[8])
-            vcf_line[9] = ":".join(vcf_line[9])
+                vcf_line[8] += ":INHERITANCE_GENOTYPE"
+                vcf_line[9] += ":" + trio_genotype
             
             var_lines.append("\t".join(vcf_line) + "\n")
         
