@@ -138,7 +138,7 @@ class LoadVCFs(object):
             # occurs for x chrom male heterozygotes (an impossible genotype)
             pass
     
-    def find_vcf_definitions(self, path):
+    def find_vcf_definitions(self, path, header):
         """ get provenance information for a vcf path
         """ 
         
@@ -148,7 +148,15 @@ class LoadVCFs(object):
             vcf_checksum = "NA"
         
         vcf_basename = os.path.basename(path)
-        vcf_date = vcf_basename.split(".")[-3]
+        
+        vcf_date = None
+        for line in header:
+            if line.startswith("##fileDate"):
+                vcf_date = line.strip().split("=")[1]
+                break
+        
+        if vcf_date is None:
+            vcf_date = vcf_basename.split(".")[-3]
         
         return (vcf_checksum, vcf_basename, vcf_date)
     
@@ -199,7 +207,7 @@ class LoadVCFs(object):
         f = self.open_vcf_file(path)
         header = self.get_vcf_header(f)
         self.header_lines = header
-        file_definitions = self.find_vcf_definitions(path)
+        file_definitions = self.find_vcf_definitions(path, header)
         
         vcf = {}
         for line in f:
@@ -216,7 +224,8 @@ class LoadVCFs(object):
                 var.add_info(self.info_values, self.tags_dict)
                 var.set_gender(gender)
                 var.add_format(self.format_keys, self.sample_values)
-                var.fix_gene_IDs(self.filters["HGNC"][1])
+                if "HGNC" in self.filters:
+                    var.fix_gene_IDs(self.filters["HGNC"][1])
             else:
                 var = SNV(self.chrom, self.position, self.snp_id, \
                     self.ref_allele, self.alt_allele, self.quality, \

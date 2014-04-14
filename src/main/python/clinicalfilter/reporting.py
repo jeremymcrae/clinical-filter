@@ -223,13 +223,12 @@ class Report(object):
             
             var_lines.append("\t".join(vcf_line) + "\n")
         
-        
         child_lines += var_lines
         
         vcf_path = self.get_vcf_export_path()
         # join the list of lines for the VCF file into a single string
         child_lines = "".join(child_lines)
-        if platform.python_version_tuple()[0] == "2":
+        if sys.version_info[0] == 2:
             with gzip.open(vcf_path, 'wb') as f:
                 f.write(child_lines)
         else:

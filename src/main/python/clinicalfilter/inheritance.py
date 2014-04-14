@@ -24,7 +24,7 @@ class Inheritance(object):
         causal.
         
         Args:
-            variants: list of variants in a gene
+            variants: list of TrioGenotypes variants in a gene
             trio: a Family object for the family
             gene_inheritance: inheritance based on a database of genes known to
                 be involved in disorders. If no gene list is provided, default
@@ -102,6 +102,9 @@ class Inheritance(object):
     
     def set_trio_genotypes(self, variant):
         """ sets the genotypes for the trio as Variant objects
+        
+        Args:
+            variant: TrioGenotypes object
         """
         
         # allow for children without parents
@@ -116,6 +119,11 @@ class Inheritance(object):
     
     def add_variant_to_appropriate_list(self, variant, check, inheritance):
         """ add processed variants to the appropriate list
+        
+        Args:
+            variant: TrioGenotypes object (CNV or SNV)
+            check: single_variant or compound_het
+            inheritance: inheritance mode (eg Monoallelelic, Biallelic etc)
         """
         
         if check == "compound_het":
@@ -125,6 +133,16 @@ class Inheritance(object):
     
     def examine_variant(self, variant, inheritance):
         """ examines a single variant for whether or not to report it
+        
+        Args:
+            variant: TrioGenotypes object
+            inheritance: inheritance mode to check ("Monoallelic", "Biallelic")
+        
+        Returns:
+            code for whether to add the variant to the list of flagged variants 
+            ("single_variant"), to check if the variant could act in concert as 
+            a compound het ("compound_het"), or whether to ignore the variant 
+            ("nothing").
         """
         
         if variant.is_cnv():
@@ -570,13 +588,7 @@ class CNVInheritance(object):
         # more likely to be disruptively causal, and non-artifacts. The length 
         # required depends on whether the CNV was inherited, and whether the
         # CNV is a deletion, or duplication
-        if inh in ["deNovo", "paternal", "maternal", "biparental", "inheritedDuo"]:
-            if geno == "DEL":
-                min_len = 100000
-            elif geno == "DUP":
-                min_len = 250000
-        else:
-            min_len = 500000
+        min_len = 1000000
         
         # reportable CNVs must be longer than the minimum length
         if float(self.variant.child.info["SVLEN"]) >= min_len:

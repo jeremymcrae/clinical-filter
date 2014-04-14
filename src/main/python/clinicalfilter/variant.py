@@ -31,6 +31,7 @@ class Variant(object):
     def set_gender(self, gender):
         """ sets the gender of the individual for the variant
         """
+        
         if gender in self.male_codes:
             self.gender = "male"
         elif gender in self.female_codes:

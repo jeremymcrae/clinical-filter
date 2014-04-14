@@ -5,6 +5,7 @@ from clinicalfilter.vcf_info import VcfInfo
 from clinicalfilter.variant import Variant
 from clinicalfilter.variant_cnv_acgh_filter import ACGH_CNV
 from clinicalfilter.variant_cnv_exome_filter import ExomeCNV
+from clinicalfilter.variant_cnv_breakdancer_filter import BreakdancerCNV
 
 class CNV(Variant, VcfInfo):
     """  class to take CNV data for an individual, and
@@ -206,8 +207,11 @@ class CNV(Variant, VcfInfo):
         if "CONVEX" in self.info and "CNSOLIDATE" not in self.info:
             filt = ExomeCNV(self)
             passes = filt.filter_cnv(track_variant)
-        if "CNSOLIDATE" in self.info:
+        elif "CNSOLIDATE" in self.info:
             filt = ACGH_CNV(self)
+            passes = filt.filter_cnv(track_variant)
+        elif "BREAKDANCER" in self.info:
+            filt = BreakdancerCNV(self)
             passes = filt.filter_cnv(track_variant)
         else:
             if track_variant:

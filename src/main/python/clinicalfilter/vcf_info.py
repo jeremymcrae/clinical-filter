@@ -27,7 +27,12 @@ class VcfInfo(object):
         
         for item in info_values.split(";"):
             if "=" in item:
-                key, value = item.split("=")
+                try:
+                    key, value = item.split("=")
+                except ValueError:
+                    pos = item.index("=")
+                    key = item[:pos]
+                    value = item[pos + 1:]
             else:
                 key, value = item, True
             self.info[key] = value
@@ -50,7 +55,10 @@ class VcfInfo(object):
         
         # sometimes the variant lacks an HGNC field
         if "HGNC" not in self.info:
-            self.gene = None
+            if "gene" in self.info:
+                self.gene = self.info["gene"]
+            else:
+                self.gene = None
         else:
             self.gene = self.info["HGNC"]
     
@@ -141,7 +149,6 @@ class VcfInfo(object):
                     continue
                 # if number > 0.5:
                 #     number = 1 - number
-                #     record[key] = str(number)
                 if number > max_allele_frequency:
                     max_allele_frequency = number
         
@@ -168,7 +175,7 @@ class VcfInfo(object):
         """
         
         self.show_fail_point = False
-        if self.get_chrom() == "11" and self.get_position() == "118343368":
+        if self.get_chrom() == "19" and self.get_position() == "50881821":
             self.show_fail_point = True
         
         passes = True
@@ -184,6 +191,7 @@ class VcfInfo(object):
                 passes = self.passes_list(value, filter_values)
             elif condition == "smaller_than":
                 passes = self.passes_smaller_than(value, filter_values)
+                # passes = self.passes_smaller_than(value, filter_values, key)
                 
             if passes == False:
                 break
@@ -211,12 +219,13 @@ class VcfInfo(object):
         return value in filter_values
     
     def passes_smaller_than(self, value, filter_values):
+    # def passes_smaller_than(self, value, filter_values, key):
         """ checks whether values are not within a filter range
         """
         
         # some of the MAF values are 1 - MAF due to being for a population that 
         # was genotyped on the opposing strand. We need to convert those back.
-        # if key in self.tags_dict["MAX_MAF"]:
+        # if key in self.tags["MAX_MAF"]:
         #     value = self.get_number(value)
         #     if self.is_number(value):
         #         if value > 0.5:
@@ -232,13 +241,18 @@ class VcfInfo(object):
     def passes_multiple_filter(self):
         """ a few variants need filtering across multiple requirements
         
-        Currently we only exclude vars where the mutation ID (HGMD from VCF ID
+        Currently we exclude vars where the mutation ID (HGMD from VCF ID
         field) is unknown (ie "NA"), the vep consequence is missense_variant, 
-        and the MAF is > 0.005.
+        and the MAF is > 0.005. We also exclude vars where the VEP consequence
+        is missense_variant, and the 
         """
         
         mut = self.get_mutation_id()
         cq = self.info["CQ"]
+        
+        if cq == "missense_variant" and "PolyPhen" in self.info and \
+                self.info["PolyPhen"].startswith("benign"):
+            return False
         
         if mut == "NA" and cq == "missense_variant":
             maf = self.find_max_allele_frequency(self.tags["MAX_MAF"])

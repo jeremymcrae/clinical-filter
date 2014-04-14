@@ -135,33 +135,13 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         self.inh.variant.child.genotype = "DUP"
         self.inh.variant.child.format["INHERITANCE"] = "deNovo"
-        self.inh.variant.child.info["SVLEN"] = "250001"
+        self.inh.variant.child.info["SVLEN"] = "1000001"
         
         # check that a sufficiently long de novo DUP passes
         self.assertTrue(self.inh.passes_nonddg2p_filter())
         
         # check that a insufficiently long de novo DUP fails
-        self.inh.variant.child.info["SVLEN"] = "249999"
-        self.assertFalse(self.inh.passes_nonddg2p_filter())
-        
-        # check that a sufficiently long de novo DEL passes
-        self.inh.variant.child.genotype = "DEL"
-        self.assertTrue(self.inh.passes_nonddg2p_filter())
-        
-        # check that a insufficiently long de novo DEL fails
-        self.inh.variant.child.info["SVLEN"] = "99999"
-        self.assertFalse(self.inh.passes_nonddg2p_filter())
-        
-        # check that paternally inherited CNVs that have affected fathers pass
-        self.inh.variant.child.info["SVLEN"] = "600000"
-        self.inh.trio.father.affected_status = "2"
-        self.inh.variant.child.format["INHERITANCE"] = "paternal"
-        self.assertTrue(self.inh.passes_nonddg2p_filter())
-        
-        # check that non-inherited CNVs pass a more stringent length
-        self.inh.variant.child.format["INHERITANCE"] = "inconclusive"
-        self.assertTrue(self.inh.passes_nonddg2p_filter())
-        self.inh.variant.child.info["SVLEN"] = "499999"
+        self.inh.variant.child.info["SVLEN"] = "999999"
         self.assertFalse(self.inh.passes_nonddg2p_filter())
     
     def test_passes_gene_inheritance(self):
@@ -347,7 +327,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.known_genes = gene_inh
         self.inh.variant.chrom = "1"
         self.inh.variant.child.info["CNS"] = "3"
-        self.inh.variant.child.info["SVLEN"] = "500001"
+        self.inh.variant.child.info["SVLEN"] = "1000001"
         
         # check that a standard CNV passes
         self.assertTrue(self.inh.check_compound_inheritance())
@@ -362,7 +342,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         # check that low SVLEN doesn't fail if the DDG2P route passes
         self.inh.variant.child.info["CNS"] = "1"
-        self.inh.variant.child.info["SVLEN"] = "499999"
+        self.inh.variant.child.info["SVLEN"] = "999999"
         self.assertTrue(self.inh.check_compound_inheritance())
         
         # check that low SVLEN combined with no DDG2P match fails
@@ -370,7 +350,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.assertFalse(self.inh.check_compound_inheritance())
         
         # check that high SVLEN can overcome not having a DDG2P match
-        self.inh.variant.child.info["SVLEN"] = "500001"
+        self.inh.variant.child.info["SVLEN"] = "1000001"
         self.assertTrue(self.inh.check_compound_inheritance())
         
     def test_check_compound_inheritance_hemizygous(self):

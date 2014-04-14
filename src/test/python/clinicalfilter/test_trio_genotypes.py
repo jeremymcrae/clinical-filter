@@ -54,9 +54,9 @@ class TestTrioGenotypesPy(unittest.TestCase):
         
         tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
         
-        info = "HGNC=TEST;CQ=missense_variant;DENOVO-SNP"
-        keys = "GT:DP:TEAM29_FILTER"
-        values = genotype + ":50:PASS"
+        info = "HGNC=TEST;CQ=missense_variant;DENOVO-SNP;PP_DNM=0.99"
+        keys = "GT:DP:TEAM29_FILTER:PP_DNM"
+        values = genotype + ":50:PASS:0.99"
         
         var.add_info(info, tags)
         var.add_format(keys, values)
@@ -101,6 +101,14 @@ class TestTrioGenotypesPy(unittest.TestCase):
         
         # make sure that DENOVO-INDEL flag can pass the de novo filter
         self.var.child.info["DENOVO-INDEL"] = True
+        self.assertTrue(self.var.passes_de_novo_checks(self.trio))
+        
+        # check that de novos with low PP_DNM scores fail the de novo filter
+        self.var.child.format["PP_DNM"] = 0.94
+        self.assertFalse(self.var.passes_de_novo_checks(self.trio))
+        
+        # check that we don't fail a de novo if it lacks the PP_DNM annotation
+        del self.var.child.format["PP_DNM"]
         self.assertTrue(self.var.passes_de_novo_checks(self.trio))
     
     def test_passes_de_novo_checks_X_chrom(self):

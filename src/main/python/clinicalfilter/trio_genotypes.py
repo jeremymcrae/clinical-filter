@@ -132,7 +132,9 @@ class TrioGenotypes(object):
          # criteria.
         de_novo_snp_field = "DENOVO-SNP"
         de_novo_indel_field = "DENOVO-INDEL"
-        project_filter_field = "TEAM29_FILTER"
+        # project_filter_field = "TEAM29_FILTER"
+        # project_filter_field = "DENOVOGEAR_FILTER"
+        project_filter_field = ["TEAM29_FILTER", "DENOVOGEAR_FILTER"]
         
         # set the standard de novo genotype combination
         de_novo_genotype = (1,0,0)
@@ -152,10 +154,22 @@ class TrioGenotypes(object):
            de_novo_indel_field not in self.child.info:
             return False
         
-        if project_filter_field not in self.child.format:
+        if "PP_DNM" in self.child.format and \
+                float(self.child.format["PP_DNM"]) < 0.95:
             return False
         
-        return self.child.format[project_filter_field] == "PASS"
+        for project_filter in project_filter_field:
+            # if project_filter_field not in self.child.info and \
+            #     project_filter_field not in self.child.format:
+            #     return False
+            
+            # return self.child.format[project_filter_field] == "PASS"
+            if project_filter in self.child.info:
+                return self.child.info[project_filter] == "PASS"
+            elif project_filter in self.child.format:
+                return self.child.format[project_filter] == "PASS"
+        
+        return False
 
 
 

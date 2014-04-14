@@ -28,6 +28,7 @@ import logging
 
 from clinicalfilter import vcf
 from clinicalfilter.inheritance import *
+from clinicalfilter.post_inheritance_filter import PostInheritanceFilter
 from clinicalfilter.reporting import Report
 from clinicalfilter.load_options import LoadOptions, get_options
 
@@ -94,6 +95,10 @@ class ClinicalFilter(LoadOptions, Report):
         # remove any duplicate variants (which might ocur due to CNVs being 
         # checked against all the genes that they encompass)
         found_vars = self.exclude_duplicates(found_vars)
+        
+        # apply some final filters to the flagged variants
+        post_filter = PostInheritanceFilter(found_vars)
+        found_vars = post_filter.filter_variants()
         
         # export the results to either tab-separated table or VCF format
         if self.output_path is not None:
