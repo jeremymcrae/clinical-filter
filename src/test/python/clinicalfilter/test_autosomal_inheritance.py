@@ -42,6 +42,7 @@ class TestAutosomalPy(unittest.TestCase):
         gene_inh = self.known_genes[var.get_gene()]["inheritance"]
         
         self.inh = Autosomal(self.variants, self.trio, gene_inh)
+        self.inh.is_lof = var.child.is_lof()
     
     def create_snv(self, gender, genotype):
         """ create a default variant
@@ -394,6 +395,7 @@ class TestAutosomalPy(unittest.TestCase):
         self.inh.mother_affected = True
         self.assertEqual(self.inh.check_homozygous("Monoallelic"), "single_variant")
         self.assertEqual(self.inh.log_string, "transmitted from affected parents")
+    
 
 
 if __name__ == '__main__':

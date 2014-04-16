@@ -31,38 +31,74 @@ class PostInheritanceFilter(object):
         
         # if we have flagged CNVs on three different chroms, drop all CNVs,
         # since the sample is sufficiently anomalous
-        if self.count_cnv_chroms() > 2:
-            passed_vars = []
-            for (var, check, inh) in self.variants:
-                if not var.is_cnv():
-                    passed_vars.append((var, check, inh))
-            
-            self.variants = passed_vars
+        if self.count_cnv_chroms(self.variants) > 2:
+            self.variants = self.remove_cnvs(self.variants)
         
-        passed_vars = []
-        for (var, check, inh) in self.variants:
-            if inh == "Biallelelic":
-                passed_vars.append((var, check, inh))
-            else:
-                populations = var.child.tags["MAX_MAF"]
-                max_maf = var.child.find_max_allele_frequency(populations)
-                print(max_maf)
-                if max_maf == "NA" or float(max_maf) <= 0.1:
-                    passed_vars.append((var, check, inh))
-        
-        self.variants = passed_vars
+        # and filter by a lower MAF threshold
+        self.variants = self.filter_by_maf(self.variants)
         
         return self.variants
     
-    def count_cnv_chroms(self):
+    def count_cnv_chroms(self, variants):
         """ count the number of different chroms that CNVs are on
+        
+        Args:
+            variants: list of (variant, check, inheritance) tuples
+        
+        Returns:
+            integer count of distinct chromosomes containing CNVs
         """
         
         # count the flagged CNVs
         cnv_chroms = set([])
-        for (var, check, inh) in self.variants:
+        for (var, check, inh) in variants:
             if var.is_cnv():
                 cnv_chroms.add(var.get_chrom())
         
         return len(cnv_chroms)
+    
+    def remove_cnvs(self, variants):
+        """ remove CNVs from individuals with too many flagged CNVs
+        
+        Args:
+            variants: list of (variant, check, inheritance) tuples
+        
+        Returns:
+        reutns list of tuples without CNV variants
+        """
+        
+        # remove CNVs from the list of flagged variants
+        passed_vars = []
+        for (var, check, inh) in variants:
+            if not var.is_cnv():
+                passed_vars.append((var, check, inh))
+            else:
+                logging.debug(str(var) + " dropped from excess CNVs in proband")
+        
+        return  passed_vars
+    
+    def filter_by_maf(self, variants):
+        """ filter for llow MAF threshold, except for Biallelic variants
+        """
+        
+        passed_vars = []
+        for (var, check, inh) in variants:
+            populations = var.child.tags["MAX_MAF"]
+            max_maf = var.child.find_max_allele_frequency(populations)
+            if max_maf == "NA": # set maf=NA to 0 to reduce later checks
+                max_maf = 0
+            
+            if inh == "Biallelic":
+                passed_vars.append((var, check, inh))
+            # variants with multiple inheritance types should be left as 
+            # Biallelic if the other inheritance type fails the MAF threshold
+            elif "Biallelic" in inh and float(max_maf) >= 0.001:
+                passed_vars.append((var, check, "Biallelic"))
+            else:
+                if float(max_maf) <= 0.001:
+                    passed_vars.append((var, check, inh))
+                else:
+                    logging.debug(str(var) + " dropped from low MAF in non-biallelic variant")
+        
+        return passed_vars
 

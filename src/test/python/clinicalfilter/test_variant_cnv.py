@@ -189,18 +189,6 @@ class TestVariantCnvPy(unittest.TestCase):
         
         filters = "temp"
         self.assertFalse(self.var.passes_filters(filters))
-    
-    def test_fails_cnsolidate(self):
-        """ test that fails_cnsolidate() works correctly
-        """
-        
-        # check when the variant is passed by CNSOLIDATE
-        self.var.info["CNSOLIDATE"] = True
-        self.assertFalse(self.var.fails_cnsolidate())
-        
-        # check when the variant hasn't been passed by CNSOLIDATE
-        del self.var.info["CNSOLIDATE"]
-        self.assertTrue(self.var.fails_cnsolidate())
 
 
 if __name__ == '__main__':

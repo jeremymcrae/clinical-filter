@@ -43,6 +43,7 @@ class TestAllosomalPy(unittest.TestCase):
         gene_inh = self.known_genes[var.get_gene()]["inheritance"]
         
         self.inh = Allosomal(self.variants, self.trio, gene_inh)
+        self.inh.is_lof = var.child.is_lof()
     
     def create_snv(self, gender, genotype):
         """ create a default variant

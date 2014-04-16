@@ -72,6 +72,17 @@ class VcfInfo(object):
         
         if "CQ" not in self.info:
             self.info["CQ"] = None
+            
+    def is_lof(self):
+        """ checks if a variant has a loss-of-function consequence
+        """
+        
+        # define the set of loss-of-function consequences
+        lof_consequences = set(["transcript_ablation","splice_donor_variant", \
+            "splice_acceptor_variant", "frameshift_variant", "stop_gained", \
+            "coding_sequence_variant"])
+        
+        return self.info["CQ"] in lof_consequences
     
     def get_number(self, values):
         """ converts a string into a number

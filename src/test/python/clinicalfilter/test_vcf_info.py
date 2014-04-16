@@ -29,7 +29,7 @@ class TestVcfInfoPy(unittest.TestCase):
             "1KG_AF", "AF_AFR", "AF_AMR", "AF_ASN", "AF_EUR", \
             "UK10K_cohort_AF", "ESP_AF", "DDD_AF", "ASN_AF", "AFR_AF", \
             "EUR_AF", "AMR_AF"], "transcript": ["ENSEMBL_TRANSCRIPT", "ENST"]}
-            
+        
         # here are the default filtering criteria, as loaded into python
         self.default_filters = {"FILTER": ("list", set(["PASS", "."])), \
             "VCQ": ("list", set(["ESSENTIAL_SPLICE_SITE", "STOP_GAINED", \
@@ -66,6 +66,22 @@ class TestVcfInfoPy(unittest.TestCase):
         del self.var.info["HGNC"]
         self.var.add_gene_from_info()
         self.assertIsNone(self.var.gene)
+    
+    def test_is_lof(self):
+        """ test that is_lof() works correctly
+        """
+        
+        # check that known LOF consensequence return True
+        self.var.info["CQ"] = "stop_gained"
+        self.assertTrue(self.var.is_lof())
+        
+        # check that known non-LOF consensequence returns False
+        self.var.info["CQ"] = "missense_variant"
+        self.assertFalse(self.var.is_lof())
+        
+        # check that null values return False
+        self.var.info["CQ"] = None
+        self.assertFalse(self.var.is_lof())
     
     def test_get_number(self):
         """ tests that number conversion works as expected

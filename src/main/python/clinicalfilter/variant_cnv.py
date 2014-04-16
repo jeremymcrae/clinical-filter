@@ -171,42 +171,15 @@ class CNV(Variant, VcfInfo):
             return False
         
         track_variant = False
-        if self.get_position() == "186746704":
+        if self.get_position() == "30742589":
             track_variant = True
         
         passes = True
-        # if self.fails_cnsolidate():
-        #     passes = False
-        #     if track_variant:
-        #         print("failed CNSOLIDATE", self)
-        # elif self.fails_mad_ratio():
-        #     passes = False
-        #     if track_variant:
-        #         print("failed mad ratio", self.info["MEANLR2"], self.info["MADL2R"])
-        # elif self.fails_wscore():
-        #     passes = False
-        #     if track_variant:
-        #         print("failed wscore", self.info["WSCORE"])
-        # elif self.fails_callp():
-        #     passes = False
-        #     if track_variant:
-        #         print("failed callp", self.info["CALLP"])
-        # elif self.fails_commmon_forwards():
-        #     passes = False
-        #     if track_variant:
-        #         print("failed commonforwards", self.info["COMMONFORWARDS"])
-        # elif self.fails_meanlr2():
-        #     passes = False
-        #     if track_variant:
-        #         print("failed meanlr2", self.info["MEANLR2"])
-        # elif self.fails_no_exons():
-        #     passes = False
-        #     if track_variant:
-        #         print("failed no exons", self.info["NUMBEREXONS"])
-        
         if "CONVEX" in self.info and "CNSOLIDATE" not in self.info:
+            # currently return false for all exome-only CNVs, undergoing testing
             filt = ExomeCNV(self)
-            passes = filt.filter_cnv(track_variant)
+            # passes = filt.filter_cnv(track_variant)
+            passes = False 
         elif "CNSOLIDATE" in self.info:
             filt = ACGH_CNV(self)
             passes = filt.filter_cnv(track_variant)
@@ -220,56 +193,6 @@ class CNV(Variant, VcfInfo):
         
         return passes
     
-    def fails_cnsolidate(self):
-        """ checks if the CNV is passed by CNSOLIDATE
-        """
-        
-        return "CNSOLIDATE" not in self.info
-    
-    def fails_mad_ratio(self):
-        """ checks if the MAD ratio is too low
-        """
-        
-        try:
-            return abs(float(self.info["MEANLR2"])/float(self.info["MADL2R"])) < 15
-        except ZeroDivisionError:
-            return True
-        
-    def fails_wscore(self):
-        """ checks if the WSCORE value is too low
-        """
-        
-        return float(self.info["WSCORE"]) < 0.4
-    
-    def fails_callp(self):
-        """ checks if the CALLP value is too high
-        """
-        
-        return float(self.info["CALLP"]) > 0.01
-    
-    def fails_commmon_forwards(self):
-        """ checks if the COMMONFORWARDS value is too high
-        """
-        
-        return float(self.info["COMMONFORWARDS"]) > 0.8
-    
-    def fails_meanlr2(self):
-        """ checks if the MEANLR2 value is out of bounds
-        """
-        
-        if self.genotype == "DUP":
-            return float(self.info["MEANLR2"]) < 0.36
-        elif self.genotype == "DEL":
-            return float(self.info["MEANLR2"]) > -0.41
-        
-        return False
-    
-    def fails_no_exons(self):
-        """ checks that the CNV overlaps at least one exon
-        """
-        
-        return float(self.info["NUMBEREXONS"]) < 1
-        
     def is_het(self):
         # return False
         return self.genotype in self.alt_genotypes
