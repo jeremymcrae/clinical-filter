@@ -32,6 +32,7 @@ def get_options():
     parser.add_option('--log', dest='loglevel', help='level of logging to use')
     parser.add_option('--ddg2p', dest='ddg2p_path', default=known_genes, help='path to the ddg2p file to use')
     parser.add_option('--njobs', dest='n_jobs', default=100, help='number of jobs you want to divide the run across')
+    parser.add_option('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
     
     (opts, args) = parser.parse_args()
     
@@ -126,8 +127,7 @@ def write_sh_file(hash_string, command):
     random_file.close()
     
     return random_filename
-    
-    
+
 def remove_sh_file(filename):
     """ cleans up the sh file
     """
@@ -138,9 +138,8 @@ def remove_sh_file(filename):
     
     if os.path.exists("clinical_reporting.log"):
         os.remove("clinical_reporting.log")
-    
 
-def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_path, log_options):
+def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_path, all_genes, log_options):
     """ sets up a lsf job array
     """
     
@@ -150,7 +149,12 @@ def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_pat
     
     bjob_output_name = temp_name + "bjob_output"
     
-    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--known-genes", known_genes_path, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt"] + log_options
+    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt"] + log_options
+    
+    # sometimes we don't want to restrict to the DDG2P genes, then all_genes
+    # would be False and variants would be assessed in every gene.
+    if not all_genes:
+        command += ["--known-genes", known_genes_path]
     
     sh_file = write_sh_file(hash_string, command)
     subprocess.Popen(["sh", sh_file])
@@ -218,7 +222,7 @@ def main():
     
     tidy_directory_before_start()
     trio_counter = split_pedigree_file(temp_name, ped_path, opts.n_jobs)
-    run_array(hash_string, trio_counter, temp_name, output_name, opts.ddg2p_path, log_options)
+    run_array(hash_string, trio_counter, temp_name, output_name, opts.ddg2p_path, opts.all_genes, log_options)
     run_cleanup(hash_string, output_name, temp_name)
 
 
