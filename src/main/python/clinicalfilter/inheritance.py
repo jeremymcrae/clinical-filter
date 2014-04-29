@@ -10,7 +10,7 @@ class Inheritance(object):
     """figure out whether trio genotypes fit mendelian inheritance models
     """
     
-    def __init__(self, variants, trio, known_genes, gene_inheritance=None):
+    def __init__(self, variants, trio, known_genes, gene_inheritance=None, cnv_regions=None):
         """ intialise the class with the variants and trio information
         
         We have an affected child, with two parents who may or may not be 
@@ -34,6 +34,7 @@ class Inheritance(object):
         self.variants = variants
         self.trio = trio
         self.known_genes = known_genes
+        self.cnv_regions = cnv_regions
         
         if self.trio.has_parents():
             self.father_affected = self.trio.father.is_affected()
@@ -147,7 +148,7 @@ class Inheritance(object):
         """
         
         if variant.is_cnv():
-            cnv_checker = CNVInheritance(variant, self.trio, self.known_genes)
+            cnv_checker = CNVInheritance(variant, self.trio, self.known_genes, self.cnv_regions)
             check = cnv_checker.check_single_inheritance()
             self.log_string = cnv_checker.log_string
             return check
@@ -238,9 +239,9 @@ class Inheritance(object):
 
 class Autosomal(Inheritance):
     
-    def __init__(self, variants, trio, known_genes, gene_inheritance=None):
+    def __init__(self, variants, trio, known_genes, gene_inheritance=None, cnv_regions=None):
         
-        super(Autosomal, self).__init__(variants, trio, known_genes, gene_inheritance)
+        super(Autosomal, self).__init__(variants, trio, known_genes, gene_inheritance, cnv_regions)
         
         self.inheritance_modes = set(["Monoallelic", "Biallelic", "Both"])
     
@@ -274,7 +275,7 @@ class Autosomal(Inheritance):
             return report
         elif self.is_lof and not self.father_affected and not \
                 self.mother_affected and inheritance == "Monoallelic" and \
-                (self.dad.is_not_ref() or self.mom.is_not_ref()):
+                (self.dad.is_het() or self.mom.is_het()):
             self.log_string = "reduced penetrance transmitted from unaffected parents"
             return report
         elif (self.dad.is_not_ref() and self.father_affected) and \
@@ -333,9 +334,9 @@ class Autosomal(Inheritance):
 
 class Allosomal(Inheritance):
     
-    def __init__(self, variants, trio, known_genes, gene_inheritance=None):
+    def __init__(self, variants, trio, known_genes, gene_inheritance=None, cnv_regions=None):
         
-        super(Allosomal, self).__init__(variants, trio, known_genes, gene_inheritance)
+        super(Allosomal, self).__init__(variants, trio, known_genes, gene_inheritance, cnv_regions)
         
         # self.inheritance_modes = set(["X-linked dominant", "Hemizygous", \
         #     "Monoallelic", "X-linked over-dominance"])
@@ -379,8 +380,8 @@ class Allosomal(Inheritance):
             return "single_variant"
         elif self.is_lof and not self.father_affected and not \
                 self.mother_affected and inheritance == "X-linked dominant" and \
-                (self.dad.is_not_ref() or self.mom.is_not_ref()):
-            self.log_string = "reduced penetrance transmitted from unaffected parents"
+                self.dad.is_hom_ref() and self.mom.is_het():
+            self.log_string = "reduced penetrance transmitted from unaffected mother"
             return report
         elif (self.dad.is_hom_alt() and self.father_affected) and \
              (self.mom.is_hom_ref() or self.mother_affected) or \
@@ -415,10 +416,9 @@ class Allosomal(Inheritance):
                  (self.mom.is_hom_alt() and self.mother_affected):
                 self.log_string = "male X chrom inherited from het mother or hom affected mother"
                 return "single_variant"
-            elif self.is_lof and not self.father_affected and not \
-                    self.mother_affected and inheritance == "X-linked dominant" and \
-                    (self.dad.is_not_ref() or self.mom.is_not_ref()):
-                self.log_string = "reduced penetrance transmitted from unaffected parents"
+            elif self.is_lof and not self.mother_affected and \
+                    inheritance == "X-linked dominant" and self.mom.is_not_ref():
+                self.log_string = "reduced penetrance transmitted from unaffected mother"
                 return "single_variant"
         
         elif self.trio.child.is_female():
@@ -438,8 +438,8 @@ class Allosomal(Inheritance):
                 return "single_variant"
             elif self.is_lof and not self.father_affected and not \
                     self.mother_affected and inheritance == "X-linked dominant" and \
-                    self.dad.is_not_ref() and self.mom.is_not_ref():
-                self.log_string = "reduced penetrance transmitted from unaffected parents"
+                    self.dad.is_hom_ref() and self.mom.is_not_ref():
+                self.log_string = "reduced penetrance transmitted from unaffected mother"
                 return "single_variant"
         
         self.log_string = "variant not compatible with being causal"
@@ -448,7 +448,7 @@ class Allosomal(Inheritance):
 
 class CNVInheritance(object):
     
-    def __init__(self, variant, trio, known_genes):
+    def __init__(self, variant, trio, known_genes, cnv_regions):
         """ intialise the class
         
         Args: 
@@ -460,6 +460,7 @@ class CNVInheritance(object):
         self.variant = variant
         self.trio = trio
         self.known_genes = known_genes
+        self.cnv_regions = cnv_regions
     
     def check_single_inheritance(self):
         """ checks if a CNV could be causal by itself
@@ -485,6 +486,8 @@ class CNVInheritance(object):
         if self.passes_nonddg2p_filter():
             return "single_variant"
         elif self.known_genes is not None and self.passes_ddg2p_filter():
+            return "single_variant"
+        elif self.cnv_regions is not None and self.check_cnv_region_overlap(self.cnv_regions):
             return "single_variant"
         # elif self.check_compound_inheritance():
         #     return "compound_het"
@@ -703,6 +706,54 @@ class CNVInheritance(object):
             len(self.known_genes[gene]["inheritance"][inh] & cnv_mech) > 0 # and \
             # cnv_encompasses
     
+    def check_cnv_region_overlap(self, cnv_regions):
+        """ finds CNVs that overlap DECIPHER syndrome regions
+        """
+        
+        key = self.variant.child.get_key()
+        chrom = key[0]
+        start = int(key[1])
+        end = int(key[2])
+        copy_number = int(self.variant.child.info["CNS"])
+        
+        for region_key in cnv_regions:
+            region_chrom = region_key[0]
+            region_start = int(region_key[1])
+            region_end = int(region_key[2])
+            region_copy_number = int(cnv_regions[region_key])
+            
+            if region_chrom != chrom:
+                continue
+            
+            if start <= region_end and end >= region_start and \
+                    copy_number == region_copy_number and \
+                    self.has_enough_overlap(start, end, region_start, region_end):
+                return True
+        
+        return False
     
-
+    def has_enough_overlap(self, start, end, region_start, region_end):
+        """ finds if aCNV and another chrom region share sufficient overlap
+        """
+        
+        # find the point where the overlap starts
+        if region_start <= start <= region_end:
+            overlap_start = start
+        else:
+            overlap_start = region_start
+        
+        # find the point where the overlap ends
+        if region_start <= end <= region_end:
+            overlap_end = end
+        else:
+            overlap_end = region_end
+        
+        overlap_distance = overlap_end - overlap_start
+        
+        forward_overlap = float(overlap_distance)/(end - start)
+        reverse_overlap = float(overlap_distance)/(region_end - region_start)
+        
+        print("DECIPHER_SYNDROME_OVERLAP:\t" + self.trio.child.get_ID() + "\t" + str(start) + "\t" + str(end) + "\t" + str(region_start) + "\t" + str(region_end) + "\t" + str(forward_overlap) + "\treverse: " + str(reverse_overlap))
+        
+        return True
 

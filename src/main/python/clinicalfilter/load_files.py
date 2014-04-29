@@ -225,7 +225,7 @@ def open_tags(path):
     GT_tag = "genotype"
     
     tags_dict = {GN_tag: "", CQ_tag: "", MAF_tag: "", GT_tag: ""}
-    f = open(path,"r")
+    f = open(path, "r")
     for line in f:
         if line.startswith("#"):
             continue
@@ -246,3 +246,33 @@ def open_tags(path):
         tags_dict[key] = value
         
     return tags_dict
+
+def open_cnv_regions(path):
+    """ opens a file listing CNV regions
+    
+    Args:
+        path: path to CNV regions file
+    
+    Returns:
+        dictionary of copy number values, indexed by (chrom, start end) tuples
+    """
+    
+    f = open(path, "r")
+    header = f.readline().strip().split("\t")
+    
+    cnv_regions = {}
+    for line in f:
+        line = line.strip().split("\t")
+        
+        chrom = line[5]
+        start = line[3]
+        end = line[4]
+        copy_number = line[2]
+        
+        key = (chrom, start, end)
+        cnv_regions[key] = copy_number
+    
+    return cnv_regions
+
+
+

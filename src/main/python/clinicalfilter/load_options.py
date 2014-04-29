@@ -22,6 +22,7 @@ def get_options():
     
     parser.add_option("-l", "--filter", dest="filters_path", help="path to filter file (eg filters.txt)")
     parser.add_option("-t", "--tags", dest="tags_path", help="path to tags.txt (eg tags.txt)")
+    parser.add_option("--syndrome-regions", dest="cnv_regions", help="path to list of CNV regions known to occur in disorders, eg decipher_syndrome_list_20140428.txt")
     parser.add_option("--known-genes", dest="genes_path", help="path to list of known disease causative genes, eg DDG2P-reportable.txt")
     parser.add_option("--known-genes-date", dest="genes_date", help="Date that the list of known disease causative genes was last updated")
     parser.add_option("--alternate-ids", dest="alternate_ids_path", help="path to list of alternate IDs, eg personid_decipher_id_sangerid.txt")
@@ -101,10 +102,13 @@ class LoadOptions(object):
         
         # if we have named an ID mapping file, the load a dictionary of IDs and
         # alternate IDs, so we can convert between different ID schemes.
+        self.ID_mapper = None
         if self.options.alternate_ids_path is not None:
             self.ID_mapper = create_person_ID_mapper(self.options.alternate_ids_path)
-        else:
-            self.ID_mapper = None
+        
+        self.cnv_regions = None
+        if self.options.cnv_regions is not None:
+            self.cnv_regions = open_cnv_regions(self.options.cnv_regions)
     
     def load_trio_paths(self):
         """sets the paths to the VCF files for a trio, or multiple trios.

@@ -22,15 +22,16 @@ known_genes = os.path.join(datafreeze, "DDG2P_with_genomic_coordinates_20131107_
 alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.private.txt")
 individuals_filename = os.path.join(datafreeze, "family_relationships.shared.20131206.txt")
 working_vcfs_filename = os.path.join(datafreeze, "all_working_paths.private.txt")
+syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
     
 def get_options():
     """ gets the options from the command line
     """
     
     parser = optparse.OptionParser()
-    parser.add_option('--ped', dest='ped_path', default=None, help='path of the ped file')
-    parser.add_option('--log', dest='loglevel', help='level of logging to use')
-    parser.add_option('--ddg2p', dest='ddg2p_path', default=known_genes, help='path to the ddg2p file to use')
+    parser.add_option('--ped', dest='ped_path', default=None, help='path of the ped file (default=construct from DDD datasets)')
+    parser.add_option('--log', dest='loglevel', help='level of logging to use (default=all)')
+    parser.add_option('--ddg2p', dest='ddg2p_path', default=known_genes, help='optional path to the ddg2p file to use (default = current DDD DDG2P file)')
     parser.add_option('--njobs', dest='n_jobs', default=100, help='number of jobs you want to divide the run across')
     parser.add_option('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
     
@@ -149,6 +150,7 @@ def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_pat
     
     bjob_output_name = temp_name + "bjob_output"
     
+    # command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", syndrome_regions_filename] + log_options
     command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt"] + log_options
     
     # sometimes we don't want to restrict to the DDG2P genes, then all_genes

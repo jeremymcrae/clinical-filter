@@ -155,9 +155,9 @@ class ClinicalFilter(LoadOptions, Report):
         chrom_inheritance = variants[0].get_inheritance_type()
         
         if chrom_inheritance == "autosomal":
-            finder = Autosomal(variants, self.family, self.known_genes, gene_inh)
+            finder = Autosomal(variants, self.family, self.known_genes, gene_inh, self.cnv_regions)
         elif chrom_inheritance in ["XChrMale", "XChrFemale", "YChrMale"]:
-            finder = Allosomal(variants, self.family, self.known_genes, gene_inh)
+            finder = Allosomal(variants, self.family, self.known_genes, gene_inh, self.cnv_regions)
         
         return finder.get_candidate_variants()
     

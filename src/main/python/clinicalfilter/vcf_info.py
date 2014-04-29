@@ -186,7 +186,7 @@ class VcfInfo(object):
         """
         
         self.show_fail_point = False
-        if self.get_chrom() == "19" and self.get_position() == "50881821":
+        if self.get_chrom() == "4" and self.get_position() == "15602948":
             self.show_fail_point = True
         
         passes = True
