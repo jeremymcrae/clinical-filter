@@ -30,9 +30,11 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.variant = self.create_variant(child_gender)
         
         # make sure we've got known genes data
-        self.known_genes = {"TEST": {"inheritance": {"Monoallelic": {"Loss of function"}}, "confirmed_status": {"Confirmed DD Gene"}}}
+        self.known_genes = {"TEST": {"inheritance": {"Monoallelic": {"Loss of function"}}, "confirmed_status": {"Confirmed DD Gene"}, "start": "5000", "end": "6000"}}
         
-        self.inh = CNVInheritance(self.variant, self.trio, self.known_genes)
+        syndrome_regions = {("1", "1000", "2000"): 1}
+        
+        self.inh = CNVInheritance(self.variant, self.trio, self.known_genes, syndrome_regions)
     
     def create_cnv(self, gender, inh, chrom, pos):
         """ create a default variant
@@ -273,7 +275,8 @@ class TestCNVInheritancePy(unittest.TestCase):
         """
         
         gene_inh = {"TEST": {"inheritance": {"Monoallelic": \
-            {"Increased gene dosage"}}, "confirmed_status": {"Confirmed DD Gene"}}}
+            {"Increased gene dosage"}}, "confirmed_status": \
+            {"Confirmed DD Gene"}, "start": "5000", "end": "6000"}}
         
         gene = "TEST"
         inh = "Monoallelic"
@@ -317,12 +320,129 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.variant.child.gene = "TEST,TEST2"
         self.assertTrue(self.inh.passes_ddg2p_filter())
         
+    
+    def test_check_passes_intragenic_dup(self):
+        """ test that passes_intragenic_dup() works correctly
+        """
+        
+        gene = "TEST"
+        inh = "Monoallelic"
+        
+        # set parameters that will pass the function
+        self.inh.variant.child.genotype = "DUP"
+        self.inh.variant.position = "5200"
+        self.inh.variant.child.info["END"] = "5800"
+        
+        gene_inh = {"TEST": {"inheritance": {"Monoallelic": \
+            {"Increased gene dosage"}}, "confirmed_status": \
+            {"Confirmed DD Gene"}, "start": "5000", "end": "6000"}}
+        
+        self.inh.known_genes = gene_inh
+            
+        # check for values that pass the function
+        self.assertTrue(self.inh.passes_intragenic_dup(gene, inh))
+        
+        # make a CNV that surrounds the entire gene, which will fail
+        self.inh.variant.position = "4800"
+        self.inh.variant.child.info["END"] = "6200"
+        self.assertFalse(self.inh.passes_intragenic_dup(gene, inh))
+        
+        # make a CNV where the gene exactly overlaps, which will fail
+        self.inh.variant.position = "5000"
+        self.inh.variant.child.info["END"] = "6000"
+        self.assertFalse(self.inh.passes_intragenic_dup(gene, inh))
+        
+        # make a CNV where the gene protrudes at the 5' end, which will pass
+        self.inh.variant.position = "5200"
+        self.inh.variant.child.info["END"] = "6200"
+        self.assertTrue(self.inh.passes_intragenic_dup(gene, inh))
+        
+        # make a CNV where the gene protrudes at the 3' end, which will pass
+        self.inh.variant.position = "4800"
+        self.inh.variant.child.info["END"] = "5800"
+        self.assertTrue(self.inh.passes_intragenic_dup(gene, inh))
+        
+        # check for correct response under different inheritance models
+        self.assertTrue(self.inh.passes_intragenic_dup(gene, "X-linked dominant"))
+        self.assertFalse(self.inh.passes_intragenic_dup(gene, "Biallelic"))
+        
+        # check that DEL CNVs fail
+        self.inh.variant.child.genotype = "DEL"
+        self.assertFalse(self.inh.passes_intragenic_dup(gene, inh))
+    
+    def test_check_cnv_region_overlap(self):
+        """ test that check_cnv_region_overlap() works correctly
+        """
+        
+        # set the variant key and copy number to known values
+        self.variant.child.chrom = "1"
+        self.variant.child.start_position = "1000"
+        self.variant.child.end_position = "2000"
+        self.variant.child.info["CNS"] = "1"
+        
+        syndrome_regions = {("2", "5000", "6000"): 1, ("3", "8000", "9000"): 0}
+        
+        # check that if there aren't any overlapping regions, we return False
+        self.assertFalse(self.inh.check_cnv_region_overlap(syndrome_regions))
+        
+        # check that when the region matches, but the chrom does not, we still 
+        # return False
+        syndrome_regions[("2", "1000", "2000")] = "1"
+        self.assertFalse(self.inh.check_cnv_region_overlap(syndrome_regions))
+        
+        # check that when the region and chrom overlap, but the copy number 
+        # does not, we still return False
+        syndrome_regions[("1", "1000", "2000")] = "2"
+        self.assertFalse(self.inh.check_cnv_region_overlap(syndrome_regions))
+        
+        # check that if the chrom, range and copy number overlap, and the 
+        # overlap region is sufficient, we return True
+        syndrome_regions[("1", "1000", "2000")] = "1"
+        self.assertTrue(self.inh.check_cnv_region_overlap(syndrome_regions))
+    
+    def test_has_enough_overlap(self):
+        """ test that has_enough_overlap() works correctly
+        """
+        
+        start_a = 1000
+        end_a = 2000
+        start_b = 1000
+        end_b = 2000
+        
+        # check that CNV and syndrome region with 100% overlap, forwards and 
+        # backwards, pass
+        self.assertTrue(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
+        
+        # check that CNV with 1% overlap to the syndrome region passes
+        end_a = 1010
+        self.assertTrue(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
+        
+        # check that CNV with < 1% overlap to the syndrome region fails
+        end_a = 1009
+        self.assertFalse(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
+        
+        # check that syndrome region with 1% overlap to the CNV passes
+        end_a = 2000
+        end_b = 1010
+        self.assertTrue(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
+        
+        # check that syndrome region with < 1% overlap to the CNV fails
+        end_b = 1009
+        self.assertFalse(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
+        
+        # check that syndrome regions as SNVs still pass if the CNV region is
+        # short enough
+        end_b = 1050
+        end_a = 1000
+        self.assertTrue(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
+    
     def test_check_compound_inheritance(self):
         """ test that check_compound_inheritance() works correctly
         """
         
         gene_inh = {"TEST": {"inheritance": {"Biallelic": \
-            {"Increased gene dosage"}}, "confirmed_status": {"Confirmed DD Gene"}}}
+            {"Increased gene dosage"}}, "confirmed_status": \
+            {"Confirmed DD Gene"}, "start": "5000", "end": "6000"}}
         
         self.inh.known_genes = gene_inh
         self.inh.variant.chrom = "1"
@@ -358,7 +478,8 @@ class TestCNVInheritancePy(unittest.TestCase):
         """
         
         gene_inh = {"TEST": {"inheritance": {"Hemizygous": \
-            {"Increased gene dosage"}}, "confirmed_status": {"Confirmed DD Gene"}}}
+            {"Increased gene dosage"}}, "confirmed_status": \
+            {"Confirmed DD Gene"}, "start": "5000", "end": "6000"}}
         
         self.inh.known_genes = gene_inh
         self.inh.variant.chrom = "X"

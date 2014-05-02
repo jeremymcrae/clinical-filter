@@ -598,6 +598,7 @@ class CNVInheritance(object):
         # that the pertinent parents actually are affected.
         if inh not in ["paternal", "maternal", "biparental", "inheritedDuo"]:
             return True
+        
         elif (inh == "paternal" and self.trio.father.is_affected()) or \
             (inh == "maternal" and self.trio.mother.is_affected()) or \
             ((inh == "biparental" or inh == "inheritedDuo") and \
@@ -637,7 +638,7 @@ class CNVInheritance(object):
         for gene in genes:
             if self.known_genes is None or gene not in self.known_genes:
                 continue
-                
+            
             self.log_string = "non-reported DDG2P CNV"
             gene_type = self.known_genes[gene]["confirmed_status"]
             
@@ -645,11 +646,14 @@ class CNVInheritance(object):
             if "Both DD and IF" in gene_type:
                 self.log_string = "Both DD and IF DDG2P gene"
                 inh_passes.append(True)
-            elif {"Confirmed DD Gene", "Probable DD gene"} & gene_type == 0:
+            elif {"Confirmed DD Gene", "Probable DD gene"} & gene_type == set():
+                # drop out genes with insufficient evidence
                 continue
             
             for inh in self.known_genes[gene]["inheritance"]:
-                inh_passes.append(self.passes_gene_inheritance(gene, inh))
+                passes = self.passes_gene_inheritance(gene, inh) or \
+                    self.passes_intragenic_dup(gene, inh)
+                inh_passes.append(passes)
             
             if any(inh_passes):
                 self.log_string = "DDG2P CNV"
@@ -692,19 +696,30 @@ class CNVInheritance(object):
             # exclude other inheritance modes (Mosaic etc) with impossible 
             # criteria
             copy_number = {"XXXX"}
-        
-        # cnv_encompasses = True
-        # if self.variant.child.genotype == "DUP":
-        #     if "Increased gene dosage" in self.known_genes[gene]["inheritance"][inh]:
-        #         if int(self.variant.get_position()) >= int(self.known_genes[gene]["start"]) or \
-        #             int(self.variant.child.info["END"]) <= int(self.known_genes[gene]["end"]):
-        #             cnv_encompasses = False
          
         return (chrom =="all" or 
             (chrom == "X" and self.variant.get_chrom() == "X")) and \
             self.variant.child.info["CNS"] in copy_number and \
-            len(self.known_genes[gene]["inheritance"][inh] & cnv_mech) > 0 # and \
-            # cnv_encompasses
+            len(self.known_genes[gene]["inheritance"][inh] & cnv_mech) > 0
+    
+    def passes_intragenic_dup(self, gene, inh):
+        """ checks if the CNV is an intragenic dup (in an appropriate gene)
+        """
+        
+        allowed_inh = set(["Monoallelic", "X-linked dominant"])
+        
+        if self.variant.child.genotype != "DUP" or inh not in allowed_inh:
+            return False
+        
+        # find the CNV start and end, as well as the gene start and end
+        cnv_start = int(self.variant.get_position())
+        cnv_end = int(self.variant.child.info["END"])
+        
+        gene_start = int(self.known_genes[gene]["start"])
+        gene_end = int(self.known_genes[gene]["end"])
+        
+        # check if any part of the gene is outside the CNv boundaries
+        return gene_start < cnv_start or gene_end > cnv_end
     
     def check_cnv_region_overlap(self, cnv_regions):
         """ finds CNVs that overlap DECIPHER syndrome regions
@@ -722,38 +737,42 @@ class CNVInheritance(object):
             region_end = int(region_key[2])
             region_copy_number = int(cnv_regions[region_key])
             
-            if region_chrom != chrom:
+            if region_chrom != chrom or copy_number != region_copy_number:
                 continue
             
             if start <= region_end and end >= region_start and \
-                    copy_number == region_copy_number and \
                     self.has_enough_overlap(start, end, region_start, region_end):
                 return True
         
         return False
     
     def has_enough_overlap(self, start, end, region_start, region_end):
-        """ finds if aCNV and another chrom region share sufficient overlap
+        """ finds if a CNV and another chrom region share sufficient overlap
         """
         
         # find the point where the overlap starts
+        overlap_start = region_start
         if region_start <= start <= region_end:
             overlap_start = start
-        else:
-            overlap_start = region_start
         
         # find the point where the overlap ends
+        overlap_end = region_end
         if region_start <= end <= region_end:
             overlap_end = end
-        else:
-            overlap_end = region_end
         
-        overlap_distance = overlap_end - overlap_start
+        distance = (overlap_end - overlap_start) + 1
         
-        forward_overlap = float(overlap_distance)/(end - start)
-        reverse_overlap = float(overlap_distance)/(region_end - region_start)
+        # adjust the positions before we try to divide by zero, if the "region"
+        # is actually a SNV
+        if end == start:
+            start -= 1
+        if region_end == region_start:
+            region_start -= 1
         
-        print("DECIPHER_SYNDROME_OVERLAP:\t" + self.trio.child.get_ID() + "\t" + str(start) + "\t" + str(end) + "\t" + str(region_start) + "\t" + str(region_end) + "\t" + str(forward_overlap) + "\treverse: " + str(reverse_overlap))
+        forward = float(distance)/(abs(end - start) + 1)
+        reverse = float(distance)/(abs(region_end - region_start) + 1)
         
-        return True
+        # determine whether there is sufficient overlap
+        return forward > 0.01 and reverse > 0.01
+        
 
