@@ -334,7 +334,8 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.variant.child.info["END"] = "5800"
         
         gene_inh = {"TEST": {"inheritance": {"Monoallelic": \
-            {"Increased gene dosage"}}, "confirmed_status": \
+            {"Loss of Function"}, "X-linked dominant": \
+            {"Loss of Function"}}, "confirmed_status": \
             {"Confirmed DD Gene"}, "start": "5000", "end": "6000"}}
         
         self.inh.known_genes = gene_inh

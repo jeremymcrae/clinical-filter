@@ -104,7 +104,7 @@ class TestTrioGenotypesPy(unittest.TestCase):
         self.assertTrue(self.var.passes_de_novo_checks(self.trio))
         
         # check that de novos with low PP_DNM scores fail the de novo filter
-        self.var.child.format["PP_DNM"] = 0.94
+        self.var.child.format["PP_DNM"] = 0.0099
         self.assertFalse(self.var.passes_de_novo_checks(self.trio))
         
         # check that we don't fail a de novo if it lacks the PP_DNM annotation

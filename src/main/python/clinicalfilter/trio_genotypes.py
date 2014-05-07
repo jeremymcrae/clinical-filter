@@ -155,15 +155,10 @@ class TrioGenotypes(object):
             return False
         
         if "PP_DNM" in self.child.format and \
-                float(self.child.format["PP_DNM"]) < 0.95:
+                float(self.child.format["PP_DNM"]) < 0.01:
             return False
         
         for project_filter in project_filter_field:
-            # if project_filter_field not in self.child.info and \
-            #     project_filter_field not in self.child.format:
-            #     return False
-            
-            # return self.child.format[project_filter_field] == "PASS"
             if project_filter in self.child.info:
                 return self.child.info[project_filter] == "PASS"
             elif project_filter in self.child.format:

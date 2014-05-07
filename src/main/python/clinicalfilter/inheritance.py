@@ -707,8 +707,14 @@ class CNVInheritance(object):
         """
         
         allowed_inh = set(["Monoallelic", "X-linked dominant"])
+        allowed_mech = set(["Loss of Function"])
         
+        # only allow duplications in dominant genes
         if self.variant.child.genotype != "DUP" or inh not in allowed_inh:
+            return False
+        
+        # only allow genes with loss-of-function mechanisms
+        if len(self.known_genes[gene]["inheritance"][inh] & allowed_mech) < 1:
             return False
         
         # find the CNV start and end, as well as the gene start and end
