@@ -10,6 +10,8 @@ assessed after the standard filters
         biallelic variants, they have a 1% threshold. We can only filter these 
         out once we have found variants that pass the different inheritance 
         models - then we can check if they are biallelelic or not.
+    We fail SNVs with polyphen=benign, except if the SNV is in a compound het, 
+        then we require both SNVs to be polyphen=benign
 """
 
 import sys
@@ -36,6 +38,8 @@ class PostInheritanceFilter(object):
         
         # and filter by a lower MAF threshold
         self.variants = self.filter_by_maf(self.variants)
+        
+        self.variants = self.filter_polyphen(self.variants)
         
         return self.variants
     
@@ -64,7 +68,7 @@ class PostInheritanceFilter(object):
             variants: list of (variant, check, inheritance) tuples
         
         Returns:
-        reutns list of tuples without CNV variants
+            returns list of tuples without CNV variants
         """
         
         # remove CNVs from the list of flagged variants
@@ -78,7 +82,13 @@ class PostInheritanceFilter(object):
         return  passed_vars
     
     def filter_by_maf(self, variants):
-        """ filter for llow MAF threshold, except for Biallelic variants
+        """ filter for low MAF threshold, except for Biallelic variants
+        
+        Args:
+            variants: list of (variant, check, inheritance) tuples
+        
+        Returns:
+            returns list of tuples without high maf variants
         """
         
         passed_vars = []
@@ -101,4 +111,60 @@ class PostInheritanceFilter(object):
                     logging.debug(str(var) + " dropped from low MAF in non-biallelic variant")
         
         return passed_vars
+    
+    def filter_polyphen(self, variants):
+        """ filter variants based on polyphen predictions
+        
+        filter out compound hets where both have benign predictions from 
+        polyphen, but retain compound hets where only one is polyphen benign. 
+        Also filter out single variants where polyphen predicts benign.
+        
+        Args:
+            variants: list of (variant, check, inheritance) tuples
+        
+        Returns:
+            returns list of tuples without polyphen benign variants
+        """
+        
+        passed_vars = []
+        
+        for (var, check, inh) in variants:
+            passes = False
+            
+            if "PolyPhen" not in var.child.info or \
+                    not var.child.info["PolyPhen"].startswith("benign"):
+                passes = True
+            
+            # check all of the other variants to see if any are in the same
+            # gene, compound_het, and polyphen benign
+            benign_match = False
+            for (alt_var, alt_check, alt_inh) in variants:
+                # ignore if we are looking at the same var, or in another gene
+                if alt_var == var or var.child.gene != alt_var.child.gene:
+                    continue
+                
+                if "compound_het" not in alt_check:
+                    continue
+                
+                if "PolyPhen" not in alt_var.child.info:
+                    continue
+                
+                if alt_var.child.info["PolyPhen"].startswith("benign"):
+                    benign_match = True
+                else:
+                    benign_match = False
+                    break
+            
+            if "compound_het" in check and not benign_match:
+                passes = True
+            
+            if passes:
+                passed_vars.append((var, check, inh))
+        
+        return passed_vars
+                
+            
+            
+        
+        
 

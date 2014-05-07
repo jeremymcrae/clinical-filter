@@ -254,16 +254,11 @@ class VcfInfo(object):
         
         Currently we exclude vars where the mutation ID (HGMD from VCF ID
         field) is unknown (ie "NA"), the vep consequence is missense_variant, 
-        and the MAF is > 0.005. We also exclude vars where the VEP consequence
-        is missense_variant, and the 
+        and the MAF is > 0.005.
         """
         
         mut = self.get_mutation_id()
         cq = self.info["CQ"]
-        
-        if cq == "missense_variant" and "PolyPhen" in self.info and \
-                self.info["PolyPhen"].startswith("benign"):
-            return False
         
         if mut == "NA" and cq == "missense_variant":
             maf = self.find_max_allele_frequency(self.tags["MAX_MAF"])

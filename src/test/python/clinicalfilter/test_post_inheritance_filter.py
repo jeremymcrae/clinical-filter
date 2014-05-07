@@ -235,6 +235,53 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         variants = [(snv_1, "single_variant", "Monoallelic")]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
+    def test_filter_polyphen(self):
+        """ check that filter_polyphen() works correctly
+        """
+        
+        snv_1 = self.create_var("1", snv=True)
+        snv_2 = self.create_var("1", snv=True)
+        snv_3 = self.create_var("1", snv=True)
+        snv_1.position = 1000
+        snv_2.position = 2000
+        snv_3.position = 3000
+        
+        variants = [(snv_1, "single_variant", "Biallelic"), \
+            (snv_2, "single_variant", "Biallelic")]
+        
+        # check that two vars without polyphen predictions pass
+        self.assertEqual(self.post_filter.filter_polyphen(variants), variants)
+        
+        # check that two compound_hets in the same gene, with polyphen benign,
+        # fail to pass the filter
+        snv_1.child.info["PolyPhen"] = "benign(0.01)"
+        snv_2.child.info["PolyPhen"] = "benign(0.01)"
+        variants = [(snv_1, "compound_het", "Biallelic"), \
+            (snv_2, "compound_het", "Biallelic")]
+        self.assertEqual(self.post_filter.filter_polyphen(variants), [])
+        
+        # check that if one var is not benign, both compound hets pass
+        snv_2.child.info["PolyPhen"] = "probably_damaging(0.99)"
+        self.assertEqual(self.post_filter.filter_polyphen(variants), variants)
+        
+        # check that if one var lacks a polyphen value, both compound hets pass
+        del snv_2.child.info["PolyPhen"]
+        self.assertEqual(self.post_filter.filter_polyphen(variants), variants)
+        
+        # check that single vars with polyphen benign fail
+        variants = [(snv_1, "single_variant", "Biallelic")]
+        self.assertEqual(self.post_filter.filter_polyphen(variants), [])
+        
+        # check if we have three compound_hets in the same gene, and one is
+        # polyphen not benign, then all compound hets in the gene still pass, 
+        # even if two of them have polyphen benign
+        snv_2.child.info["PolyPhen"] = "benign(0.01)"
+        snv_3.child.info["PolyPhen"] = "probably_damaging(0.99)"
+        variants = [(snv_1, "compound_het", "Biallelic"), \
+            (snv_2, "compound_het", "Biallelic"), \
+            (snv_3, "compound_het", "Biallelic")]
+        self.assertEqual(self.post_filter.filter_polyphen(variants), variants)
+        
         
         
         

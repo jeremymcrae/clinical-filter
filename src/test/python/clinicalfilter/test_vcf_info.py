@@ -267,19 +267,6 @@ class TestVcfInfoPy(unittest.TestCase):
         
         self.assertTrue(self.var.passes_multiple_filter())
         
-        # now check that non-missense variants work correctly
-        self.var.info["CQ"] = "temp"
-        self.assertTrue(self.var.passes_multiple_filter())
-        
-        # check that missense variants with benign polyphen predictions fail
-        self.var.info["CQ"] = "missense_variant"
-        self.var.info["PolyPhen"] = "benign(0)"
-        self.assertFalse(self.var.passes_multiple_filter())
-        
-        # check that missense variants without benign polyphen predictions pass
-        self.var.info["PolyPhen"] = "possibly_damaging(0.7)"
-        self.assertTrue(self.var.passes_multiple_filter())
-        
         # check that missense vars with NA mutation IDs but low MAF still pass
         self.var.id = "."
         self.var.set_mutation_id()
