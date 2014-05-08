@@ -288,10 +288,10 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         variants = [(snv_1, "compound_het", "Biallelic"), \
             (snv_2, "compound_het", "Biallelic")]
         
-        # check that two vars without polyphen annotations return true
+        # check that two vars without polyphen annotations return false
         self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
         
-        # check that two vars with polyphen benign return false
+        # check that two vars with polyphen benign return true
         snv_1.child.info["PolyPhen"] = "benign(0.01)"
         snv_2.child.info["PolyPhen"] = "benign(0.01)"
         self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
@@ -302,7 +302,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # check that if we are checking a benign variant, and there are more
         # than two compound hets to check in the gene, if any one of those
-        # variants would prevent a match, then the function returns False
+        # variants would prevent a match, then the function returns false
         snv_3.child.info["PolyPhen"] = "benign(0.01)"
         variants = [(snv_1, "compound_het", "Biallelic"), \
             (snv_2, "compound_het", "Biallelic"),
@@ -318,6 +318,12 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         variants = [(snv_1, "compound_het", "Biallelic"), \
             (snv_2, "compound_het", "Biallelic")]
         self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
+        
+        # check that single variants in the same gene still return false
+        variants = [(snv_1, "compound_het", "Biallelic"), \
+            (snv_2, "single_variant", "Biallelic")]
+        self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
+        
         
         
         

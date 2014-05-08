@@ -202,18 +202,9 @@ class VcfInfo(object):
                 passes = self.passes_list(value, filter_values)
             elif condition == "smaller_than":
                 passes = self.passes_smaller_than(value, filter_values)
-                # passes = self.passes_smaller_than(value, filter_values, key)
                 
             if passes == False:
                 break
-        
-        # finally, check for some specific multiple requirements
-        if passes and not self.passes_multiple_filter():
-            key = "multiplefilter:cq=missense,mutation!=NA,maf>0.005"
-            value = ""
-            condition = ""
-            filter_values = ""
-            passes = False
         
         if passes == False and self.show_fail_point:
             self.show_fail(key, value, condition, filter_values)
@@ -230,7 +221,6 @@ class VcfInfo(object):
         return value in filter_values
     
     def passes_smaller_than(self, value, filter_values):
-    # def passes_smaller_than(self, value, filter_values, key):
         """ checks whether values are not within a filter range
         """
         
@@ -248,27 +238,3 @@ class VcfInfo(object):
             return True
         
         return value <= filter_values and self.is_number(value)
-    
-    def passes_multiple_filter(self):
-        """ a few variants need filtering across multiple requirements
-        
-        Currently we exclude vars where the mutation ID (HGMD from VCF ID
-        field) is unknown (ie "NA"), the vep consequence is missense_variant, 
-        and the MAF is > 0.005.
-        """
-        
-        mut = self.get_mutation_id()
-        cq = self.info["CQ"]
-        
-        if mut == "NA" and cq == "missense_variant":
-            maf = self.find_max_allele_frequency(self.tags["MAX_MAF"])
-            if maf == "NA":
-                maf = 0
-            else:
-                maf = float(maf)
-            
-            if maf > 0.005:
-                return False
-        
-        return True
-

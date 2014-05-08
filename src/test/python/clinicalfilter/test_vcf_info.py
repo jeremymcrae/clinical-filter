@@ -255,27 +255,6 @@ class TestVcfInfoPy(unittest.TestCase):
         
         # check for None value
         self.assertTrue(self.var.passes_smaller_than(None, 1))
-    
-    def test_passes_multiple_filter(self):
-        """ test that test_passes_multiple_filter() operates correctly
-        """
-        
-        # make a SNP that passes the multiple filter
-        self.var.info["AF_AFR"] = "0.001"
-        self.var.id = "CM00001"
-        self.var.set_mutation_id()
-        
-        self.assertTrue(self.var.passes_multiple_filter())
-        
-        # check that missense vars with NA mutation IDs but low MAF still pass
-        self.var.id = "."
-        self.var.set_mutation_id()
-        self.var.info["CQ"] = "missense_variant"
-        self.assertTrue(self.var.passes_multiple_filter())
-        
-        # check that missense vars with NA mutation IDs and high MAF fail
-        self.var.info["AF_AFR"] = "0.00501"
-        self.assertFalse(self.var.passes_multiple_filter())
 
 
 if __name__ == '__main__':
