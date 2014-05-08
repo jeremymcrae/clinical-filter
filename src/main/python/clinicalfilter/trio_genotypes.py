@@ -108,6 +108,19 @@ class TrioGenotypes(object):
     def get_gene(self):
         return self.gene
     
+    def get_de_novo_genotype(self):
+        """ get the de novo genotype combination for the chromosome/sex
+        """
+        
+        # set the standard de novo genotype combination
+        de_novo_genotype = (1,0,0)
+        
+        # account for X chrom de novos in males
+        if self.inheritance_type == "XChrMale":
+            de_novo_genotype = (2,0,0)
+        
+        return de_novo_genotype
+    
     def passes_de_novo_checks(self, family):
         """ checks if the child's de novo variants passes filters
         
@@ -129,29 +142,17 @@ class TrioGenotypes(object):
         # whether the variant is de novo, I don't know how this is assigned. The
         # project filter field indicates an internal filter, curently whether 
         # the variant passed MAF, alternate frequency, and segmental duplication
-         # criteria.
-        de_novo_snp_field = "DENOVO-SNP"
-        de_novo_indel_field = "DENOVO-INDEL"
-        # project_filter_field = "TEAM29_FILTER"
-        # project_filter_field = "DENOVOGEAR_FILTER"
+        # criteria.
+        de_novo_field = set(["DENOVO-SNP", "DENOVO-INDEL"])
         project_filter_field = ["TEAM29_FILTER", "DENOVOGEAR_FILTER"]
         
-        # set the standard de novo genotype combination
-        de_novo_genotype = (1,0,0)
-        
-        # account for X chrom de novos in males
-        if self.inheritance_type == "XChrMale" and family.child.is_male():
-            de_novo_genotype = (2,0,0)
-        
-        # get the genotypes for the trio
-        trio_genotype = self.get_trio_genotype()
         # if the variant is not de novo, don't worry about de novo filtering
-        if trio_genotype != de_novo_genotype:
+        if self.get_trio_genotype() != self.get_de_novo_genotype():
             return True
         
-        # check the VCF record to see whether the variant has been screened out
-        if de_novo_snp_field not in self.child.info and \
-           de_novo_indel_field not in self.child.info:
+        # check the VCF record to see whether the variant has been screened out.
+        # Either DENOVO-SNP or DENOVO-INDEL should be in the info.
+        if len(set(self.child.info) & de_novo_field) < 1:
             return False
         
         if "PP_DNM" in self.child.format and \

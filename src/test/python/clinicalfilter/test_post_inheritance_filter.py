@@ -15,14 +15,6 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         """ define a default VcfInfo object
         """
         
-        chrom = "1"
-        pos = "15000000"
-        snp_id = "CM00001"
-        ref = "A"
-        alt = "G"
-        qual = "50"
-        filt = "PASS"
-        
         variants = []
         snv = self.create_var("1", True)
         cnv = self.create_var("1", False)
@@ -281,6 +273,55 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
             (snv_2, "compound_het", "Biallelic"), \
             (snv_3, "compound_het", "Biallelic")]
         self.assertEqual(self.post_filter.filter_polyphen(variants), variants)
+    
+    def test_has_compound_match(self):
+        """ check that has_compound_match() works correctly
+        """
+        
+        snv_1 = self.create_var("1", snv=True)
+        snv_2 = self.create_var("1", snv=True)
+        snv_3 = self.create_var("1", snv=True)
+        snv_1.position = 1000
+        snv_2.position = 2000
+        snv_3.position = 3000
+        
+        variants = [(snv_1, "compound_het", "Biallelic"), \
+            (snv_2, "compound_het", "Biallelic")]
+        
+        # check that two vars without polyphen annotations return true
+        self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
+        
+        # check that two vars with polyphen benign return false
+        snv_1.child.info["PolyPhen"] = "benign(0.01)"
+        snv_2.child.info["PolyPhen"] = "benign(0.01)"
+        self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
+        
+        # check that having one var not polyphen benign returns false
+        snv_2.child.info["PolyPhen"] = "probably_damaging(0.99)"
+        self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
+        
+        # check that if we are checking a benign variant, and there are more
+        # than two compound hets to check in the gene, if any one of those
+        # variants would prevent a match, then the function returns False
+        snv_3.child.info["PolyPhen"] = "benign(0.01)"
+        variants = [(snv_1, "compound_het", "Biallelic"), \
+            (snv_2, "compound_het", "Biallelic"),
+            (snv_3, "compound_het", "Biallelic")]
+        self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
+        
+        # check that de novo matches return false
+        snv_1.child.info["PolyPhen"] = "benign(0.01)"
+        snv_2.child.info["PolyPhen"] = "benign(0.01)"
+        snv_2.child.genotype = 1
+        snv_2.mother.genotype = 0
+        snv_2.father.genotype = 0
+        variants = [(snv_1, "compound_het", "Biallelic"), \
+            (snv_2, "compound_het", "Biallelic")]
+        self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
+        
+        
+        
+        
         
         
         

@@ -132,28 +132,13 @@ class PostInheritanceFilter(object):
             passes = False
             
             if "PolyPhen" not in var.child.info or \
-                    not var.child.info["PolyPhen"].startswith("benign"):
+                    not var.child.info["PolyPhen"].startswith("benign") or \
+                    var.get_trio_genotype() == var.get_de_novo_genotype():
                 passes = True
             
             # check all of the other variants to see if any are in the same
             # gene, compound_het, and polyphen benign
-            benign_match = False
-            for (alt_var, alt_check, alt_inh) in variants:
-                # ignore if we are looking at the same var, or in another gene
-                if alt_var == var or var.child.gene != alt_var.child.gene:
-                    continue
-                
-                if "compound_het" not in alt_check:
-                    continue
-                
-                if "PolyPhen" not in alt_var.child.info:
-                    continue
-                
-                if alt_var.child.info["PolyPhen"].startswith("benign"):
-                    benign_match = True
-                else:
-                    benign_match = False
-                    break
+            benign_match = self.has_compound_match(var, variants)
             
             if "compound_het" in check and not benign_match:
                 passes = True
@@ -162,9 +147,46 @@ class PostInheritanceFilter(object):
                 passed_vars.append((var, check, inh))
         
         return passed_vars
-                
+    
+    def has_compound_match(self, var, variants):
+        """ for a compound var, find if its partner is also polyphen benign
+        
+        Check all of the other variants to see if any are in the same
+        gene, compound_het, and polyphen benign.
+        
+        Args:
+            var: TrioGenotypes object
+            variants: list of (variant, check, inheritance) tuples
+        
+        Returns:
+            True/false for whether there is a compound het match
+        """
+        
+        benign_match = False
+        for (alt_var, alt_check, alt_inh) in variants:
+            # ignore if we are looking at the same var, or in another gene
+            if alt_var == var or var.child.gene != alt_var.child.gene:
+                continue
             
+            if "compound_het" not in alt_check:
+                continue
             
+            if "PolyPhen" not in alt_var.child.info:
+                continue
+            
+            # exclude de novos
+            if alt_var.get_trio_genotype() == alt_var.get_de_novo_genotype():
+                continue
+            
+            if alt_var.child.info["PolyPhen"].startswith("benign"):
+                benign_match = True
+            else:
+                benign_match = False
+                break
+        
+        return benign_match
+        
+        
         
         
 

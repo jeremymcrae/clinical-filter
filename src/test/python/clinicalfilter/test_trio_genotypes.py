@@ -138,6 +138,21 @@ class TestTrioGenotypesPy(unittest.TestCase):
         self.var.child.info["DENOVO-SNP"] = True
         self.assertTrue(self.var.passes_de_novo_checks(self.trio))
     
+    def test_get_de_novo_genotype(self):
+        """ check that get_de_novo_genotype() works correctly
+        """
+        
+        self.var.inheritance_type = "autosomal"
+        self.assertEqual(self.var.get_de_novo_genotype(), (1, 0, 0))
+        
+        self.var.inheritance_type = "XChrFemale"
+        self.assertEqual(self.var.get_de_novo_genotype(), (1, 0, 0))
+        
+        # we double the alt count for males on the X, so a de novo genotype
+        # differes from the other situations
+        self.var.inheritance_type = "XChrMale"
+        self.assertEqual(self.var.get_de_novo_genotype(), (2, 0, 0))
+    
     def test_get_trio_genotype(self):
         """ test that get_trio_genotype() works correctly
         """
