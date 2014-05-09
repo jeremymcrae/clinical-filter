@@ -32,7 +32,7 @@ from clinicalfilter.post_inheritance_filter import PostInheritanceFilter
 from clinicalfilter.reporting import Report
 from clinicalfilter.load_options import LoadOptions, get_options
 
-class ClinicalFilter(LoadOptions, Report):
+class ClinicalFilter(LoadOptions):
     """ filters trios for candidate variants that might contribute to a 
     probands disorder.
     """
@@ -42,15 +42,13 @@ class ClinicalFilter(LoadOptions, Report):
         """
         
         self.set_definitions(opts)
-        self.first_run = True
+        self.report = Report(self.output_path, self.export_vcf, self.ID_mapper,
+            self.tags_dict, self.known_genes_date)
         self.counter = 0
     
     def filter_trios(self):
         """ loads trio variants, and screens for candidate variants
         """
-        
-        if self.first_run:
-            self.printReportInputInfo(" Clinical filtering analysis")
         
         # load the trio paths into the current path setup
         for family_ID in sorted(self.families):
@@ -70,19 +68,11 @@ class ClinicalFilter(LoadOptions, Report):
                 self.family.set_child_examined()
             self.counter += 1
         
-        # make sure we close the output file off
-        if self.output_path is not None:
-            self.output.close()
-        
         sys.exit(0)
     
     def analyse_trio(self, variants):
         """identify candidate variants in exome data for a single trio.
         """
-        
-        # report the variants that were found
-        if self.first_run and self.output_path is not None:
-            self.output = open(self.output_path, "w")
         
         # organise variants by gene, then find variants that fit
         # different inheritance models
@@ -101,19 +91,24 @@ class ClinicalFilter(LoadOptions, Report):
         found_vars = post_filter.filter_variants()
         
         # export the results to either tab-separated table or VCF format
-        if self.output_path is not None:
-            self.save_results(found_vars)
-        if self.export_vcf is not None:
-            self.save_vcf(found_vars)
-        self.first_run = False
+        self.report.export_data(found_vars, self.family, \
+            self.vcf_loader.child_header, self.vcf_provenance)
     
     def create_gene_dict(self, variants):
         """creates dictionary of variants indexed by gene
+        
+        Args:
+            variants: list of TrioGenotypes objects
+        
+        Returns:
+            dictionary of variants indexed by HGNC symbols
         """
         
         # organise the variants into entries for each gene
         genes_dict = {}
         for var in variants:
+            # cnvs can span mulitple genes, so we need to check each gene 
+            # separately, and then collapse duplicates later
             if var.is_cnv():
                 for gene in var.child.get_genes():
                     if gene not in genes_dict:
@@ -136,15 +131,17 @@ class ClinicalFilter(LoadOptions, Report):
         Args:
             variants: list of TrioGenotype objects
             gene: gene ID as string
+        
+        Returns:
+            list of variants that pass inheritance checks
         """
         
         # get the inheritance for the gene (monoalleleic, biallelic, hemizygous
         # etc), but allow for times when we haven't specified a list of genes 
         # to use
+        gene_inh = None
         if self.known_genes is not None and gene in self.known_genes:
             gene_inh = self.known_genes[gene]["inheritance"]
-        else:
-            gene_inh = None
         
         # ignore intergenic variants
         if gene is None:
@@ -168,7 +165,7 @@ class ClinicalFilter(LoadOptions, Report):
             variants: list of candidate variants
         
         Returns:
-            list of (variant, check_type, inheritance), with duplicates 
+            list of (variant, check_type, inheritance) tuples, with duplicates 
             excluded, and originals modified to show both mechanisms
         """
         
