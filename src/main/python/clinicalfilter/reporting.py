@@ -21,7 +21,11 @@ class Report(object):
             export vcf: path string to export VCF files(s), or None
             ID_mapper: original_ID - alternate ID dictionary for study probands
             tags_dict: dictionary of alternate tags for VCF fields
+<<<<<<< HEAD
             known_genes_date: date the known gene list was generated, or None
+=======
+            known_genes_date: date the list of known genes was generated
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         """
         
         self.output_path = output_path
@@ -39,9 +43,15 @@ class Report(object):
                 "trio_genotype", "mom_aff", "dad_aff", "result"]) + "\n")
             output.close()
         
+<<<<<<< HEAD
         self._log_run_details()
     
     def _clinicalFilterVersion(self):
+=======
+        self.__log_run_details()
+    
+    def __clinicalFilterVersion(self):
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         """ get the version (git tag) from clinicalfilter.version.version()
         
         Returns:
@@ -59,7 +69,11 @@ class Report(object):
         
         return clinical_filter_version
     
+<<<<<<< HEAD
     def _log_run_details(self):
+=======
+    def __log_run_details(self):
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         """ log the python version and run date
         """
         
@@ -84,14 +98,24 @@ class Report(object):
         # export the results in tabular format
         if self.output_path is not None:
             self.output = open(self.output_path, "a")
+<<<<<<< HEAD
             self._save_tabular(variants)
+=======
+            self.__save_tabular(variants)
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
             self.output.close()
         
         # export the results in vcf format
         if self.export_vcf is not None:
+<<<<<<< HEAD
             self._save_vcf(variants, vcf_header, vcf_provenance)
     
     def _get_output_line(self, candidate, dad_aff, mom_aff, alternate_ID):
+=======
+            self.__save_vcf(variants, vcf_header, vcf_provenance)
+    
+    def __get_output_line(self, candidate, dad_aff, mom_aff, alternate_ID):
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         """ gets a tab-separated string for output
         
         Args:
@@ -131,7 +155,11 @@ class Report(object):
         
         return output_line
     
+<<<<<<< HEAD
     def _save_tabular(self, variants):
+=======
+    def __save_tabular(self, variants):
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         """ exports candidate variants and their details
         
         Args:
@@ -158,7 +186,11 @@ class Report(object):
         if len(variants) > 0: 
             self.output.write("\n")
     
+<<<<<<< HEAD
     def _get_provenance(self, provenance, member):
+=======
+    def __get_provenance(self, provenance, member):
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         """ gets the VCF filename, checksum and VCF date for family members
         
         Args:
@@ -176,7 +208,11 @@ class Report(object):
         
         return [ID, checksum, basename, date]
     
+<<<<<<< HEAD
     def _get_vcf_export_path(self):
+=======
+    def __get_vcf_export_path(self):
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         """ get the path for writing a VCF file
         
         Since we optionally define a folder, or path for exporting, we need to 
@@ -201,7 +237,11 @@ class Report(object):
         
         return vcf_path
     
+<<<<<<< HEAD
     def _make_vcf_header(self, header, vcf_provenance):
+=======
+    def __make_vcf_header(self, header, vcf_provenance):
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         """ start a vcf header using the proband's header, and add extra lines
         
         Args:
@@ -223,7 +263,11 @@ class Report(object):
         header.append('##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="The inheritance of the variant in the trio (biparental, paternal, maternal, deNovo).">\n')
         
         header.append("##ClinicalFilterRunDate={0}\n".format(datetime.date.today()))
+<<<<<<< HEAD
         header.append("##ClinicalFilterVersion={0}\n".format(self._clinicalFilterVersion()))
+=======
+        header.append("##ClinicalFilterVersion={0}\n".format(self.__clinicalFilterVersion()))
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         
         filter_list = ["single_variant", "compound_het"]
         header.append("##ClinicalFilterHistory={0}\n".format(",".join(filter_list)))
@@ -232,16 +276,26 @@ class Report(object):
             header.append("##ClinicalFilterKnownGenesDate={0}\n".format(self.known_genes_date))
         
         # add details of the input VCF files used for filtering
+<<<<<<< HEAD
         header += self._get_provenance(vcf_provenance[0], "proband")
         header += self._get_provenance(vcf_provenance[1], "maternal")
         header += self._get_provenance(vcf_provenance[2], "paternal")
+=======
+        header += self.__get_provenance(vcf_provenance[0], "proband")
+        header += self.__get_provenance(vcf_provenance[1], "maternal")
+        header += self.__get_provenance(vcf_provenance[2], "paternal")
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         
         # add the final header line back in
         header.append(final_header_line)
         
         return header
     
+<<<<<<< HEAD
     def _get_parental_inheritance(self, var):
+=======
+    def __get_parental_inheritance(self, var):
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         """ figures out the parental inheritance for SNVs
         
         Args:
@@ -268,7 +322,11 @@ class Report(object):
         
         return parental_inheritance
     
+<<<<<<< HEAD
     def _save_vcf(self, variants, header, vcf_provenance):
+=======
+    def __save_vcf(self, variants, header, vcf_provenance):
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         """ exports a VCF file for the childs candidate variants.
         
         Args:
@@ -277,7 +335,11 @@ class Report(object):
             vcf_provenance: list of (checksum, path, date) tuples for family
         """
         
+<<<<<<< HEAD
         child_lines = self._make_vcf_header(header, vcf_provenance)
+=======
+        child_lines = self.__make_vcf_header(header, vcf_provenance)
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         
         for candidate in sorted(variants):
             var = candidate[0]
@@ -288,7 +350,11 @@ class Report(object):
             gene_inheritance = ";ClinicalFilterGeneInheritance=" + candidate[2]
             vcf_line[7] += gene_inheritance + filter_type
             
+<<<<<<< HEAD
             parental_inheritance = self._get_parental_inheritance(var)
+=======
+            parental_inheritance = self.__get_parental_inheritance(var)
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
             
             if "INHERITANCE" not in vcf_line[8]:
                 vcf_line[8] += ":INHERITANCE"
@@ -301,7 +367,11 @@ class Report(object):
             
             child_lines.append("\t".join(vcf_line) + "\n")
         
+<<<<<<< HEAD
         vcf_path = self._get_vcf_export_path()
+=======
+        vcf_path = self.__get_vcf_export_path()
+>>>>>>> 9065801ea173aff44ea02d2176ab255db82f5a47
         # join the list of lines for the VCF file into a single string
         child_lines = "".join(child_lines)
         if sys.version_info[0] == 2:
