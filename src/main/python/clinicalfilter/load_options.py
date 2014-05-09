@@ -94,8 +94,7 @@ class LoadOptions(object):
                 self.filters[tag] = ["list", self.known_genes]
             
             # Attempt to recover a date for the dictionary of genes
-            if self.options.genes_date is not None:
-                self.known_genes_date = self.options.genes_date
+            self.known_genes_date = self.options.genes_date
 
         else:
             self.known_genes = None
