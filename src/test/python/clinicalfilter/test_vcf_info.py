@@ -17,11 +17,10 @@ class TestVcfInfoPy(unittest.TestCase):
         snp_id = "CM00001"
         ref = "A"
         alt = "G"
-        qual = "50"
         filt = "PASS"
         
         # set up a SNV object, since SNV inherits VcfInfo
-        self.var = SNV(chrom, pos, snp_id, ref, alt, qual, filt)
+        self.var = SNV(chrom, pos, snp_id, ref, alt, filt)
         
         self.default_info = "HGNC=ATRX;CQ=missense_variant;random_tag"
         self.default_tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": \

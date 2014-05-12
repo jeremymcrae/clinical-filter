@@ -45,11 +45,10 @@ class TestInheritancePy(unittest.TestCase):
         snp_id = "."
         ref = "A"
         alt = "G"
-        qual = "50"
         filt = "PASS"
         
         # set up a SNV object, since SNV inherits VcfInfo
-        var = SNV(chrom, pos, snp_id, ref, alt, qual, filt)
+        var = SNV(chrom, pos, snp_id, ref, alt, filt)
         
         tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
         
@@ -71,11 +70,10 @@ class TestInheritancePy(unittest.TestCase):
         snp_id = "."
         ref = "A"
         alt = "<DUP>"
-        qual = "50"
         filt = "PASS"
         
         # set up a SNV object, since SNV inherits VcfInfo
-        var = CNV(chrom, pos, snp_id, ref, alt, qual, filt)
+        var = CNV(chrom, pos, snp_id, ref, alt, filt)
         
         tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
         

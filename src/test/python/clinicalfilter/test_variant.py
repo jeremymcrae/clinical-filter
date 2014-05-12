@@ -17,10 +17,9 @@ class TestVariantPy(unittest.TestCase):
         snp_id = "."
         ref = "A"
         alt = "G"
-        qual = "50"
         filt = "PASS"
         
-        self.var = Variant(chrom, pos, snp_id, ref, alt, qual, filt)
+        self.var = Variant(chrom, pos, snp_id, ref, alt, filt)
     
     def test_set_gender_unknown(self):
         """ tests set_gender(), and its implications on the inheritance type

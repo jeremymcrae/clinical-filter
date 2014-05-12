@@ -5,7 +5,15 @@ class Variant(object):
     """ generic functions for variants
     """
     
-    def __init__(self, chrom, position, snp_id, ref_allele, alt_allele, quality, filter):
+    # define some codes used in ped files to identify male and female sexes
+    male_codes = set(["1", "m", "M", "male"])
+    female_codes = set(["2", "f", "F", "female"])
+    
+    x_pseudoautosomal_regions = [(60001, 2699520), (154930290, 155260560), \
+        (88456802, 92375509)]
+    y_pseudoautosomal_regions = [(10001, 2649520), (59034050, 59363566)]
+    
+    def __init__(self, chrom, position, snp_id, ref_allele, alt_allele, filter):
         """ initialise the object with the definition values
         """
         
@@ -17,16 +25,8 @@ class Variant(object):
         self.ref_allele = ref_allele
         self.alt_allele = alt_allele
         
-        self.quality = quality
+        # self.quality = quality
         self.filter = filter
-        
-        # define some codes used in ped files to identify male and female sexes
-        self.male_codes = set(["1", "m", "M", "male"])
-        self.female_codes = set(["2", "f", "F", "female"])
-        
-        self.x_pseudoautosomal_regions = [(60001, 2699520), (154930290, 155260560), \
-            (88456802, 92375509)]
-        self.y_pseudoautosomal_regions = [(10001, 2649520), (59034050, 59363566)]
         
     def set_gender(self, gender):
         """ sets the gender of the individual for the variant

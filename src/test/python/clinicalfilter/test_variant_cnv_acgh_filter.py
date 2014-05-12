@@ -19,11 +19,10 @@ class TestAcghCnvPy(unittest.TestCase):
         snp_id = "."
         ref = "A"
         alt = "<DUP>"
-        qual = "50"
         filt = "PASS"
         
         # set up a SNV object, since SNV inherits VcfInfo
-        cnv = CNV(chrom, pos, snp_id, ref, alt, qual, filt)
+        cnv = CNV(chrom, pos, snp_id, ref, alt, filt)
         self.var = ACGH_CNV(cnv)
         
         tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": \

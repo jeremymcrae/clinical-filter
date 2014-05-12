@@ -100,25 +100,6 @@ class LoadVCFs(object):
         
         return header
     
-    def split_vcf_line(self, line):
-        """ splits a tab-separated vcf line
-        """
-        
-        line = line.strip().split("\t")
-        
-        self.chrom = line[0]
-        self.position = line[1]
-        self.snp_id = line[2]
-        self.ref_allele = line[3]
-        self.alt_allele = line[4]
-        self.quality = line[5]
-        self.filter_value = line[6]
-        self.info_values = line[7]
-        self.format_keys = line[8]
-        self.sample_values = line[9]
-        
-        return line
-    
     def add_single_variant(self, vcf, var, gender, line):
         """ adds a single variant to a vcf dictionary indexed by position key
         """
@@ -126,9 +107,11 @@ class LoadVCFs(object):
         if not var.has_info():
             var.add_info(self.info_values, self.tags_dict)
         
-        var.add_format(self.format_keys, self.sample_values)
+        # var.add_format(self.format_keys, self.sample_values)
+        var.add_format(line[8], line[9])
         var.add_vcf_line(line)
         var.set_gender(gender)
+        
         try:
             var.set_genotype()
             key = var.get_key()
@@ -140,6 +123,14 @@ class LoadVCFs(object):
     
     def find_vcf_definitions(self, path, header):
         """ get provenance information for a vcf path
+        
+        Args:
+            path: path to VCF file
+            header: list of header lines
+        
+        Returns:
+            returns a tuple of sha1 VCF file hash, name of VCF file (without 
+            directory), and date the VCF file was generated
         """ 
         
         try:
@@ -160,21 +151,51 @@ class LoadVCFs(object):
         
         return (vcf_checksum, vcf_basename, vcf_date)
     
-    def include_variant(self, var, child_variants, filters):
+    def construct_variant(self, line, gender):
+        """ constructs a Variant object for a VCF line, specific to the variant type
+        
+        Args:
+            line: list of elements of a single sample VCF line:
+                [chrom, position, snp_id, ref_allele, alt_allele, quality, 
+                filter_value, info, format_keys, format_values]
+            gender: gender of the individual to whom the variant line belongs 
+                (eg "1" or "M" for male, "2", or "F" for female).
+        
+        Returns:
+            returns a Variant object
+        """
+        
+        # CNVs are found by their alt_allele values, as either <DUP>, or <DEL>
+        if line[4] == "<DUP>" or line[4] == "<DEL>":
+            var = CNV(line[0], line[1], line[2], line[3], line[4], line[6])
+            var.add_info(line[7], self.tags_dict)
+            # CNVs require the format values for filtering
+            var.set_gender(gender)
+            var.add_format(line[8], line[9])
+            if "HGNC" in self.filters:
+                var.fix_gene_IDs(self.filters["HGNC"][1])
+        else:
+            var = SNV(line[0], line[1], line[2], line[3], line[4], line[6])
+            var.add_info(line[7], self.tags_dict)
+        
+        return var
+    
+    def include_variant(self, line, child_variants, filters, gender):
         """ check if we want to include the variant or not
         """
         
         use_variant = False
         if child_variants:
-            key = var.get_key()
+            key = (line[0], line[1])
             if key in self.child_vcf.keys():
                 use_variant = True
-            elif self.alt_allele == "<DUP>" or self.alt_allele == "<DEL>":
+            elif line[4] == "<DUP>" or line[4] == "<DEL>":
+                var = self.construct_variant(line, gender)
                 if self.cnv_matcher.has_match(var):
                     use_variant = True
         elif filters:
-            if not var.has_info():
-                var.add_info(self.info_values, self.tags_dict)
+            
+            var = self.construct_variant(line, gender)
             if var.passes_filters(self.filters):
                 use_variant = True
         else:
@@ -211,28 +232,11 @@ class LoadVCFs(object):
         
         vcf = {}
         for line in f:
-            if line.startswith("#"):
-                continue
-            
-            line = self.split_vcf_line(line)
-            
-            if self.alt_allele == "<DUP>" or self.alt_allele == "<DEL>":
-                var = CNV(self.chrom, self.position, self.snp_id, \
-                    self.ref_allele, self.alt_allele, self.quality, \
-                    self.filter_value)
-                # we have to set CNV values to be able to filter
-                var.add_info(self.info_values, self.tags_dict)
-                var.set_gender(gender)
-                var.add_format(self.format_keys, self.sample_values)
-                if "HGNC" in self.filters:
-                    var.fix_gene_IDs(self.filters["HGNC"][1])
-            else:
-                var = SNV(self.chrom, self.position, self.snp_id, \
-                    self.ref_allele, self.alt_allele, self.quality, \
-                    self.filter_value)
+            line = line.strip().split("\t")
             
             # check if we want to include the variant or not
-            if self.include_variant(var, child_variants, filters):
+            if self.include_variant(line, child_variants, filters, gender):
+                var = self.construct_variant(line, gender)
                 self.add_single_variant(vcf, var, gender, line)
         
         # logging.debug(path)
@@ -304,6 +308,9 @@ class LoadVCFs(object):
             parental_vcf: dict of parental variants, indexed by position key
             gender: gender of the parent
             matcher: cnv matcher for parent
+        
+        Returns:
+            returns a Variant object, matched to the proband's variant
         """
         
         if isinstance(var, CNV):
@@ -311,14 +318,14 @@ class LoadVCFs(object):
                 overlap_key = matcher.get_overlap_key(var.get_key())
                 var = parental_vcf[overlap_key]
             else:
-                var = CNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.quality, var.filter)
+                var = CNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.filter)
                 var.set_gender(gender)
                 var.set_default_genotype()
         else:
             if var.get_key() in parental_vcf:
                 var = parental_vcf[var.get_key()]
             else:
-                var = SNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.quality, var.filter)
+                var = SNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.filter)
                 var.set_gender(gender)
                 var.set_default_genotype()
         

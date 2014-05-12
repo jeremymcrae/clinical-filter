@@ -8,11 +8,7 @@ class VcfInfo(object):
     filtering criteria.
     """
     
-    def __init__(self):
-        """
-        """
-        
-        self.show_fail_point = False
+    show_fail_point = False
     
     def add_info(self, info_values, tags):
         """Parses the INFO column from VCF files.

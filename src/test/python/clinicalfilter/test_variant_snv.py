@@ -17,11 +17,10 @@ class TestVariantSnvPy(unittest.TestCase):
         snp_id = "."
         ref = "A"
         alt = "G"
-        qual = "50"
         filt = "PASS"
         
         # set up a SNV object, since SNV inherits VcfInfo
-        self.var = SNV(chrom, pos, snp_id, ref, alt, qual, filt)
+        self.var = SNV(chrom, pos, snp_id, ref, alt, filt)
         
         tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
         
