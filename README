@@ -15,6 +15,10 @@ python clinical_filter.py \
     --ped temp_name.ped \
     --filter filters.txt \
     --tags tags.txt \
-    --known-genes known_genes.txt \
-    --alternate-ids alternate_ids.txt \
-    --output output_name.txt
+    --syndrome-regions regions_filename.txt \ # optional
+    --known-genes known_genes.txt \ # optional (but recommended)
+    --known-genes-date 2014-01-01 \ # optional
+    --alternate-ids alternate_ids.txt \ # optional
+    --output output_name.txt \ # optional
+    -export-vcf vcf_filename_or_directory # optional
+

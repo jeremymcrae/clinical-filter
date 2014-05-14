@@ -201,8 +201,8 @@ def main():
     numeric_level = getattr(logging, loglevel.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError("Invalid log level: %s" % loglevel)
-    if options.ped_path is not None:
-        log_filename = options.ped_path + ".log"
+    if options.ped is not None:
+        log_filename = options.ped + ".log"
     else:
         log_filename = "clinical-filter.log"
     logging.basicConfig(level=numeric_level, filename=log_filename)
