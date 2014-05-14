@@ -51,10 +51,10 @@ class VcfInfo(object):
         
         # sometimes the variant lacks an HGNC field
         if "HGNC" not in self.info:
-            if "gene" in self.info:
-                self.gene = self.info["gene"]
-            else:
+            if "gene" not in self.info:
                 self.gene = None
+            else:
+                self.gene = self.info["gene"]
         else:
             self.gene = self.info["HGNC"]
     
@@ -62,9 +62,9 @@ class VcfInfo(object):
         """ makes sure a consequence field is available in the info dict
         """
         
-        for consequence in self.tags["consequence"]:
-            if consequence in self.info:
-                self.info["CQ"] = self.info[consequence]
+        # for consequence in self.tags["consequence"]:
+        #     if consequence in self.info:
+        #         self.info["CQ"] = self.info[consequence]
         
         if "CQ" not in self.info:
             self.info["CQ"] = None

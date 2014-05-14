@@ -104,8 +104,8 @@ class LoadVCFs(object):
         """ adds a single variant to a vcf dictionary indexed by position key
         """
         
-        if not var.has_info():
-            var.add_info(self.info_values, self.tags_dict)
+        # if not var.has_info():
+        #     var.add_info(self.info_values, self.tags_dict)
         
         # var.add_format(self.format_keys, self.sample_values)
         var.add_format(line[8], line[9])
