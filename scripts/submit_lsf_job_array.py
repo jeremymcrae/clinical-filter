@@ -1,5 +1,9 @@
-""" a quick script to process all the trios efficiently on the farm as a job array. Splits trios in
-a PED file across multiple ped files in order to analyse them simultaneously.
+""" a helper script to process all the trios efficiently on the farm as a job 
+array. Splits trios in a PED file across multiple ped files in order to run 
+them in parallel. 
+
+Not recommended for use, as this is very scrappy code, and highly user-specific,
+but it works if all the files are in the expected locations.
 """
 
 import math
@@ -8,7 +12,7 @@ import random
 import os
 import time
 import glob
-import optparse
+import argparse
 
 home_folder = "/nfs/users/nfs_j/jm33/"
 app_folder = os.path.join(home_folder, "apps", "clinical-filter")
@@ -17,10 +21,10 @@ filter_code = os.path.join(app_folder, "src", "main", "python", "clinical_filter
 filters = os.path.join(app_folder, "config", "filters.txt")
 tag_names = os.path.join(app_folder, "config", "tags.txt")
 
-datafreeze = "/nfs/ddd0/Data/datafreeze/1139trios_20131030/"
+datafreeze = "/nfs/ddd0/Data/datafreeze/1133trios_20131218/"
 known_genes = os.path.join(datafreeze, "DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv")
 alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.private.txt")
-individuals_filename = os.path.join(datafreeze, "family_relationships.shared.20131206.txt")
+individuals_filename = os.path.join(datafreeze, "family_relationships.shared.txt")
 working_vcfs_filename = os.path.join(datafreeze, "all_working_paths.private.txt")
 syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
     
@@ -28,16 +32,17 @@ def get_options():
     """ gets the options from the command line
     """
     
-    parser = optparse.OptionParser()
-    parser.add_option('--ped', dest='ped_path', default=None, help='path of the ped file (default=construct from DDD datasets)')
-    parser.add_option('--log', dest='loglevel', help='level of logging to use (default=all)')
-    parser.add_option('--ddg2p', dest='ddg2p_path', default=known_genes, help='optional path to the ddg2p file to use (default = current DDD DDG2P file)')
-    parser.add_option('--njobs', dest='n_jobs', default=100, help='number of jobs you want to divide the run across')
-    parser.add_option('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
+    parser = argparse.ArgumentParser(description="Submit trio analysis to an \
+        LSF cluster.")
+    parser.add_argument('--ped', dest='ped_path', default=None, help='path of the ped file (default=construct from DDD datasets)')
+    parser.add_argument('--log', dest='loglevel', help='level of logging to use (default=all)')
+    parser.add_argument('--ddg2p', dest='ddg2p_path', default=known_genes, help='optional path to the ddg2p file to use (default = current DDD DDG2P file)')
+    parser.add_argument('--njobs', dest='n_jobs', default=100, help='number of jobs you want to divide the run across')
+    parser.add_argument('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
     
-    (opts, args) = parser.parse_args()
+    args = parser.parse_args()
     
-    return opts
+    return args
 
 def make_ped(ped_filename):
     """ create a PED file for clinical filtering, using DDD datafreeze files
@@ -150,8 +155,7 @@ def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_pat
     
     bjob_output_name = temp_name + "bjob_output"
     
-    # command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", syndrome_regions_filename] + log_options
-    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt"] + log_options
+    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", syndrome_regions_filename] + log_options
     
     # sometimes we don't want to restrict to the DDG2P genes, then all_genes
     # would be False and variants would be assessed in every gene.

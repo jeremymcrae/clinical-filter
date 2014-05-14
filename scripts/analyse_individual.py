@@ -1,10 +1,13 @@
-""" runs clincal filtering analysis on a single proband, just starting from the
-proband ID. Used for testing purposes.
+""" runs clinical filtering analysis on a single proband, just starting from the
+proband ID. A helper script used for testing purposes.
+
+Not recommended for use, as this is very scrappy code, and highly user-specific,
+but it works if all the files are in the expected locations.
 """
 
 import os
 import sys
-import optparse
+import argparse
 import subprocess
 import random
 import glob
@@ -18,23 +21,22 @@ ped_file = os.path.join(home_folder, "exome_reporting.ped")
 filters = os.path.join(app_folder, "config", "filters.txt")
 tag_names = os.path.join(app_folder, "config", "tags.txt")
 
-datafreeze = "/nfs/ddd0/Data/datafreeze/1139trios_20131030/"
+datafreeze = "/nfs/ddd0/Data/datafreeze/1133trios_20131218/"
 known_genes = os.path.join(datafreeze, "DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv")
 alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.private.txt")
-
+syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
 
 def get_options():
     """ gets the options from the command line
     """
     
-    parser = optparse.OptionParser()
-    parser.add_option('-i', '--individual', dest='proband_ID', help='ID of proband to be analysed')
-    parser.add_option('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
+    parser = argparse.ArgumentParser(description="Submit analysis job for single individual")
+    parser.add_argument('-i', '--individual', dest='proband_ID', required=True, help='ID of proband to be analysed')
+    parser.add_argument('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
     
+    args = parser.parse_args()
     
-    (opts, args) = parser.parse_args()
-    
-    return opts
+    return args
 
 def load_ped(ped_path, proband_ID):
     """ loads the pedigree details for a prband
@@ -75,9 +77,6 @@ def main():
     proband_ID = options.proband_ID
     logging_option = ["--log", options.loglevel]
     
-    if proband_ID == None:
-        sys.exit("you need to specify a proband ID using '-i' or '--individual'")
-    
     new_ped = load_ped(ped_file, proband_ID)
     
     # remove the temp files from the previous run
@@ -97,7 +96,7 @@ def main():
     
     # now set up the command for analysing the given pedigree file
     bjobs_preamble = ["bsub", "-q", "normal", "-o", random_filename + ".bjob_output.txt"]
-    filter_command = ["python3", filter_code, "--ped", random_filename, "--filter", filters, "--tags", tag_names, "--known-genes", known_genes, "--alternate-ids", alternate_ids, "--output", random_filename + ".output.txt", "--export-vcf", os.getcwd()] + logging_option
+    filter_command = ["python3", filter_code, "--ped", random_filename, "--filter", filters, "--tags", tag_names, "--known-genes", known_genes, "--alternate-ids", alternate_ids, "--output", random_filename + ".output.txt", "--export-vcf", os.getcwd(), "--syndrome-regions", syndrome_regions_filename] + logging_option
     full_command = " ".join(bjobs_preamble + filter_command)
     
     subprocess.call(bjobs_preamble + filter_command)
