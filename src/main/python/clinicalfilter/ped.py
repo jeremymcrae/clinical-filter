@@ -8,6 +8,10 @@ import sys
 class Person(object):
     """creates an object for a person, with their ID, and VCF path
     """
+    
+    male_codes = set(["1", "m", "M", "male"])
+    female_codes = set(["2", "f", "F", "female"])
+    
     def __init__(self, person_ID, VCF_path, affected_status, gender):
         self.person_ID = person_ID
         self.VCF_path = VCF_path
@@ -16,10 +20,6 @@ class Person(object):
         
         # set a flag so we can check whether the child has been analysed
         self.analysed = False
-        
-        # define some codes used in ped files to identify male and female sexes
-        self.male_codes = set(["1", "m", "M", "male"])
-        self.female_codes = set(["2", "f", "F", "female"])
     
     def get_ID(self):
         """returns the ID for a person.

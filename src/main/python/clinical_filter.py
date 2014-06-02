@@ -50,6 +50,9 @@ class ClinicalFilter(LoadOptions):
         """ loads trio variants, and screens for candidate variants
         """
         
+        self.vcf_loader = vcf.LoadVCFs(self.counter, len(self.families), \
+            self.filters, self.tags_dict)
+        
         # load the trio paths into the current path setup
         for family_ID in sorted(self.families):
             self.family = self.families[family_ID]
@@ -59,9 +62,7 @@ class ClinicalFilter(LoadOptions):
             self.family.set_child()
             while self.family.child is not None:
                 if self.family.child.is_affected():
-                    self.vcf_loader = vcf.LoadVCFs(self.family, self.counter, \
-                        len(self.families), self.filters, self.tags_dict)
-                    variants = self.vcf_loader.get_trio_variants()
+                    variants = self.vcf_loader.get_trio_variants(self.family)
                     self.vcf_provenance = self.vcf_loader.get_vcf_provenance()
                     self.analyse_trio(variants)
                 
@@ -72,6 +73,15 @@ class ClinicalFilter(LoadOptions):
     
     def analyse_trio(self, variants):
         """identify candidate variants in exome data for a single trio.
+        
+        takes variants that passed the initial filtering from VCF loading, and
+        splits the variants into groups for each gene with variants. Then 
+        analyses variants in a single gene (so we can utilise the appropriate
+        inheritance mechanisms for that gene), before running some 
+        pos-inheritance filters, and exporting the data (ir required).
+        
+        Args:
+            variants: list of TrioGenotypes objects
         """
         
         # organise variants by gene, then find variants that fit

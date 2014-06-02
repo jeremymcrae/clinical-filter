@@ -13,7 +13,8 @@ class MatchCNVs(object):
         
         # figure out which of the variants are CNVs
         self.cnvs = []
-        for key in variants:
+        for var in variants:
+            key = var.get_key()
             if len(key) == 3: # ignore SNVs, which are only (chrom, position)
                 self.cnvs.append(key)
         

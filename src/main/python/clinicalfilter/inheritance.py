@@ -275,6 +275,8 @@ class Autosomal(Inheritance):
             return report
         # elif self.is_lof and not self.father_affected and not \
         #         self.mother_affected and inheritance == "Monoallelic" and \
+        #         inheritance in self.known_genes[self.child.gene] and \
+        #         self.known_genes[self.child.gene][inheritance] != "Loss of Function" and \
         #         (self.dad.is_het() or self.mom.is_het()):
         #     self.log_string = "reduced penetrance transmitted from unaffected parents"
         #     return report
@@ -324,6 +326,9 @@ class Autosomal(Inheritance):
                 return "single_variant"
             # elif self.is_lof and not self.father_affected and not \
             #         self.mother_affected and self.dad.is_not_ref() and \
+            #         inheritance == "Monoallelic" and \
+            #         inheritance in self.known_genes[self.child.gene] and \
+            #         self.known_genes[self.child.gene][inheritance] != "Loss of Function" and \
             #         self.mom.is_not_ref():
             #     self.log_string = "reduced penetrance transmitted from unaffected parents"
             #     return "single_variant"
@@ -380,6 +385,8 @@ class Allosomal(Inheritance):
             return "single_variant"
         # elif self.is_lof and not self.father_affected and not \
         #         self.mother_affected and inheritance == "X-linked dominant" and \
+        #         inheritance in self.known_genes[self.child.gene] and \
+        #         self.known_genes[self.child.gene][inheritance] != "Loss of Function" and \
         #         self.dad.is_hom_ref() and self.mom.is_het():
         #     self.log_string = "reduced penetrance transmitted from unaffected mother"
         #     return report
@@ -417,7 +424,10 @@ class Allosomal(Inheritance):
                 self.log_string = "male X chrom inherited from het mother or hom affected mother"
                 return "single_variant"
             # elif self.is_lof and not self.mother_affected and \
-            #         inheritance == "X-linked dominant" and self.mom.is_not_ref():
+            #         inheritance == "X-linked dominant" and \
+            #         inheritance in self.known_genes[self.child.gene] and \
+            #         self.known_genes[self.child.gene][inheritance] != "Loss of Function" and \
+            #         self.mom.is_not_ref():
             #     self.log_string = "reduced penetrance transmitted from unaffected mother"
             #     return "single_variant"
         
@@ -438,6 +448,8 @@ class Allosomal(Inheritance):
                 return "single_variant"
             # elif self.is_lof and not self.father_affected and not \
             #         self.mother_affected and inheritance == "X-linked dominant" and \
+            #         inheritance in self.known_genes[self.child.gene] and \
+            #         self.known_genes[self.child.gene][inheritance] != "Loss of Function" and \
             #         self.dad.is_hom_ref() and self.mom.is_not_ref():
             #     self.log_string = "reduced penetrance transmitted from unaffected mother"
             #     return "single_variant"
