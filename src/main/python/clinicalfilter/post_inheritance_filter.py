@@ -145,6 +145,8 @@ class PostInheritanceFilter(object):
             
             if passes:
                 passed_vars.append((var, check, inh))
+            else:
+                logging.debug(str(var) + " dropped from polyphen prediction")
         
         return passed_vars
     

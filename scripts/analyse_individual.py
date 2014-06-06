@@ -33,6 +33,7 @@ def get_options():
     parser = argparse.ArgumentParser(description="Submit analysis job for single individual")
     parser.add_argument('-i', '--individual', dest='proband_ID', required=True, help='ID of proband to be analysed')
     parser.add_argument('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
+    parser.add_argument('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
     
     args = parser.parse_args()
     
@@ -96,8 +97,11 @@ def main():
     
     # now set up the command for analysing the given pedigree file
     bjobs_preamble = ["bsub", "-q", "normal", "-o", random_filename + ".bjob_output.txt"]
-    filter_command = ["python3", filter_code, "--ped", random_filename, "--filter", filters, "--tags", tag_names, "--known-genes", known_genes, "--alternate-ids", alternate_ids, "--output", random_filename + ".output.txt", "--export-vcf", os.getcwd(), "--syndrome-regions", syndrome_regions_filename] + logging_option
+    filter_command = ["python3", filter_code, "--ped", random_filename, "--filter", filters, "--tags", tag_names, "--alternate-ids", alternate_ids, "--output", random_filename + ".output.txt", "--export-vcf", os.getcwd(), "--syndrome-regions", syndrome_regions_filename] + logging_option
     full_command = " ".join(bjobs_preamble + filter_command)
+    
+    if not options.all_genes:
+        full_command += ["--known-genes", known_genes]
     
     subprocess.call(bjobs_preamble + filter_command)
 
