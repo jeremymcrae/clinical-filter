@@ -98,10 +98,11 @@ def main():
     # now set up the command for analysing the given pedigree file
     bjobs_preamble = ["bsub", "-q", "normal", "-o", random_filename + ".bjob_output.txt"]
     filter_command = ["python3", filter_code, "--ped", random_filename, "--filter", filters, "--tags", tag_names, "--alternate-ids", alternate_ids, "--output", random_filename + ".output.txt", "--export-vcf", os.getcwd(), "--syndrome-regions", syndrome_regions_filename] + logging_option
-    full_command = " ".join(bjobs_preamble + filter_command)
     
     if not options.all_genes:
-        full_command += ["--known-genes", known_genes]
+        filter_command += ["--known-genes", known_genes]
+        
+    full_command = " ".join(bjobs_preamble + filter_command)
     
     subprocess.call(bjobs_preamble + filter_command)
 

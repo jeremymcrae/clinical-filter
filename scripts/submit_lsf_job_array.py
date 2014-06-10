@@ -10,11 +10,13 @@ import math
 import subprocess
 import random
 import os
+import shutil
 import time
 import glob
 import argparse
 
 home_folder = "/nfs/users/nfs_j/jm33/"
+home_lustre = "/lustre/scratch113/teams/hurles/users/jm33/"
 app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
 filter_code = os.path.join(app_folder, "src", "main", "python", "clinical_filter.py")
@@ -155,12 +157,19 @@ def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_pat
     
     bjob_output_name = temp_name + "bjob_output"
     
-    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--alternate-ids", alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", syndrome_regions_filename] + log_options
+    # copy the alternate IDs to a faster filesystem
+    fast_alternate_ids = os.path.join(home_lustre, os.path.basename(alternate_ids))
+    shutil.copyfile(alternate_ids, fast_alternate_ids)
+    
+    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--alternate-ids", fast_alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", syndrome_regions_filename] + log_options
     
     # sometimes we don't want to restrict to the DDG2P genes, then all_genes
     # would be False and variants would be assessed in every gene.
     if not all_genes:
-        command += ["--known-genes", known_genes_path]
+        # copy the known genes to a faster filesystem
+        genes_path = os.path.join(home_lustre, os.path.basename(known_genes_path))
+        shutil.copyfile(known_genes_path, genes_path)
+        command += ["--known-genes", genes_path]
     
     sh_file = write_sh_file(hash_string, command)
     subprocess.Popen(["sh", sh_file])

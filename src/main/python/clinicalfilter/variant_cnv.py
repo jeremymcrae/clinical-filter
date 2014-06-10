@@ -11,6 +11,9 @@ class CNV(Variant, VcfInfo):
     """  class to take CNV data for an individual, and
     """
     
+    ref_genotypes = set(["REF"])
+    alt_genotypes = set(["DEL", "DUP"])
+    
     def set_genotype(self):
         """ sets the genotype of the variant
         """
@@ -37,9 +40,6 @@ class CNV(Variant, VcfInfo):
                 # swap to the start type if that is the allosomal end
                 if cnv_start_inh != "autosomal":
                     self.set_inheritance_type()
-        
-        self.ref_genotypes = set(["REF"])
-        self.alt_genotypes = set(["DEL", "DUP"])
         
         if self.get_inheritance_type() == "YChrFemale":
             raise ValueError("cannot have CNV on female Y chromosome")

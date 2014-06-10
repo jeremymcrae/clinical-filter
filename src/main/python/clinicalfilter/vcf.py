@@ -25,10 +25,10 @@ class LoadVCFs(object):
         """ intitalise the class with the filters and tags details etc
         
         Args:
-            counter: count of how many 
-            total_trios:
-            filters:
-            tags_dict: 
+            counter: count of how many trios have been analysed
+            total_trios: count of how many trios are to be analysed
+            filters: dictionary of filtering criteria for variants
+            tags_dict: dictionary of alternate tags for INFO fields
         """
         
         self.family = None
@@ -95,23 +95,54 @@ class LoadVCFs(object):
         
         return handle
 
-    def get_vcf_header(self, f):
-        """Get the header lines from a VCF file.
+    def get_vcf_header(self, path):
+        """ Get the header lines from a VCF file.
         
         Args:
-            f: file object to read from
+            path: path to VCF file
         
         Returns:
             a list of lines that start with "#", which are the header lines.
         """
-        header = []
         
+        f = self.open_vcf_file(path)
+        
+        header = []
         for line in f:
             if not line.startswith("#"):
                 break
             header.append(line)
         
+        f.close()
+        
         return header
+    
+    def exclude_header(self, f):
+        """ removes the header from a VCF file object
+        
+        We remove the header from the VCF file, since the header is ~200 lines
+        long, and an exome VCF file is 100,000 lines long, so it's better to 
+        remove the header once, rather than continually check if lines are part 
+        of the header as we traverse the VCF. We simply run through the VCF 
+        until we find a non-header line, then seek back to the start of that 
+        line.
+        
+        Args:
+            f: handler for a VCF file
+        """
+        
+        file_pos = f.tell()
+        in_header = True
+        while in_header:
+            line = f.readline()
+            if not line.startswith("#"):
+                in_header = False
+                break
+            file_pos = f.tell()   
+        
+        # jump back to the start of the last line, which should be the first
+        # line following the header
+        f.seek(file_pos)
     
     def add_single_variant(self, variants, var, gender, line):
         """ adds a single variant to a vcf dictionary indexed by position key
@@ -134,36 +165,6 @@ class LoadVCFs(object):
             # we only get ValueError when the genotype cannot be set, which
             # occurs for x chrom male heterozygotes (an impossible genotype)
             pass
-    
-    def find_vcf_definitions(self, path, header):
-        """ get provenance information for a vcf path
-        
-        Args:
-            path: path to VCF file
-            header: list of header lines
-        
-        Returns:
-            returns a tuple of sha1 VCF file hash, name of VCF file (without 
-            directory), and date the VCF file was generated
-        """ 
-        
-        try:
-            vcf_checksum = hashlib.sha1(open(path, "rb").read()).hexdigest()
-        except (OSError, IOError) as e:
-            vcf_checksum = "NA"
-        
-        vcf_basename = os.path.basename(path)
-        
-        vcf_date = None
-        for line in header:
-            if line.startswith("##fileDate"):
-                vcf_date = line.strip().split("=")[1]
-                break
-        
-        if vcf_date is None:
-            vcf_date = vcf_basename.split(".")[-3]
-        
-        return (vcf_checksum, vcf_basename, vcf_date)
     
     def construct_variant(self, line, gender):
         """ constructs a Variant object for a VCF line, specific to the variant type
@@ -211,7 +212,7 @@ class LoadVCFs(object):
         use_variant = False
         if child_variants:
             key = (line[0], line[1])
-            if key in self.child_vcf:
+            if key in self.child_keys:
                 use_variant = True
             elif line[4] == "<DUP>" or line[4] == "<DEL>":
                 var = self.construct_variant(line, gender)
@@ -238,16 +239,16 @@ class LoadVCFs(object):
                 variants for matches in the child's variants).
         
         Returns:
-            A dictionary containing variant data for each variant indexed by
-            a position key.
+            A list of variants for the individual.
         """
         
         path = individual.get_path()
         gender = individual.get_gender()
         
+        # open the vcf, and adjust the position in the file to immediately after 
+        # the header, so we can run through the variants
         vcf = self.open_vcf_file(path)
-        self.header_lines = self.get_vcf_header(vcf)
-        file_definitions = self.find_vcf_definitions(path, self.header_lines)
+        self.exclude_header(vcf)
         
         variants = []
         for line in vcf:
@@ -258,7 +259,7 @@ class LoadVCFs(object):
                 var = self.construct_variant(line, gender)
                 self.add_single_variant(variants, var, gender, line)
         
-        return variants, file_definitions
+        return variants
     
     def load_trio(self):
         """ opens and parses the VCF files for members of the family trio.
@@ -274,33 +275,35 @@ class LoadVCFs(object):
             str(self.total_trios) + ". child path: " + \
             self.family.child.get_path())
         
-        # open the childs VCF file
-        child_vars, self.child_defs = self.open_individual(self.family.child)
+        # open the childs VCF file, and get the variant keys, to check if they
+        # are in the parents VCF
+        child_vars = self.open_individual(self.family.child)
+        self.child_keys = set([var.get_key() for var in child_vars])
         
-        # get the childs variant keys, so we can check if they are in the 
-        # parents VCF
-        self.child_vcf = set()
-        for var in child_vars:
-            self.child_vcf.add(var.get_key())
-        
-        self.child_header = self.header_lines
+        self.child_header = self.get_vcf_header(self.family.child.get_path())
         self.cnv_matcher = MatchCNVs(child_vars)
         
+        mother_vars = []
+        father_vars = []
         if self.family.has_parents():
             logging.info(" mothers path: " + self.family.mother.get_path())
-            mother_vars, self.mother_defs = self.open_individual(self.family.mother, child_variants=True)
+            mother_vars = self.open_individual(self.family.mother, child_variants=True)
             
             logging.info(" fathers path: " + self.family.father.get_path())
-            father_vars, self.father_defs = self.open_individual(self.family.father, child_variants=True)
-        else:
-            # if the trio doesn't include parents, generate blank dictionaries
-            mother_vars, self.mother_defs = [], ("NA", "NA", "NA")
-            father_vars, self.father_defs = [], ("NA", "NA", "NA")
+            father_vars = self.open_individual(self.family.father, child_variants=True)
         
         return (child_vars, mother_vars, father_vars)
     
     def combine_trio_variants(self, child_vars, mother_vars, father_vars):
-        """ for each variant, combine the trio's genotypes
+        """ for each variant, combine the trio's genotypes into TrioGenotypes
+        
+        Args:
+            child_vars: list of Variant objects for the child
+            mother_vars: list of Variant objects for the mother
+            father_vars: list of Variant objects for the father
+        
+        Returns:
+            list of TrioGenotypes objects for the family
         """
         
         mother_cnv_matcher = MatchCNVs(mother_vars)
@@ -325,13 +328,13 @@ class LoadVCFs(object):
         
         return variants
     
-    def get_parental_var(self, var, parental_vcf, gender, matcher):
+    def get_parental_var(self, var, parental_vars, gender, matcher):
         """ get the corresponding parental variant to a childs variant, or 
         create a default variant with reference genotype.
         
         Args:
             var: childs var, as Variant object
-            parental_vcf: dict of parental variants, indexed by position key
+            parental_vars: list of parental variants
             gender: gender of the parent
             matcher: cnv matcher for parent
         
@@ -339,34 +342,74 @@ class LoadVCFs(object):
             returns a Variant object, matched to the proband's variant
         """
         
-        var_key = var.get_key()
+        key = var.get_key()
         
         # if the variant is a CNV, the corresponding variant might not match 
         # the start site, so we look a variant that overlaps
         if isinstance(var, CNV) and matcher.has_match(var):
-            var_key = matcher.get_overlap_key(var.get_key())
+            key = matcher.get_overlap_key(key)
             
-        for parental_var in parental_vcf:
-            if var_key == parental_var.get_key():
-                return parental_var
+        for parental in parental_vars:
+            if key == parental.get_key():
+                return parental
         
         # if the childs variant does not exist in the parents VCF, then we 
         # create a default variant for the parent
         if isinstance(var, CNV):
-            var = CNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.filter)
+            parental = CNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.filter)
         else:
-            var = SNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.filter)
+            parental = SNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.filter)
         
-        var.set_gender(gender)
-        var.set_default_genotype()
+        parental.set_gender(gender)
+        parental.set_default_genotype()
         
-        return var
+        return parental
     
-    def get_vcf_provenance(self):
+    def get_vcf_provenance(self, path):
+        """ get provenance information for a vcf path
+        
+        Args:
+            path: path to VCF file
+        
+        Returns:
+            returns a tuple of sha1 VCF file hash, name of VCF file (without
+            directory), and date the VCF file was generated
+        """
+        
+        handle = open(path, "rb")
+        vcf_checksum = hashlib.sha1(handle.read()).hexdigest()
+        handle.close()
+        
+        vcf_basename = os.path.basename(path)
+        
+        header = self.get_vcf_header(path)
+        
+        vcf_date = None
+        for line in header:
+            if line.startswith("##fileDate"):
+                vcf_date = line.strip().split("=")[1]
+                break
+        
+        # some VCF files lack the fileDate in the header, get it from the path
+        if vcf_date is None:
+            vcf_date = os.path.splitext(vcf_basename)[0]
+            vcf_date = vcf_date.split(".")[2]
+        
+        return (vcf_checksum, vcf_basename, vcf_date)
+    
+    def get_trio_provenance(self):
         """ returns provenance of VCFs for individuals in a trio
         """
         
-        return self.child_defs, self.mother_defs, self.father_defs
+        child_defs = self.get_vcf_provenance(self.family.child.get_path())
+        
+        mother_defs = ("NA", "NA", "NA")
+        father_defs = ("NA", "NA", "NA")
+        if self.family.has_parents():
+            mother_defs = self.get_vcf_provenance(self.family.mother.get_path())
+            father_defs = self.get_vcf_provenance(self.family.father.get_path())
+        
+        return child_defs, mother_defs, father_defs
     
     def filter_de_novos(self, variants):
         """ filter the de novos variants in the VCF files

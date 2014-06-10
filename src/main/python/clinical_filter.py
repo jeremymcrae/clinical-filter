@@ -63,7 +63,7 @@ class ClinicalFilter(LoadOptions):
             while self.family.child is not None:
                 if self.family.child.is_affected():
                     variants = self.vcf_loader.get_trio_variants(self.family)
-                    self.vcf_provenance = self.vcf_loader.get_vcf_provenance()
+                    self.vcf_provenance = self.vcf_loader.get_trio_provenance()
                     self.analyse_trio(variants)
                 
                 self.family.set_child_examined()

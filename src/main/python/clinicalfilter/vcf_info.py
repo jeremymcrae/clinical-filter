@@ -228,9 +228,8 @@ class VcfInfo(object):
         #         if value > 0.5:
         #             value = 1 - value
         value = self.get_number(value)
-        try:
-            value > filter_values
-        except TypeError:
+        
+        if not self.is_number(value):
             return True
         
-        return value <= filter_values and self.is_number(value)
+        return value <= filter_values

@@ -3,11 +3,46 @@
 
 import os
 import io
+import time
+import random
+import sys
+
+def open_file(path):
+    """ opens a file handle, allowing for permission errors
+    
+    Occasionally the filesystem can block opening a file, if another process is
+    accessing it. We simply wait a few seconds before trying to open the file
+    again (but cut out after a few retries, in case something else has gone
+    wrong).
+    
+    Args:
+        path: path to a file
+    
+    Returns:
+        a file object handle, or raises an error
+    """
+    
+    f = None
+    retry = 0
+    
+    while f is None and retry < 5:
+        try:
+            f = io.open(path, "r", encoding = "latin_1")
+        except PermissionError as e:
+            # if we get an error, wait a few seconds for other processes to
+            # release the file, before retrying
+            time.sleep(random.uniform(5, 10))
+            retry += 1
+    
+    if f is None:
+        raise sys.exc_info()
+    
+    return f
 
 def open_known_genes(path="DDGP-reportable.txt"):
     """Loads list of known disease causative genes.
     
-    We obtain a liost of genes that are known to be involved in disorders, so 
+    We obtain a list of genes that are known to be involved in disorders, so
     that we can screen variants for being in these known genes, which makes them
     better candidates for being causative.
     
@@ -23,11 +58,7 @@ def open_known_genes(path="DDGP-reportable.txt"):
         IOError: an error when the gene file path is not specified correctly.
     """
     
-    if not os.path.exists(path):
-        raise IOError("Path to known gene file does not exist")
-    
-    known_genes = {}
-    f = io.open(path, "r", encoding="latin_1")
+    f = open_file(path)
     
     # allow for gene files with different column names and positions
     header = f.readline().strip().split("\t")
@@ -60,6 +91,7 @@ def open_known_genes(path="DDGP-reportable.txt"):
     allowed_confirmed_statuses = ["Confirmed DD Gene", "Probable DD gene", \
         "Both DD and IF"]
     
+    known_genes = {}
     for line in f:
         line = line.strip().split("\t")
         gene = line[gene_column]
@@ -98,6 +130,8 @@ def open_known_genes(path="DDGP-reportable.txt"):
     if len(known_genes) == 0:
         raise ValueError("No genes found in the file, check the line endings")
     
+    f.close()
+    
     return known_genes
 
 def create_person_ID_mapper(path="/nfs/ddd0/Data/datafreeze/1139trios_20131030/person_sanger_decipher.private.txt"):
@@ -111,13 +145,12 @@ def create_person_ID_mapper(path="/nfs/ddd0/Data/datafreeze/1139trios_20131030/p
     
     Returns:
         dictionary with current ID and alternate ID as key value pairs for 
-            different individuals.
+        different individuals.
     """
-    if not os.path.exists(path):
-        raise IOError("Path to known ID converter file does not exist")
+    
+    f = open_file(path)
     
     ID_converter = {}
-    f = open(path, "r")
     for line in f:
         line = line.strip().split("\t")
         person_ID = line[0]
@@ -125,10 +158,12 @@ def create_person_ID_mapper(path="/nfs/ddd0/Data/datafreeze/1139trios_20131030/p
         
         ID_converter[person_ID] = alternate_ID
     
+    f.close()
+    
     return ID_converter
 
 def open_filters(path):
-    """Opens user-defined criteria for filtering variants.
+    """ Opens user-defined criteria for filtering variants.
 
     Open a tab-separated text file with VCF criteria for variants (such as only 
     including function altering nonsynonymous variants, or only including 
@@ -152,52 +187,37 @@ def open_filters(path):
         ValueError: An error when apparently numeric values cannot be converted
             to floats.
     """
-
-    # check that the file exists
-    if not os.path.exists(path):
-        raise IOError("path to filter file does not exist")
+    
+    f = open_file(path)
 
     # open the path and load the filter criteria
-    mydict = {}
-    f = io.open(path, "r", encoding="latin1")
+    filters = {}
     for line in f:
-        if not line.startswith("#"):
-            label, condition, values = line.strip().split("\t")
+        if line.startswith("#"):
+            continue
             
-            # split the comma-separated strings into sets
-            if condition == "list":
-                values = set(values.split(","))
-            
-            # split nested strings into nested lists
-            elif condition == "multiple_not":
-                values = values.strip("()").split("), (")
-                for position in range(len(values)):
-                    values[position] = tuple(values[position].split(", "))
-            
-            # convert numeric values to floats
-            elif condition in set(["greater_than", "smaller_than", "equal"]):
-                try:
-                    values = float(values)
-                except ValueError:
-                    print("Please check your filter file or correct this value. Here is the full record:")
-                    print(line)
-                    raise ValueError("One of these values couldn't be converted to float. Filter (%s) VCF value (%s)" % (condition, values))
-            
-            # convert numeric lists to lists of floats
-            elif condition == "range":
-                try:
-                    values = [float(x) for x in values]
-                except ValueError:
-                    print("Please check your filter file or correct this value. Here is the full record:")
-                    print(line)
-                    raise ValueError("One of these values couldn't be converted to float. Filter (%s) VCF value (%s)" % (condition, values))
+        label, condition, values = line.strip().split("\t")
+        
+        # split the comma-separated strings into sets
+        if condition == "list":
+            values = set(values.split(","))
+        
+        # convert numeric values to floats
+        elif condition in set(["greater_than", "smaller_than", "equal"]):
+            values = float(values)
+        
+        # convert numeric lists to lists of floats
+        elif condition == "range":
+            values = [float(x) for x in values]
 
-            mydict[label] = (condition, values)
+        filters[label] = (condition, values)
+            
     f.close()
-    return mydict
+    
+    return filters
 
 def open_tags(path):
-    """Opens alternate identifiers for values in nonstandard VCF files.
+    """ Opens alternate identifiers for values in nonstandard VCF files.
 
     The report needs to know what the GT and GN tags are called in the VCF file.
     Depending on where the VCF files has originated from, these can be named 
@@ -210,22 +230,18 @@ def open_tags(path):
         path: path to tags file (typically named tags.txt)
 
     Returns:
-        Strings for each of the desired tags eg CQ_tag = "CQ", or GN_tag = "VGN"
-    
-    Raises:
-        IOError: An error when the tags path is not specified correctly.
+        dictionary listing possible values for each of the desired tags eg 
+        CQ_tag = "CQ", or GN_tag = "VGN"
     """
-
-    if not os.path.exists(path):
-        raise IOError("path to tags file does not exist")
-
+    
+    f = open_file(path)
+    
     GN_tag = "gene"
     CQ_tag = "consequence"
     MAF_tag = "MAX_MAF"
     GT_tag = "genotype"
     
     tags_dict = {GN_tag: "", CQ_tag: "", MAF_tag: "", GT_tag: ""}
-    f = open(path, "r")
     for line in f:
         if line.startswith("#"):
             continue
@@ -257,7 +273,7 @@ def open_cnv_regions(path):
         dictionary of copy number values, indexed by (chrom, start end) tuples
     """
     
-    f = open(path, "r")
+    f = open_file(path)
     header = f.readline().strip().split("\t")
     
     cnv_regions = {}
@@ -271,6 +287,8 @@ def open_cnv_regions(path):
         
         key = (chrom, start, end)
         cnv_regions[key] = copy_number
+    
+    f.close()
     
     return cnv_regions
 
