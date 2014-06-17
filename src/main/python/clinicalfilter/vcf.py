@@ -425,7 +425,7 @@ class LoadVCFs(object):
         # ignore situations when we haven't loaded any parents, which would all
         # look like de novos, since we insert "0" for missing parental genotypes
         if self.family.has_parents() == False:
-            return 
+            return variants
        
         # run through the variants in the child, and remove de novos that fail
         # denovogear filtering criteria
