@@ -17,6 +17,7 @@ from clinicalfilter.variant_cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 from clinicalfilter.match_cnvs import MatchCNVs
 from clinicalfilter.vcf import LoadVCFs
+from clinicalfilter.ped import Family, Person
 
 IS_PYTHON2 = sys.version_info[0] == 2
 IS_PYTHON3 = sys.version_info[0] == 3
@@ -295,6 +296,50 @@ class TestLoadVCFsPy(unittest.TestCase):
         line = ["1", "300", ".", "T", "<DEL>", "1000", "PASS", "END=400", "GT", "0/1"]
         gender = "M"
         self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender))
+    
+    def test_filter_de_novos(self):
+        """ check that filter_de_novos() works correctly
+        """
+        
+        # make a family without parents
+        family = Family("fam_id")
+        child_gender = "female"
+        family.add_child("child_id", "child_vcf_path", "2", child_gender)
+        self.vcf_loader.family = family
+        
+        # set up an autosomal variant
+        line = ["1", "100", ".", "T", "G", "1000", "PASS", ".", "GT", "0/1"]
+        gender = "M"
+        child_var = SNV(*line[:6])
+        child_var.add_info(line[7], self.vcf_loader.tags_dict)
+        child_var.add_format(line[8], line[9])
+        child_var.set_gender(child_gender)
+        child_var.set_genotype()
+        
+        # combine the variant into a list of TrioGenotypes
+        child_vars = [child_var]
+        mother_vars = []
+        father_vars = []
+        trio_variants = self.vcf_loader.combine_trio_variants(child_vars, mother_vars, father_vars)
+        
+        # check that vars without parents get passed through automatically
+        self.assertEqual(self.vcf_loader.filter_de_novos(trio_variants), trio_variants)
+        
+        # now add parents to the family
+        family.add_mother("mother_id", "mother_vcf_path", "1", "female")
+        family.add_father("father_id", "father_vcf_path", "1", "male")
+        
+        # re-generate the variants list now that parents have been included
+        trio_variants = self.vcf_loader.combine_trio_variants(child_vars, mother_vars, father_vars)
+        
+        # check that vars with parents, and that appear to be de novo are
+        # filtered out
+        self.assertEqual(self.vcf_loader.filter_de_novos(trio_variants), [])
+        
+        # check that vars with parents, but which are not de novo, are retained
+        mother_vars = child_vars
+        trio_variants = self.vcf_loader.combine_trio_variants(child_vars, mother_vars, father_vars)
+        self.assertEqual(self.vcf_loader.filter_de_novos(trio_variants), trio_variants)
         
         
         
