@@ -113,15 +113,15 @@ class TrioGenotypes(object):
         """
         
         # set the standard de novo genotype combination
-        de_novo_genotype = (1,0,0)
+        de_novo_genotype = (1, 0, 0)
         
         # account for X chrom de novos in males
         if self.inheritance_type == "XChrMale":
-            de_novo_genotype = (2,0,0)
+            de_novo_genotype = (2, 0, 0)
         
         return de_novo_genotype
     
-    def passes_de_novo_checks(self, family):
+    def passes_de_novo_checks(self):
         """ checks if the child's de novo variants passes filters
         
         Some variants are de novo in the child, and if they are, then we should
@@ -130,9 +130,6 @@ class TrioGenotypes(object):
         that describes whether the variant passed screening, or if not, which 
         filter it failed. Note that both parents have genotypes specified, as we
         have checked at an earlier stage that the parents are present.
-        
-        Args:
-            family: ped object for the trio
         
         Returns:
             boolean value for whether the variant should be included

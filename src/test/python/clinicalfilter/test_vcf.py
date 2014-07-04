@@ -238,7 +238,8 @@ class TestLoadVCFsPy(unittest.TestCase):
         variant = self.vcf_loader.construct_variant(line, gender)
         
         self.assertEqual(variant.get_key(), test_var.get_key())
-        self.assertFalse(hasattr(variant, "format"))
+        # initally constructing a SNV shouldn't affect the format variable
+        self.assertEqual(variant.format, None)
         
         # check that construct variant works for CNVs
         line = ["1", "100", ".", "T", "<DEL>", "1000", "PASS", "END=200", "GT", "0/1"]
@@ -249,7 +250,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         variant = self.vcf_loader.construct_variant(line, gender)
         
         self.assertEqual(variant.get_key(), test_var.get_key())
-        self.assertTrue(hasattr(variant, "format"))
+        self.assertNotEqual(variant.format, None)
         
         # TODO: add checks for when HGNC is in the the filters
     

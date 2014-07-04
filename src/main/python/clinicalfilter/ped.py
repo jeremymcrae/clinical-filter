@@ -2,7 +2,6 @@
 """
 
 import os
-import logging
 import sys
 
 class Person(object):
@@ -12,24 +11,24 @@ class Person(object):
     male_codes = set(["1", "m", "M", "male"])
     female_codes = set(["2", "f", "F", "female"])
     
-    def __init__(self, person_ID, VCF_path, affected_status, gender):
-        self.person_ID = person_ID
-        self.VCF_path = VCF_path
+    def __init__(self, person_id, vcf_path, affected_status, gender):
+        self.person_id = person_id
+        self.vcf_path = vcf_path
         self.gender = gender
         self.affected_status = affected_status
         
         # set a flag so we can check whether the child has been analysed
         self.analysed = False
     
-    def get_ID(self):
+    def get_id(self):
         """returns the ID for a person.
         """
-        return self.person_ID
+        return self.person_id
     
     def get_path(self):
         """returns the path to the VCF file for a person.
         """
-        return self.VCF_path
+        return self.vcf_path
     
     def get_affected_status(self):
         """returns the affected status for a person as a string
@@ -93,7 +92,7 @@ class Person(object):
             raise ValueError("unknown gender code: " + self.get_gender())
         
         if gender_code not in current_gender_codes:
-            raise ValueError(self.person_ID + " is listed as gender " + \
+            raise ValueError(self.person_id + " is listed as gender " + \
                 self.get_gender() + ", which differs from the sex expected " + \
                 "as a parent)")
 
@@ -101,13 +100,14 @@ class Family(object):
     """creates a family, with VCF paths, IDs, and affected statuses
     """
     
-    def __init__(self, family_ID):
+    def __init__(self, family_id):
         """ initiates the class with the ID for the family
         """
-        self.family_ID = family_ID
+        self.family_id = family_id
         self.children = []
         self.father = None
         self.mother = None
+        self.child = None
     
     def has_parents(self):
         """returns True/False for whether the family includes parental info
@@ -118,34 +118,34 @@ class Family(object):
         
         return True
     
-    def add_child(self, ID, path, affected_status, gender):
+    def add_child(self, sample_id, path, affected_status, gender):
         """ adds a child
         
         Args:
-            ID: individual ID string
+            sample_id: individual ID string
             path: path to childs VCF file
             affected_status: affected status string for child
             gender: gender string for child
         """
-        child = Person(ID, path, affected_status, gender)
+        child = Person(sample_id, path, affected_status, gender)
         self.children.append(child)
     
-    def add_mother(self, ID, path, affected_status, gender):
+    def add_mother(self, sample_id, path, affected_status, gender):
         # raise an error if we try to add a different mother to the family
         if self.mother is not None:
-            if ID != self.mother.get_ID():
-                raise ValueError(self.family_ID, "already has a mother")
+            if sample_id != self.mother.get_id():
+                raise ValueError(self.family_id, "already has a mother")
         
-        self.mother = Person(ID, path, affected_status, gender)
+        self.mother = Person(sample_id, path, affected_status, gender)
         self.mother.check_gender("2")
     
-    def add_father(self, ID, path, affected_status, gender):
+    def add_father(self, sample_id, path, affected_status, gender):
         # raise an error if we try to add a different father to the family
         if self.father is not None:
-            if ID != self.father.get_ID():
-                raise ValueError(self.family_ID, "already has a father")
+            if sample_id != self.father.get_id():
+                raise ValueError(self.family_id, "already has a father")
         
-        self.father = Person(ID, path, affected_status, gender)
+        self.father = Person(sample_id, path, affected_status, gender)
         self.father.check_gender("1")
     
     def set_child(self):
@@ -164,7 +164,7 @@ class Family(object):
         """
         for child_position in range(len(self.children)):
             child = self.children[child_position]
-            if child.get_ID() == self.child.get_ID():
+            if child.get_id() == self.child.get_id():
                 self.children[child_position].set_analysed()
         
         self.set_child()
@@ -200,30 +200,30 @@ def load_ped_file(path):
     sex = {}
     vcfs = {}
     
-    f = open(path, "r")
-    for line in f:
+    ped = open(path, "r")
+    for line in ped:
         line = line.strip().split()
         
-        family_ID = line[0]
-        individual_ID = line[1]
-        paternal_ID = line[2]
-        maternal_ID = line[3]
+        family_id = line[0]
+        individual_id = line[1]
+        paternal_id = line[2]
+        maternal_id = line[3]
         gender = line[4]
         affected_status = line[5]
         path = line[6]
         
         # make sure we can match individuals to their paths, and affected status
-        vcfs[individual_ID] = path
-        affected[individual_ID] = affected_status
-        sex[individual_ID] = gender
+        vcfs[individual_id] = path
+        affected[individual_id] = affected_status
+        sex[individual_id] = gender
         
         # track the child, maternal and paternal IDs
-        if paternal_ID != "0" and maternal_ID != "0":
-            children[individual_ID] = family_ID
-        if paternal_ID != 0:
-            fathers[individual_ID] = paternal_ID
-        if maternal_ID != 0:
-            mothers[individual_ID] = maternal_ID
+        if paternal_id != "0" and maternal_id != "0":
+            children[individual_id] = family_id
+        if paternal_id != 0:
+            fathers[individual_id] = paternal_id
+        if maternal_id != 0:
+            mothers[individual_id] = maternal_id
     
     return mothers, fathers, children, affected, sex, vcfs
 
@@ -243,26 +243,27 @@ def load_families(path):
     families = {}
     
     # put all the family info into a trio class
-    for child_ID, family_ID in children.items():
+    for child_id, family_id in children.items():
         # if the family hasn't been included already, generate a new trio
-        if family_ID not in families:
-            families[family_ID] = Family(family_ID)
+        if family_id not in families:
+            families[family_id] = Family(family_id)
         
-        trio = families[family_ID]
-        father = fathers[child_ID]
-        mother = mothers[child_ID]
+        trio = families[family_id]
+        father = fathers[child_id]
+        mother = mothers[child_id]
         
         # add the child to the family, and set the child to be examined
-        trio.add_child(child_ID, vcfs[child_ID], affected[child_ID], sex[child_ID])
+        trio.add_child(child_id, vcfs[child_id], affected[child_id], sex[child_id])
         trio.set_child()
         
-        # add parents, but allow for children without parents listed in the ped file
+        # add parents, but allow for children without parents listed in the ped 
+        # file
         if father in vcfs and father in affected:
             trio.add_father(father, vcfs[father], affected[father], sex[father])
         if mother in vcfs and mother in affected:
             trio.add_mother(mother, vcfs[mother], affected[mother], sex[mother])
         
-        families[family_ID] = trio
+        families[family_id] = trio
     
     return families
 

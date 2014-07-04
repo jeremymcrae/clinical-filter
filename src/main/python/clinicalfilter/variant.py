@@ -28,6 +28,15 @@ class Variant(object):
         # self.quality = quality
         self.filter = filter
         
+        # intialise variables that will be set later
+        self.mutation_id = "NA"
+        self.gender = None
+        self.vcf_line = None
+        self.format = None
+        self.inheritance_type = None
+        self.tags = None
+        self.info = {}
+        
     def set_gender(self, gender):
         """ sets the gender of the individual for the variant
         """
@@ -50,9 +59,7 @@ class Variant(object):
         # for a single variant). 
         mutation_id = self.id
         
-        if mutation_id == ".":
-            self.mutation_id = "NA"
-        else:
+        if mutation_id != ".":
             mutation_id = mutation_id.split("&")
             ids = []
             for value in mutation_id:
@@ -60,9 +67,7 @@ class Variant(object):
                 if not value.startswith("rs"):
                     ids.append(value)
             
-            if len(ids) == 0:
-                self.mutation_id = "NA"
-            else:
+            if len(ids) > 0:
                 self.mutation_id = ",".join(ids)
                     
     def get_mutation_id(self):
