@@ -1,3 +1,5 @@
+version 0.0.18 (14 Aug 2014)
+    - Changed PP filter from <=0.01 to <0.9
 
 version 0.7 lean (13 Aug 2013)
     - Reduced RAM usage. (< 100 Mb when looking for rare coding variants in exome)
