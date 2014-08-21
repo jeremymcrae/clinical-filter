@@ -88,7 +88,7 @@ class TestVariantCnvPy(unittest.TestCase):
         self.assertEqual(self.var.range, ("1000", "2000"))
         
         # check that range is set correctly when no info available
-        del self.var.info
+        self.var.info = {}
         self.var.set_range()
         self.assertEqual(self.var.range, ("1000", "11000"))
     

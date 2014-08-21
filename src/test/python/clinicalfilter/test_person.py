@@ -20,18 +20,18 @@ class TestPerson(unittest.TestCase):
         
         self.person = Person(ID, path, status, gender)
     
-    def test_get_ID(self):
-        """ test that get_ID() works correctly
+    def test_get_id(self):
+        """ test that get_id() works correctly
         """
         
-        self.person.person_ID = "test_id"
-        self.assertEqual(self.person.get_ID(), "test_id")
+        self.person.person_id = "test_id"
+        self.assertEqual(self.person.get_id(), "test_id")
     
     def test_get_path(self):
         """ test that get_path() works correctly
         """
         
-        self.person.VCF_path = "test_path"
+        self.person.vcf_path = "test_path"
         self.assertEqual(self.person.get_path(), "test_path")
     
     def test_get_affected_status(self):

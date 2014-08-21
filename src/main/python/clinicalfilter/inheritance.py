@@ -82,7 +82,7 @@ class Inheritance(object):
                 check = self.examine_variant(variant, inheritance)
                 self.add_variant_to_appropriate_list(variant, check, inheritance)
             
-            logging.debug(self.trio.child.get_ID() + " position " + \
+            logging.debug(self.trio.child.get_id() + " position " + \
                 variant.get_position() + " " + self.log_string)
         
         self.compound_hets = self.check_compound_hets(self.compound_hets)
@@ -566,11 +566,11 @@ class CNVInheritance(object):
         for gene in genes:
             if self.known_genes is not None and gene in self.known_genes:
                 if "Biallelic" in self.known_genes[gene]["inheritance"] or \
-                    (self.variant.get_chrom() == "X" and \
-                    "Hemizygous" in self.known_genes[gene]["inheritance"] and \
-                    self.trio.child.is_female() and \
-                    self.variant.child.info["CNS"] == "1"):
-                   return True
+                     (self.variant.get_chrom() == "X" and \
+                     "Hemizygous" in self.known_genes[gene]["inheritance"] and \
+                     self.trio.child.is_female() and \
+                     self.variant.child.info["CNS"] == "1"):
+                    return True
         
         return False
     

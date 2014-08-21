@@ -66,7 +66,7 @@ class CNV(Variant, VcfInfo):
         
         self.start_position = self.position
         
-        if hasattr(self, "info"):
+        if self.has_info():
             self.end_position = self.info["END"]
         else:
             self.end_position = str(int(self.start_position) + 10000)
@@ -188,7 +188,7 @@ class CNV(Variant, VcfInfo):
             passes = filt.filter_cnv(track_variant)
         else:
             if track_variant:
-                 print("CNV is not an aCGH or exome CNV")
+                print("CNV is not an aCGH or exome CNV")
             passes = False
         
         return passes

@@ -1,8 +1,6 @@
 """ class for filtering SNVs based on VCF INFO fields
 """
 
-import copy
-
 class VcfInfo(object):
     """ parses the VCF info field, and checks whether the variant passes 
     filtering criteria.
@@ -19,7 +17,6 @@ class VcfInfo(object):
         """
         
         self.tags = tags
-        self.info = {}
         
         for item in info_values.split(";"):
             if "=" in item:
@@ -43,7 +40,7 @@ class VcfInfo(object):
         """ checks if the INFO field has been parsed and added to the object
         """
         
-        return hasattr(self, "info")
+        return self.info != {}
     
     def add_gene_from_info(self):
         """ adds a gene to the var using the info. CNVs and SNVs act differently
@@ -74,7 +71,7 @@ class VcfInfo(object):
         """
         
         # define the set of loss-of-function consequences
-        lof_consequences = set(["transcript_ablation","splice_donor_variant", \
+        lof_consequences = set(["transcript_ablation", "splice_donor_variant", \
             "splice_acceptor_variant", "frameshift_variant", "stop_gained", \
             "coding_sequence_variant"])
         

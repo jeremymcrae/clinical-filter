@@ -124,7 +124,7 @@ class Report(object):
         
         max_maf = var.child.find_max_allele_frequency(self.tags_dict["MAX_MAF"])
         
-        output_line = [self.family.child.get_ID(), alternate_ID, \
+        output_line = [self.family.child.get_id(), alternate_ID, \
             self.family.child.get_gender(), var.get_chrom(), \
             var.get_position(), var.get_gene(), var.child.get_mutation_id(), \
             transcript, consequence, alleles, max_maf, candidate[2], \
@@ -151,7 +151,7 @@ class Report(object):
         # include an alternate ID for the affected child, if it exists
         alt_id = 'no_alternate_ID'
         if self.ID_mapper is not None:
-            alt_id = self.ID_mapper[self.family.child.get_ID()]
+            alt_id = self.ID_mapper[self.family.child.get_id()]
         
         for var in sorted(variants):
             output_line = self._get_output_line(var, dad_aff, mom_aff, alt_id)
@@ -190,7 +190,7 @@ class Report(object):
         """
         
         vcf_path = self.export_vcf
-        proband_filename = self.family.child.get_ID() + ".vcf.gz"
+        proband_filename = self.family.child.get_id() + ".vcf.gz"
         # check if we have named what looks like a VCF file
         if "vcf" in vcf_path[-7:] or vcf_path.endswith("gz"):
             # make sure we haven't named a nonexistent folder

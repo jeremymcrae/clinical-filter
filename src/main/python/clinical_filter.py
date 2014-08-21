@@ -157,7 +157,7 @@ class ClinicalFilter(LoadOptions):
         if gene is None:
             return []
         
-        logging.debug(self.family.child.get_ID() + " " + gene + " " + \
+        logging.debug(self.family.child.get_id() + " " + gene + " " + \
             str(variants) + " " + str(gene_inh))
         chrom_inheritance = variants[0].get_inheritance_type()
         

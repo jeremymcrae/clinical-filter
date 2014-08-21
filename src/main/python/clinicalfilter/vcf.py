@@ -55,14 +55,14 @@ class LoadVCFs(object):
             variants = self.filter_de_novos(variants)
         except IOError as error:
             if self.family.has_parents():
-                mother_ID = self.family.mother.get_ID()
-                father_ID = self.family.father.get_ID()
+                mother_id = self.family.mother.get_id()
+                father_id = self.family.father.get_id()
             else:
-                mother_ID = "no mother"
-                father_ID = "no father"
+                mother_id = "no mother"
+                father_id = "no father"
             
-            logging.error("trio with missing file - child: " + self.family.child.get_ID() \
-                + ", mother: " + mother_ID + ", father: " + father_ID + ". " + str(error))
+            logging.error("trio with missing file - child: " + self.family.child.get_id() \
+                + ", mother: " + mother_id + ", father: " + father_id + ". " + str(error))
         
         return variants
     
@@ -431,7 +431,7 @@ class LoadVCFs(object):
         # denovogear filtering criteria
         passed_variants = []
         for var in variants:
-            if var.passes_de_novo_checks(self.family):
+            if var.passes_de_novo_checks():
                 passed_variants.append(var)
         
         return passed_variants
