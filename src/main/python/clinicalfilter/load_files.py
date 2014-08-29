@@ -22,22 +22,20 @@ def open_file(path):
         a file object handle, or raises an error
     """
     
-    f = None
     retry = 0
     
-    while f is None and retry < 5:
+    while retry < 5:
         try:
-            f = io.open(path, "r", encoding = "latin_1")
+            return io.open(path, "r", encoding = "latin_1")
         except PermissionError as e:
             # if we get an error, wait a few seconds for other processes to
             # release the file, before retrying
             time.sleep(random.uniform(5, 10))
             retry += 1
     
-    if f is None:
-        raise sys.exc_info()
-    
-    return f
+    raise IOError("cannot access file, even after " + str(retry) + " tries. \
+        This is often seen when multiple procecess try to access a file, \
+        and the lustre filesystem is being stressed.")
 
 def open_known_genes(path="DDGP-reportable.txt"):
     """Loads list of known disease causative genes.
