@@ -33,9 +33,9 @@ def open_file(path):
             time.sleep(random.uniform(5, 10))
             retry += 1
     
-    raise IOError("cannot access file, even after " + str(retry) + " tries. \
-        This is often seen when multiple procecess try to access a file, \
-        and the lustre filesystem is being stressed.")
+    raise IOError("cannot access file, even after " + str(retry) + " tries.\n" \
+        + "This is often seen when multiple processes try to access a file,\n" \
+        + "and the lustre filesystem is being stressed.")
 
 def open_known_genes(path="DDGP-reportable.txt"):
     """Loads list of known disease causative genes.
