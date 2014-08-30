@@ -46,7 +46,7 @@ class Variant(object):
         elif gender in self.female_codes:
             self.gender = "female" 
         else:
-            raise ValueError
+            raise ValueError("unknown gender code")
         
         self.set_inheritance_type()
     
