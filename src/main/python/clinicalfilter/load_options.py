@@ -118,7 +118,7 @@ class LoadOptions(object):
             if self.options.father is not None:
                 family.add_father("father", self.options.father, self.options.dad_aff, "1")
             
-            self.families = {family.family_ID: family}
+            self.families = {family.family_id: family}
         else:
             self.families = ped.load_families(self.options.ped)
 

@@ -47,13 +47,14 @@ class VcfInfo(object):
         """
         
         # sometimes the variant lacks an HGNC field
-        if "HGNC" not in self.info:
-            if "gene" not in self.info:
-                self.gene = None
-            else:
-                self.gene = self.info["gene"]
-        else:
+        if "HGNC" in self.info:
             self.gene = self.info["HGNC"]
+        else:
+            self.gene = None
+            for gene_tag in self.tags["gene"]:
+                if gene_tag in self.info:
+                    self.gene = self.info[gene_tag]
+                    break
     
     def add_consequence(self):
         """ makes sure a consequence field is available in the info dict

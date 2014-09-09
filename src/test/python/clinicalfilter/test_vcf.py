@@ -34,7 +34,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         counter = 0
         total_trios = 1
         filters = {}
-        tags_dict = {}
+        tags_dict = {"gene": ["HGNC", "GN"]}
         
         self.vcf_loader = LoadVCFs(counter, total_trios, filters, tags_dict)
         
