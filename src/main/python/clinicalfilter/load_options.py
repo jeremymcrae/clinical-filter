@@ -37,6 +37,10 @@ def get_options():
     parser.add_argument("--export-vcf", dest="export_vcf", help="Directory or file path for analysis output in VCF format.")
     parser.add_argument("--log", dest="loglevel", default="debug", help="Level of logging to use, choose from: debug, info, warning, error or critical.")
     
+    # New argument added by PJ to allow DNM_PP filtering to be disabled.
+    parser.add_argument("--pp-filter-off", dest="pp_filter", action="store_false", help="Turn off filter PP_DNM > 0.9 (On by default)")
+    parser.set_defaults(pp_filter=True)
+
     args = parser.parse_args()
     
     if args.child is not None and args.alternate_ids is not None:
@@ -63,6 +67,7 @@ class LoadOptions(object):
         
         self.load_definitions_files()
         self.load_trio_paths()
+        self.pp_filter = self.options.pp_filter
         
     def load_definitions_files(self):
         """loads all the config files for the script (eg filters, gene IDs)

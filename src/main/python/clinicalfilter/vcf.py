@@ -37,7 +37,7 @@ class LoadVCFs(object):
         self.filters = filters
         self.tags_dict = tags_dict
     
-    def get_trio_variants(self, family):
+    def get_trio_variants(self, family, pp_filter):
         """ loads the variants for a trio
         
         Args:
@@ -52,7 +52,7 @@ class LoadVCFs(object):
         try:
             (child_vars, mother_vars, father_vars) = self.load_trio()
             variants = self.combine_trio_variants(child_vars, mother_vars, father_vars)
-            variants = self.filter_de_novos(variants)
+            variants = self.filter_de_novos(variants, pp_filter)
         except IOError as error:
             if self.family.has_parents():
                 mother_id = self.family.mother.get_id()
@@ -411,7 +411,7 @@ class LoadVCFs(object):
         
         return child_defs, mother_defs, father_defs
     
-    def filter_de_novos(self, variants):
+    def filter_de_novos(self, variants, pp_filter):
         """ filter the de novos variants in the VCF files
         
         Args:
@@ -431,7 +431,7 @@ class LoadVCFs(object):
         # denovogear filtering criteria
         passed_variants = []
         for var in variants:
-            if var.passes_de_novo_checks():
+            if var.passes_de_novo_checks(pp_filter):
                 passed_variants.append(var)
         
         return passed_variants
