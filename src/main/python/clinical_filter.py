@@ -17,7 +17,8 @@ python clinical_filter.py \
     --tags tags.txt \
     --known-genes known_genes.txt \
     --alternate-ids alternate_ids.txt \
-    --output output_name.txt
+    --output output_name.txt \
+    --pp-dnm-threshold threshold_as_float (default 0.9)
 
 Written by Jeremy McRae (jm33@sanger.ac.uk), derived from code by Saeed Al 
 Turki (sa9@sanger.ac.uk).

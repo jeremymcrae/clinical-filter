@@ -42,6 +42,7 @@ class LoadVCFs(object):
         
         Args:
             family: Family object for a trio
+            pp_filter float between 0 and 1, being the threshold for the PP_DNM filter
         
         Returns:
             list of filtered variants for a trio, as TrioGenotypes objects
@@ -416,6 +417,7 @@ class LoadVCFs(object):
         
         Args:
             variants: list of TrioGenotypes objects.
+            pp_filter float between 0 and 1, being the threshold for the PP_DNM filter
         
         Returns:
             a list of TrioGenotypes without the de novo variants that failed the 

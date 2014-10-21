@@ -131,7 +131,7 @@ class TrioGenotypes(object):
         filter it failed. Note that both parents have genotypes specified, as we
         have checked at an earlier stage that the parents are present.
         Args:
-            pp_filter boolean to indicate if the PP_DNM filter should be included.
+            pp_filter float between 0 and 1, being the threshold for the PP_DNM filter
 
         Returns:
             boolean value for whether the variant should be included
@@ -154,8 +154,8 @@ class TrioGenotypes(object):
         if len(set(self.child.info) & de_novo_field) < 1:
             return False
 
-        if pp_filter and "PP_DNM" in self.child.format and \
-                float(self.child.format["PP_DNM"]) <= 0.9:
+        if "PP_DNM" in self.child.format and \
+                float(self.child.format["PP_DNM"]) < pp_filter:
             return False
 
         for project_filter in project_filter_field:

@@ -38,13 +38,15 @@ def get_options():
     parser.add_argument("--log", dest="loglevel", default="debug", help="Level of logging to use, choose from: debug, info, warning, error or critical.")
     
     # New argument added by PJ to allow DNM_PP filtering to be disabled.
-    parser.add_argument("--pp-filter-off", dest="pp_filter", action="store_false", help="Turn off filter PP_DNM > 0.9 (On by default)")
-    parser.set_defaults(pp_filter=True)
+    parser.add_argument("--pp-dnm-threshold", dest="pp_filter", type=float, default=0.9, help="Set PP_DNM threshold for filtering (defaults to >=0.9)")
 
     args = parser.parse_args()
     
     if args.child is not None and args.alternate_ids is not None:
-        sys.exit("You can't specify alternate IDs when using --child")
+        argparse.ArgumentParser.error("You can't specify alternate IDs when using --child")
+
+    if args.pp_filter < 0.0 or args.pp_filter > 1:
+        argparse.ArgumentParser.error("--pp-dnm-threshold must be between 0 and 1")
     
     return args
 
