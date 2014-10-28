@@ -229,11 +229,19 @@ class TestVcfInfoPy(unittest.TestCase):
     def test_passes_filters_with_debug(self):
         """
         """
+        
+        # make a variant that will fail the filtering
         self.var.info["AF_AFR"] = "0.05"
+        
+        # get ready to capture the output from a print function
         out = StringIO()
         sys.stdout = out
+        
+        # check that the variant fails (and secondarily prints the failure mode)
         self.assertFalse(self.var.passes_filters_with_debug(self.default_filters))
         output = out.getvalue().strip()
+        
+        # check that the message about why the variant failed filtering is correct
         self.assertEqual(output, "failed AF_AFR: 0.05 not smaller_than  0.01")
     
     def test_passes_list(self):

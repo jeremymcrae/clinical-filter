@@ -39,10 +39,16 @@ def get_options():
     parser.add_argument("--debug-chrom", dest="debug_chrom", help="chromosome of variant for which to debug the filtering behaviour.")
     parser.add_argument("--debug-pos", dest="debug_pos", help="position of variant for which to debug the filtering behaviour.")
     
+    # New argument added by PJ to allow DNM_PP filtering to be disabled.
+    parser.add_argument("--pp-dnm-threshold", dest="pp_filter", type=float, default=0.9, help="Set PP_DNM threshold for filtering (defaults to >=0.9)")
+
     args = parser.parse_args()
     
     if args.child is not None and args.alternate_ids is not None:
-        sys.exit("You can't specify alternate IDs when using --child")
+        argparse.ArgumentParser.error("You can't specify alternate IDs when using --child")
+
+    if args.pp_filter < 0.0 or args.pp_filter > 1:
+        argparse.ArgumentParser.error("--pp-dnm-threshold must be between 0 and 1")
     
     return args
 
@@ -67,6 +73,7 @@ class LoadOptions(object):
         
         self.load_definitions_files()
         self.load_trio_paths()
+        self.pp_filter = self.options.pp_filter
         
     def load_definitions_files(self):
         """loads all the config files for the script (eg filters, gene IDs)

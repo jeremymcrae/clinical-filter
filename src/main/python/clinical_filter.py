@@ -17,7 +17,8 @@ python clinical_filter.py \
     --tags tags.txt \
     --known-genes known_genes.txt \
     --alternate-ids alternate_ids.txt \
-    --output output_name.txt
+    --output output_name.txt \
+    --pp-dnm-threshold threshold_as_float (default 0.9)
 
 Written by Jeremy McRae (jm33@sanger.ac.uk), derived from code by Saeed Al 
 Turki (sa9@sanger.ac.uk).
@@ -62,7 +63,7 @@ class ClinicalFilter(LoadOptions):
             self.family.set_child()
             while self.family.child is not None:
                 if self.family.child.is_affected():
-                    variants = self.vcf_loader.get_trio_variants(self.family)
+                    variants = self.vcf_loader.get_trio_variants(self.family, self.pp_filter)
                     self.vcf_provenance = self.vcf_loader.get_trio_provenance()
                     self.analyse_trio(variants)
                 

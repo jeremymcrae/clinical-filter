@@ -121,7 +121,7 @@ class TrioGenotypes(object):
         
         return de_novo_genotype
     
-    def passes_de_novo_checks(self):
+    def passes_de_novo_checks(self, pp_filter):
         """ checks if the child's de novo variants passes filters
 
         Some variants are de novo in the child, and if they are, then we should
@@ -130,6 +130,9 @@ class TrioGenotypes(object):
         that describes whether the variant passed screening, or if not, which
         filter it failed. Note that both parents have genotypes specified, as we
         have checked at an earlier stage that the parents are present.
+        Args:
+            pp_filter float between 0 and 1, being the threshold for the PP_DNM filter
+
         Returns:
             boolean value for whether the variant should be included
         """
@@ -152,7 +155,7 @@ class TrioGenotypes(object):
             return False
 
         if "PP_DNM" in self.child.format and \
-                float(self.child.format["PP_DNM"]) <= 0.9:
+                float(self.child.format["PP_DNM"]) < pp_filter:
             return False
 
         for project_filter in project_filter_field:

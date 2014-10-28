@@ -81,34 +81,39 @@ class TestTrioGenotypesPy(unittest.TestCase):
         """
         
         # check that a default de novo variant passes
-        self.assertTrue(self.var.passes_de_novo_checks())
+        self.assertTrue(self.var.passes_de_novo_checks(pp_filter=0.9))
         
         # check that TEAM29_FILTER != PASS fail
         self.var.child.format["TEAM29_FILTER"] = "fail"
-        self.assertFalse(self.var.passes_de_novo_checks())
+        self.assertFalse(self.var.passes_de_novo_checks(pp_filter=0.9))
         
         # check that vars fail without the TEAM29_FILTER field
         del self.var.child.format["TEAM29_FILTER"]
-        self.assertFalse(self.var.passes_de_novo_checks())
+        self.assertFalse(self.var.passes_de_novo_checks(pp_filter=0.9))
         
         # put the TEAM29_FILTER in, so later tests don't fail from its lack
         self.var.child.format["TEAM29_FILTER"] = "PASS"
         
         # check that vars fail without DENOVO-SNP or DENOVO-INDEL flags
         del self.var.child.info["DENOVO-SNP"]
-        self.assertFalse(self.var.passes_de_novo_checks())
+        self.assertFalse(self.var.passes_de_novo_checks(pp_filter=0.9))
         
         # make sure that DENOVO-INDEL flag can pass the de novo filter
         self.var.child.info["DENOVO-INDEL"] = True
-        self.assertTrue(self.var.passes_de_novo_checks())
+        self.assertTrue(self.var.passes_de_novo_checks(pp_filter=0.9))
         
         # check that de novos with low PP_DNM scores fail the de novo filter
         self.var.child.format["PP_DNM"] = 0.0099
-        self.assertFalse(self.var.passes_de_novo_checks())
+        self.assertFalse(self.var.passes_de_novo_checks(pp_filter=0.9))
+        
+        # check that de novos with low PP_DNM scores pass the de novo filter, if
+        # we are using a low PP_DNM threshold
+        self.var.child.format["PP_DNM"] = 0.0099
+        self.assertTrue(self.var.passes_de_novo_checks(pp_filter=0.0))
         
         # check that we don't fail a de novo if it lacks the PP_DNM annotation
         del self.var.child.format["PP_DNM"]
-        self.assertTrue(self.var.passes_de_novo_checks())
+        self.assertTrue(self.var.passes_de_novo_checks(pp_filter=0.9))
     
     def test_passes_de_novo_checks_X_chrom(self):
         """ test that passes_de_novo_checks() works on the X chromosome
@@ -119,23 +124,23 @@ class TestTrioGenotypesPy(unittest.TestCase):
         self.var.inheritance_type = "XChrMale"
         self.var.child.format["GT"] = "1/1"
         self.var.child.set_genotype()
-        self.assertTrue(self.var.passes_de_novo_checks())
+        self.assertTrue(self.var.passes_de_novo_checks(pp_filter=0.9))
         
         # and change a field so that it would fail
         del self.var.child.info["DENOVO-SNP"]
-        self.assertFalse(self.var.passes_de_novo_checks())
+        self.assertFalse(self.var.passes_de_novo_checks(pp_filter=0.9))
         
         # and change the variant fom a male X de novo genotype
         self.var.child.format["GT"] = "1/0"
         self.var.child.set_genotype()
-        self.assertTrue(self.var.passes_de_novo_checks())
+        self.assertTrue(self.var.passes_de_novo_checks(pp_filter=0.9))
         
         # now check that a female X chrom de novo passes
         self.trio.child.gender = "F"
         self.var.inheritance_type = "XChrFemale"
         self.var.child.set_genotype()
         self.var.child.info["DENOVO-SNP"] = True
-        self.assertTrue(self.var.passes_de_novo_checks())
+        self.assertTrue(self.var.passes_de_novo_checks(pp_filter=0.9))
     
     def test_get_de_novo_genotype(self):
         """ check that get_de_novo_genotype() works correctly

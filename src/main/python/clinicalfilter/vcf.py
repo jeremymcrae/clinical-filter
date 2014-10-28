@@ -45,11 +45,12 @@ class LoadVCFs(object):
         if debug_chrom is not None:
             SNV.passes_filters = SNV.passes_filters_with_debug
     
-    def get_trio_variants(self, family):
+    def get_trio_variants(self, family, pp_filter):
         """ loads the variants for a trio
         
         Args:
             family: Family object for a trio
+            pp_filter float between 0 and 1, being the threshold for the PP_DNM filter
         
         Returns:
             list of filtered variants for a trio, as TrioGenotypes objects
@@ -60,7 +61,7 @@ class LoadVCFs(object):
         try:
             (child_vars, mother_vars, father_vars) = self.load_trio()
             variants = self.combine_trio_variants(child_vars, mother_vars, father_vars)
-            variants = self.filter_de_novos(variants)
+            variants = self.filter_de_novos(variants, pp_filter)
         except IOError as error:
             if self.family.has_parents():
                 mother_id = self.family.mother.get_id()
@@ -419,11 +420,12 @@ class LoadVCFs(object):
         
         return child_defs, mother_defs, father_defs
     
-    def filter_de_novos(self, variants):
+    def filter_de_novos(self, variants, pp_filter):
         """ filter the de novos variants in the VCF files
         
         Args:
             variants: list of TrioGenotypes objects.
+            pp_filter float between 0 and 1, being the threshold for the PP_DNM filter
         
         Returns:
             a list of TrioGenotypes without the de novo variants that failed the 
@@ -439,7 +441,7 @@ class LoadVCFs(object):
         # denovogear filtering criteria
         passed_variants = []
         for var in variants:
-            if var.passes_de_novo_checks():
+            if var.passes_de_novo_checks(pp_filter):
                 passed_variants.append(var)
         
         return passed_variants
