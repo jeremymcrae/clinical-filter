@@ -242,7 +242,7 @@ class TestVcfInfoPy(unittest.TestCase):
         output = out.getvalue().strip()
         
         # check that the message about why the variant failed filtering is correct
-        self.assertEqual(output, "failed AF_AFR: 0.05 not smaller_than  0.01")
+        self.assertEqual(output, "failed AF_AFR: 0.05 not smaller_than 0.01")
     
     def test_passes_list(self):
         """ tests that passes_list() operates correctly
