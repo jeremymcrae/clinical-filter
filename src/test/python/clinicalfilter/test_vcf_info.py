@@ -227,7 +227,7 @@ class TestVcfInfoPy(unittest.TestCase):
             self.assertFalse(self.var.passes_filters(self.default_filters))
     
     def test_passes_filters_with_debug(self):
-        """
+        """ check that passes_filters_with_debug() generates a failure message
         """
         
         # make a variant that will fail the filtering
