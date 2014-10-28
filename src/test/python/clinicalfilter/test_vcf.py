@@ -324,7 +324,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         trio_variants = self.vcf_loader.combine_trio_variants(child_vars, mother_vars, father_vars)
         
         # check that vars without parents get passed through automatically
-        self.assertEqual(self.vcf_loader.filter_de_novos(trio_variants), trio_variants)
+        self.assertEqual(self.vcf_loader.filter_de_novos(trio_variants, 0.9), trio_variants)
         
         # now add parents to the family
         family.add_mother("mother_id", "mother_vcf_path", "1", "female")
@@ -335,12 +335,12 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         # check that vars with parents, and that appear to be de novo are
         # filtered out
-        self.assertEqual(self.vcf_loader.filter_de_novos(trio_variants), [])
+        self.assertEqual(self.vcf_loader.filter_de_novos(trio_variants, 0.9), [])
         
         # check that vars with parents, but which are not de novo, are retained
         mother_vars = child_vars
         trio_variants = self.vcf_loader.combine_trio_variants(child_vars, mother_vars, father_vars)
-        self.assertEqual(self.vcf_loader.filter_de_novos(trio_variants), trio_variants)
+        self.assertEqual(self.vcf_loader.filter_de_novos(trio_variants, 0.9), trio_variants)
         
         
         
