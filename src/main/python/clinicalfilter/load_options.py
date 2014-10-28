@@ -36,6 +36,8 @@ def get_options():
     parser.add_argument("-o", "--output", dest="output", help="Path for analysis output in tabular format.")
     parser.add_argument("--export-vcf", dest="export_vcf", help="Directory or file path for analysis output in VCF format.")
     parser.add_argument("--log", dest="loglevel", default="debug", help="Level of logging to use, choose from: debug, info, warning, error or critical.")
+    parser.add_argument("--debug-chrom", dest="debug_chrom", help="chromosome of variant for which to debug the filtering behaviour.")
+    parser.add_argument("--debug-pos", dest="debug_pos", help="position of variant for which to debug the filtering behaviour.")
     
     args = parser.parse_args()
     
@@ -57,6 +59,8 @@ class LoadOptions(object):
         
         self.output_path = self.options.output
         self.export_vcf = self.options.export_vcf
+        self.debug_chrom = self.options.debug_chrom
+        self.debug_pos = self.options.debug_pos
         
         # Attempt to recover a date for the dictionary of genes
         self.known_genes_date = self.options.genes_date

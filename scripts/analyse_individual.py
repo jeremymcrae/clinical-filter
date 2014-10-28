@@ -34,6 +34,8 @@ def get_options():
     parser.add_argument('-i', '--individual', dest='proband_ID', required=True, help='ID of proband to be analysed')
     parser.add_argument('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
     parser.add_argument('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
+    parser.add_argument('--debug-chrom', dest='debug_chrom', help='chromosome of variant to debug.')
+    parser.add_argument('--debug-pos', dest='debug_pos', help='position of variant to debug.')
     
     args = parser.parse_args()
     
@@ -101,6 +103,9 @@ def main():
     
     if not options.all_genes:
         filter_command += ["--known-genes", known_genes]
+    
+    if options.debug_chrom is not None:
+        filter_command += ["--debug-chrom", options.debug_chrom, "--debug-pos", options.debug_pos]
         
     full_command = " ".join(bjobs_preamble + filter_command)
     

@@ -6,7 +6,8 @@ class VcfInfo(object):
     filtering criteria.
     """
     
-    show_fail_point = False
+    debug_chrom = None
+    debug_pos = None
     
     def add_info(self, info_values, tags):
         """Parses the INFO column from VCF files.
@@ -163,12 +164,6 @@ class VcfInfo(object):
         
         return str(max_allele_frequency)
     
-    def show_fail(self, key, value, condition, filter_values):
-        """ prints why a named variant has failed filtering
-        """
-        print(str(key) + ": " + str(value) + " not " + str(condition) + \
-                  " " + str(filter_values))
-    
     def passes_filters(self, filters):
         """Checks whether a VCF record passes user defined criteria.
         
@@ -179,11 +174,22 @@ class VcfInfo(object):
             boolean value for whether the variant passes the filters
         """
         
-        self.show_fail_point = False
-        if self.get_chrom() == "4" and self.get_position() == "15602948":
-            self.show_fail_point = True
+        pass_value, key = self.check_filters(filters)
         
-        passes = True
+        return pass_value
+    
+    def check_filters(self, filters, debug=False):
+        """Checks whether a VCF record passes user defined criteria.
+        
+        Args:
+            filters: A dictionary of filtering criteria.
+            debug: if True, stop at the first failed filter, if false, 
+                check all the filters.
+            
+        Returns:
+            boolean value for whether the variant passes the filters
+        """
+        
         for key in self.info:
             if key not in filters:
                 continue
@@ -193,17 +199,35 @@ class VcfInfo(object):
             filter_values = filters[key][1]
             
             if condition == "list":
-                passes = self.passes_list(value, filter_values)
+                pass_value = self.passes_list(value, filter_values)
             elif condition == "smaller_than":
-                passes = self.passes_smaller_than(value, filter_values)
-                
-            if passes == False:
+                pass_value = self.passes_smaller_than(value, filter_values)
+            
+            # stop at the first failed filter
+            if not pass_value:
                 break
+                
+        return pass_value, key
+    
+    def passes_filters_with_debug(self, filters):
+        """Checks whether a VCF record passes user defined criteria.
         
-        if passes == False and self.show_fail_point:
-            self.show_fail(key, value, condition, filter_values)
+        Args:
+            filters: A dictionary of filtering criteria.
+            
+        Returns:
+            boolean value for whether the variant passes the filters
+        """
         
-        return passes
+        pass_value, key = self.check_filters(filters)
+        if pass_value == False and self.get_position() == self.debug_pos:
+            value = self.info[key]
+            condition = filters[key][0]
+            filter_values = filters[key][1]
+            print("failed {0}: {1} not {2}  {3}".format(key, value, condition, \
+                filter_values))
+        
+        return pass_value
     
     def passes_list(self, value, filter_values):
         """ checks whether the vcf value is within a list 

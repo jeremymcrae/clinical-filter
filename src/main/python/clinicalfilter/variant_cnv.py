@@ -171,7 +171,7 @@ class CNV(Variant, VcfInfo):
             return False
         
         track_variant = False
-        if self.get_position() == "30742589":
+        if self.get_chrom() == self.debug_chrom and self.get_position() == self.debug_pos:
             track_variant = True
         
         passes = True

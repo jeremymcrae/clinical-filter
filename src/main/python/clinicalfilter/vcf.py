@@ -21,7 +21,7 @@ class LoadVCFs(object):
     """ load VCF files for a trio
     """
     
-    def __init__(self, counter, total_trios, filters, tags_dict):
+    def __init__(self, counter, total_trios, filters, tags_dict, debug_chrom, debug_pos):
         """ intitalise the class with the filters and tags details etc
         
         Args:
@@ -36,6 +36,14 @@ class LoadVCFs(object):
         self.total_trios = total_trios
         self.filters = filters
         self.tags_dict = tags_dict
+        
+        SNV.debug_chrom = debug_chrom
+        SNV.debug_pos = debug_pos
+        CNV.debug_chrom = debug_chrom
+        CNV.debug_pos = debug_pos
+        
+        if debug_chrom is not None:
+            SNV.passes_filters = SNV.passes_filters_with_debug
     
     def get_trio_variants(self, family):
         """ loads the variants for a trio
