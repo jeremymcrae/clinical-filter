@@ -36,7 +36,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         filters = {}
         tags_dict = {"gene": ["HGNC", "GN"]}
         
-        self.vcf_loader = LoadVCFs(counter, total_trios, filters, tags_dict)
+        self.vcf_loader = LoadVCFs(counter, total_trios, filters, tags_dict, None, None)
         
         # make a temp directory for the cache file
         self.temp_dir = tempfile.mkdtemp()
@@ -341,6 +341,20 @@ class TestLoadVCFsPy(unittest.TestCase):
         mother_vars = child_vars
         trio_variants = self.vcf_loader.combine_trio_variants(child_vars, mother_vars, father_vars)
         self.assertEqual(self.vcf_loader.filter_de_novos(trio_variants), trio_variants)
+    
+    def test_debug_option(self):
+        """ test whether we can set up the class with the debug option
+        """
+        
+        counter = 0
+        total_trios = 1
+        filters = {}
+        tags_dict = {"gene": ["HGNC", "GN"]}
+        
+        self.vcf_loader = LoadVCFs(counter, total_trios, filters, tags_dict, "1", "10000")
+        
+        # check that the debug filter function got set correctly
+        self.assertEqual(SNV.passes_filters, SNV.passes_filters_with_debug)
         
         
         

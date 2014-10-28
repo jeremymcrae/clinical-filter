@@ -190,6 +190,7 @@ class VcfInfo(object):
             boolean value for whether the variant passes the filters
         """
         
+        pass_value = True
         for key in self.info:
             if key not in filters:
                 continue
@@ -212,6 +213,9 @@ class VcfInfo(object):
     def passes_filters_with_debug(self, filters):
         """Checks whether a VCF record passes user defined criteria.
         
+        This method replaces passes_filters() when we specify a chromosome and
+        position for debugging the filtering.
+        
         Args:
             filters: A dictionary of filtering criteria.
             
@@ -220,11 +224,13 @@ class VcfInfo(object):
         """
         
         pass_value, key = self.check_filters(filters)
+        
         if pass_value == False and self.get_position() == self.debug_pos:
             value = self.info[key]
             condition = filters[key][0]
             filter_values = filters[key][1]
-            print("failed {0}: {1} not {2}  {3}".format(key, value, condition, \
+            
+            print("failed {0}: {1} not {2} {3}".format(key, value, condition, \
                 filter_values))
         
         return pass_value

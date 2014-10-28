@@ -2,6 +2,9 @@
 """
 
 import unittest
+from io import StringIO
+import sys
+
 from clinicalfilter.variant_snv import SNV
 
 class TestVcfInfoPy(unittest.TestCase):
@@ -21,6 +24,8 @@ class TestVcfInfoPy(unittest.TestCase):
         
         # set up a SNV object, since SNV inherits VcfInfo
         self.var = SNV(chrom, pos, snp_id, ref, alt, filt)
+        self.var.debug_chrom = "1"
+        self.var.debug_pos = "15000000"
         
         self.default_info = "HGNC=ATRX;CQ=missense_variant;random_tag"
         self.default_tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": \
@@ -220,6 +225,16 @@ class TestVcfInfoPy(unittest.TestCase):
         for cq in vep_failing:
             self.var.info["CQ"] = cq
             self.assertFalse(self.var.passes_filters(self.default_filters))
+    
+    def test_passes_filters_with_debug(self):
+        """
+        """
+        self.var.info["AF_AFR"] = "0.05"
+        out = StringIO()
+        sys.stdout = out
+        self.assertFalse(self.var.passes_filters_with_debug(self.default_filters))
+        output = out.getvalue().strip()
+        self.assertEqual(output, "failed AF_AFR: 0.05 not smaller_than  0.01")
     
     def test_passes_list(self):
         """ tests that passes_list() operates correctly
