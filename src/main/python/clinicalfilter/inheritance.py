@@ -148,10 +148,12 @@ class Inheritance(object):
         """
         
         if variant.is_cnv():
-            cnv_checker = CNVInheritance(variant, self.trio, self.known_genes, self.cnv_regions)
-            check = cnv_checker.check_single_inheritance()
-            self.log_string = cnv_checker.log_string
-            return check
+            self.log_string = "skipping CNVs for now"
+            return "nothing"
+            # cnv_checker = CNVInheritance(variant, self.trio, self.known_genes, self.cnv_regions)
+            # check = cnv_checker.check_single_inheritance()
+            # self.log_string = cnv_checker.log_string
+            # return check
         
         if not self.trio.has_parents():
             return self.check_variant_without_parents(inheritance)
