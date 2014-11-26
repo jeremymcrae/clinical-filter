@@ -5,7 +5,7 @@ then submit a cluster array job filtering on the PED file.
 
 import os
 import sys
-import optparse
+import argparse
 import subprocess
 import random
 import glob
@@ -19,12 +19,13 @@ def get_options():
     """ gets the options from the command line
     """
     
-    parser = optparse.OptionParser()
-    parser.add_option('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
+    parser.add_argument('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
     
-    (opts, args) = parser.parse_args()
+    args = parser.parse_args()
     
-    return opts
+    return args
 
 def load_ped(ped_path):
     """ loads a pedigree file and excludes any parents
@@ -54,6 +55,10 @@ def main():
     options = get_options()
     logging_option = ["--log", options.loglevel]
     
+    all_genes_option = []
+    if options.all_genes:
+        all_genes_option = ["--all-genes"]
+    
     new_ped = load_ped(ped_file)
     
     # remove the temp files from the previous run
@@ -72,7 +77,7 @@ def main():
     random_file.close()
     
     # now set up the command for analysing the given pedigree file
-    filter_command = ["python", submit_script, "--ped", random_filename] + logging_option
+    filter_command = ["python", submit_script, "--ped", random_filename] + logging_option + all_genes_option
     
     subprocess.call(filter_command)
 

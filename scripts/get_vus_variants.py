@@ -136,8 +136,6 @@ def remove_common_lof_genes(variants, lof_genes):
             line = variants[person_id][key]
             hgnc_symbols = line[5].split(",")
             
-            # print(hgnc_symbols)
-            
             # find which genes for a variant match the common LOF genes
             common_lof_match = False
             for hgnc in hgnc_symbols:
@@ -215,8 +213,6 @@ def is_compound_het_lof(key, variants, lof_consequences):
         
         if alt_consequence in lof_consequences and "compound_het" in alt_result:
             lof_compound_hets += 1
-        
-    print(key, lof_compound_hets >= 2)
     
     return lof_compound_hets >= 2
 
@@ -245,16 +241,12 @@ def get_lof_recessive_variants(variants):
             
             chrom = key[1]
             
-            
             # if the variant is part of a compound het, both variants have to be
             # lof, so drop compound het variants where one of the pair is non-lof
             if "compound_het" in result and not is_compound_het_lof(key, variants[person_id], lof_consequences):
-                print(key)
                 if result == "compound_het":
                     continue
                 line[15] = "single_variant"
-            
-            # print(key, consequence in lof_consequences, inheritance not in dominant_inheritances)
             
             if consequence in lof_consequences and inheritance not in dominant_inheritances:
                 if person_id not in lof_variants:
@@ -336,7 +328,6 @@ def main():
     # and write the variants to a file
     omim_genes = open_omim_genes(omim_file)
     vus_vars = annotate_omim_gene(vus_vars, omim_genes)
-    # print(vus_vars.keys())
     write_output(output_file, vus_vars)
 
 
