@@ -126,12 +126,11 @@ class TrioGenotypes(object):
 
         Some variants are de novo in the child, and if they are, then we should
         subject them to additional filtering to see if they have been passed by
-        de novo gear, and an additional hardcoded filter called "TEAM29_FILTER"
-        that describes whether the variant passed screening, or if not, which
-        filter it failed. Note that both parents have genotypes specified, as we
+        denovogear. Note that both parents have genotypes specified, as we
         have checked at an earlier stage that the parents are present.
+        
         Args:
-            pp_filter float between 0 and 1, being the threshold for the PP_DNM filter
+            pp_filter: float between 0 and 1, being the threshold for the PP_DNM filter
 
         Returns:
             boolean value for whether the variant should be included
@@ -143,7 +142,6 @@ class TrioGenotypes(object):
         # the variant passed MAF, alternate frequency, and segmental duplication
         # criteria.
         de_novo_field = set(["DENOVO-SNP", "DENOVO-INDEL"])
-        project_filter_field = ["TEAM29_FILTER", "DENOVOGEAR_FILTER"]
 
         # if the variant is not de novo, don't worry about de novo filtering
         if self.get_trio_genotype() != self.get_de_novo_genotype():
@@ -157,12 +155,6 @@ class TrioGenotypes(object):
         if "PP_DNM" in self.child.format and \
                 float(self.child.format["PP_DNM"]) < pp_filter:
             return False
-
-        for project_filter in project_filter_field:
-            if project_filter in self.child.info:
-                return self.child.info[project_filter] == "PASS"
-            elif project_filter in self.child.format:
-                return self.child.format[project_filter] == "PASS"
 
         return False
 
