@@ -156,7 +156,7 @@ class TrioGenotypes(object):
                 float(self.child.format["PP_DNM"]) < pp_filter:
             return False
 
-        return False
+        return True
 
 
 
