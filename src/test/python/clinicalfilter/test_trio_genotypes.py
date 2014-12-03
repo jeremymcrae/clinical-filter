@@ -83,17 +83,6 @@ class TestTrioGenotypesPy(unittest.TestCase):
         # check that a default de novo variant passes
         self.assertTrue(self.var.passes_de_novo_checks(pp_filter=0.9))
         
-        # check that TEAM29_FILTER != PASS fail
-        self.var.child.format["TEAM29_FILTER"] = "fail"
-        self.assertFalse(self.var.passes_de_novo_checks(pp_filter=0.9))
-        
-        # check that vars fail without the TEAM29_FILTER field
-        del self.var.child.format["TEAM29_FILTER"]
-        self.assertFalse(self.var.passes_de_novo_checks(pp_filter=0.9))
-        
-        # put the TEAM29_FILTER in, so later tests don't fail from its lack
-        self.var.child.format["TEAM29_FILTER"] = "PASS"
-        
         # check that vars fail without DENOVO-SNP or DENOVO-INDEL flags
         del self.var.child.info["DENOVO-SNP"]
         self.assertFalse(self.var.passes_de_novo_checks(pp_filter=0.9))

@@ -110,13 +110,12 @@ class Family(object):
         self.child = None
     
     def has_parents(self):
-        """returns True/False for whether the family includes parental info
+        """ returns True/False for whether the family includes parental info
+        
+        Currently requires both parents to be included
         """
         
-        if self.father is None and self.mother is None:
-            return False
-        
-        return True
+        return self.father is not None and self.mother is not None
     
     def add_child(self, sample_id, path, affected_status, gender):
         """ adds a child
