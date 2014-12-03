@@ -6,6 +6,23 @@ class VcfInfo(object):
     filtering criteria.
     """
     
+    severity = {"transcript_ablation": 0, "splice_donor_variant": 1, \
+        "splice_acceptor_variant": 2, "stop_gained": 3, "frameshift_variant": 4, \
+        "stop_lost": 5, "initiator_codon_variant": 6, "inframe_insertion": 7, \
+        "inframe_deletion": 8, "missense_variant": 9, \
+        "transcript_amplification": 10, "splice_region_variant": 11, \
+        "incomplete_terminal_codon_variant": 12, "synonymous_variant": 13, \
+        "stop_retained_variant": 14, "coding_sequence_variant": 15, \
+        "mature_miRNA_variant": 16, "5_prime_UTR_variant": 17, \
+        "3_prime_UTR_variant": 18, "intron_variant": 19, \
+        "NMD_transcript_variant": 20, "non_coding_exon_variant": 21, \
+        "nc_transcript_variant": 22, "upstream_gene_variant": 23, \
+        "downstream_gene_variant": 24, "TFBS_ablation": 25, \
+        "TFBS_amplification": 26, "TF_binding_site_variant": 27, \
+        "regulatory_region_variant": 28, "regulatory_region_ablation": 29, \
+        "regulatory_region_amplification": 30, "feature_elongation": 31, \
+        "feature_truncation": 32, "intergenic_variant": 33}
+    
     debug_chrom = None
     debug_pos = None
     
@@ -61,13 +78,45 @@ class VcfInfo(object):
         """ makes sure a consequence field is available in the info dict
         """
         
-        # for consequence in self.tags["consequence"]:
-        #     if consequence in self.info:
-        #         self.info["CQ"] = self.info[consequence]
-        
         if "CQ" not in self.info:
             self.info["CQ"] = None
+        
+        # some variants have multiple alts, so we need to select the alt with 
+        # the most severe consequence. However, in at least one version of the 
+        # VCFs, one of the alts could have zero depth, which I believe resulted 
+        # from the population based multi-sample calling. We need to drop the
+        # consequences recorded for zero-depth alternate alleles before finding
+        # the most severe.
+        if "," in self.alt_allele:
+            # drop the consequence for zero-depth alleles
+            if "AC" in self.info:
+                cq = self.info["CQ"].split(",")
+                
+                # check if alleles are present in the individual
+                counts = [ x != "0" for x in self.info["AC"].split(",") ]
+                
+                # exclude the consequences for alleles with zero alleles
+                cq[:] = [ item for i,item in enumerate(cq) if counts[i] ]
+                
+                # convert the alleles back into a comma separated list
+                self.info["CQ"] = ",".join(cq)
             
+            consequences = self.info["CQ"].split(",")
+            self.info["CQ"] = self.get_most_severe_consequence(consequences)
+             
+    def get_most_severe_consequence(self, consequences):
+        """ find the most severe consequence from a list of vep consequence terms
+        """
+        
+        most_severe = ""
+        most_severe_score = 1000
+        for cq in self.severity:
+            if self.severity[cq] < most_severe_score:
+                most_severe = cq
+                most_severe_score = self.severity[cq]
+        
+        return most_severe
+       
     def is_lof(self):
         """ checks if a variant has a loss-of-function consequence
         """

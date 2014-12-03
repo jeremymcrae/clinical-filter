@@ -45,16 +45,33 @@ class SNV(Variant, VcfInfo):
             genotype: genotype in two character format. eg "0/0"
         
         Returns:
-            Genotype in single character format. eg 0
+            Count of non-reference alleles
         """
         
         if len(genotype) == 1:
             raise ValueError("genotype is only a single character")
         
-        genotype_dict = {"00": 0, "01": 1, "10": 1, "12": 1, "21": 1, \
-            "02": 1, "20": 1, "11": 2, "22": 2}
+        # split the genotype field (allow for phased genotypes)
+        try:
+            allele_1, allele_2 = genotype.split("/")
+        except ValueError:
+            allele_1, allele_2 = genotype.split("|")
         
-        return genotype_dict[genotype[0] + genotype[-1]]
+        assert self.is_number(allele_1)
+        assert self.is_number(allele_2)
+        
+        # if the two alleles are different, return 1, which roughly equates
+        # to heterozygous. Strictly this isn't quite true, since some variants
+        # might have both alleles as non-reference, but different from each
+        # other. The cases where this occurs all occur for indels, and appear to
+        # be poorly called variants, where it is likely that one of the alleles
+        # is actually for the reference. 
+        if allele_1 != allele_2:
+            return 1
+        elif allele_1 == "0" and allele_2 == "0":
+            return 0
+        
+        return 2
     
     def convert_genotype_code_to_alleles(self):
         """ converts a genotype to a set of alleles

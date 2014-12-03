@@ -63,19 +63,15 @@ class TestVariantSnvPy(unittest.TestCase):
             self.var.convert_genotype("0")
           
         # raise error when converting unknown genotype
-        with self.assertRaises(KeyError):
+        with self.assertRaises(AssertionError):
             self.var.convert_genotype("a/a")
             
         # also include other genotype format posibilities. None of these are
         # used, but since they aren't explicitly forbidden, make sure they work
         
         # check two character strings
-        self.assertEqual(self.var.convert_genotype("00"), 0)
-        self.assertEqual(self.var.convert_genotype("01"), 1)
-        
-        # check > three character strings
-        self.assertEqual(self.var.convert_genotype("00001"), 1)
-        self.assertEqual(self.var.convert_genotype("1000001"), 2)
+        self.assertEqual(self.var.convert_genotype("12|34"), 1)
+        self.assertEqual(self.var.convert_genotype("99|99"), 2)
     
     def test_set_default_genotype(self):
         """ test that set_default_genotype() operates correctly on the autosomes
