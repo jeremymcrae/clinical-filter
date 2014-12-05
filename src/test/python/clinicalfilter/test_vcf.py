@@ -31,12 +31,11 @@ class TestLoadVCFsPy(unittest.TestCase):
         """ define a default LoadVCFs object
         """
         
-        counter = 0
         total_trios = 1
         filters = {}
         tags_dict = {"gene": ["HGNC", "GN"]}
         
-        self.vcf_loader = LoadVCFs(counter, total_trios, filters, tags_dict, None, None)
+        self.vcf_loader = LoadVCFs(total_trios, filters, tags_dict, None, None)
         
         # make a temp directory for the cache file
         self.temp_dir = tempfile.mkdtemp()
@@ -352,7 +351,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         filters = {}
         tags_dict = {"gene": ["HGNC", "GN"]}
         
-        self.vcf_loader = LoadVCFs(counter, total_trios, filters, tags_dict, "1", "10000")
+        self.vcf_loader = LoadVCFs(total_trios, filters, tags_dict, "1", "10000")
         
         # check that the debug filter function got set correctly
         self.assertEqual(SNV.passes_filters, SNV.passes_filters_with_debug)
