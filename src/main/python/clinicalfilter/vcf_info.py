@@ -6,6 +6,9 @@ class VcfInfo(object):
     filtering criteria.
     """
     
+    # Here are the VEP consequences, ranked in severity from the most severe to
+    # the least severe as defined at: 
+    # http://www.ensembl.org/info/genome/variation/predicted_data.html
     severity = {"transcript_ablation": 0, "splice_donor_variant": 1, \
         "splice_acceptor_variant": 2, "stop_gained": 3, "frameshift_variant": 4, \
         "stop_lost": 5, "initiator_codon_variant": 6, "inframe_insertion": 7, \
@@ -51,8 +54,8 @@ class VcfInfo(object):
         # add the filter value, as we filter with the info dict
         self.info["FILTER"] = self.filter
         
+        self.set_consequence()
         self.add_gene_from_info()
-        self.add_consequence()
     
     def has_info(self):
         """ checks if the INFO field has been parsed and added to the object
@@ -74,7 +77,7 @@ class VcfInfo(object):
                     self.gene = self.info[gene_tag]
                     break
     
-    def add_consequence(self):
+    def set_consequence(self):
         """ makes sure a consequence field is available in the info dict
         """
         
@@ -100,12 +103,31 @@ class VcfInfo(object):
                 
                 # convert the alleles back into a comma separated list
                 self.info["CQ"] = ",".join(cq)
+                
+                if "HGNC" in self.info:
+                    enst = self.info["ENST"].split(",")
+                    hgnc = self.info["HGNC"].split(",")
+                    hgnc[:] = [ item for i,item in enumerate(hgnc) if counts[i] ]
+                    enst[:] = [ item for i,item in enumerate(enst) if counts[i] ]
+                    self.info["HGNC"] = ",".join(hgnc)
+                    self.info["ENST"] = ",".join(enst)
             
             consequences = self.info["CQ"].split(",")
             self.info["CQ"] = self.get_most_severe_consequence(consequences)
+            
+            if "HGNC" in self.info:
+                # and get the unique HGNC and transcripts
+                self.info["HGNC"] = ",".join(sorted(set(self.info["HGNC"].split(","))))
+                self.info["ENST"] = ",".join(sorted(set(self.info["ENST"].split(","))))
              
     def get_most_severe_consequence(self, consequences):
-        """ find the most severe consequence from a list of vep consequence terms
+        """ get the most severe consequence from a list of vep consequence terms
+        
+        Args:
+            consequences: list of VEP consequence strings
+        
+        Returns:
+            the most severe consequence string
         """
         
         most_severe = ""

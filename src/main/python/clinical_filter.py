@@ -21,7 +21,7 @@ python clinical_filter.py \
     --pp-dnm-threshold threshold_as_float (default 0.9)
 
 Written by Jeremy McRae (jm33@sanger.ac.uk), derived from code by Saeed Al 
-Turki (sa9@sanger.ac.uk).
+Turki (sa9@sanger.ac.uk) and Jeff Barrett.
 """
 
 import sys
@@ -45,14 +45,13 @@ class ClinicalFilter(LoadOptions):
         self.set_definitions(opts)
         self.report = Report(self.output_path, self.export_vcf, self.ID_mapper,
             self.tags_dict, self.known_genes_date)
-        self.counter = 0
     
     def filter_trios(self):
         """ loads trio variants, and screens for candidate variants
         """
         
-        self.vcf_loader = vcf.LoadVCFs(self.counter, len(self.families), \
-            self.filters, self.tags_dict, self.debug_chrom, self.debug_pos)
+        self.vcf_loader = vcf.LoadVCFs(len(self.families), self.filters, \
+             self.tags_dict, self.debug_chrom, self.debug_pos)
         
         # load the trio paths into the current path setup
         for family_ID in sorted(self.families):
@@ -68,7 +67,6 @@ class ClinicalFilter(LoadOptions):
                     self.analyse_trio(variants)
                 
                 self.family.set_child_examined()
-            self.counter += 1
         
         sys.exit(0)
     

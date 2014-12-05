@@ -21,7 +21,7 @@ class LoadVCFs(object):
     """ load VCF files for a trio
     """
     
-    def __init__(self, counter, total_trios, filters, tags_dict, debug_chrom, debug_pos):
+    def __init__(self, total_trios, filters, tags_dict, debug_chrom, debug_pos):
         """ intitalise the class with the filters and tags details etc
         
         Args:
@@ -32,7 +32,7 @@ class LoadVCFs(object):
         """
         
         self.family = None
-        self.counter = counter
+        self.counter = 0
         self.total_trios = total_trios
         self.filters = filters
         self.tags_dict = tags_dict
@@ -57,6 +57,7 @@ class LoadVCFs(object):
         """
         
         self.family = family
+        self.counter += 1
         
         try:
             (child_vars, mother_vars, father_vars) = self.load_trio()
@@ -72,6 +73,8 @@ class LoadVCFs(object):
             
             logging.error("trio with missing file - child: " + self.family.child.get_id() \
                 + ", mother: " + mother_id + ", father: " + father_id + ". " + str(error))
+            
+            raise(error)
         
         return variants
     

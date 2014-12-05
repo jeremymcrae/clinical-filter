@@ -22,6 +22,7 @@ app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 filter_code = os.path.join(app_folder, "src", "main", "python", "clinical_filter.py")
 filters = os.path.join(app_folder, "config", "filters.txt")
 tag_names = os.path.join(app_folder, "config", "tags.txt")
+deprecated_genes = os.path.join(app_folder, "config", "ddg2p_deprecated_hgnc.txt")
 
 datafreeze = "/nfs/ddd0/Data/datafreeze/1133trios_20131218/"
 known_genes = os.path.join(datafreeze, "DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv")
@@ -161,7 +162,12 @@ def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_pat
     fast_alternate_ids = os.path.join(home_lustre, os.path.basename(alternate_ids))
     shutil.copyfile(alternate_ids, fast_alternate_ids)
     
-    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--alternate-ids", fast_alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", syndrome_regions_filename] + log_options
+    # copy the syndrome regions to potentiall faster system
+    fast_syndrome_regions = os.path.join(home_lustre, os.path.basename(syndrome_regions_filename))
+    shutil.copyfile(syndrome_regions_filename, fast_syndrome_regions)
+    
+    # command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--alternate-ids", fast_alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", syndrome_regions_filename] + log_options
+    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", fast_syndrome_regions, "--deprecated-genes", deprecated_genes] + log_options
     
     # sometimes we don't want to restrict to the DDG2P genes, then all_genes
     # would be False and variants would be assessed in every gene.

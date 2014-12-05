@@ -37,7 +37,7 @@ def open_file(path):
         + "This is often seen when multiple processes try to access a file,\n" \
         + "and the lustre filesystem is being stressed.")
 
-def open_known_genes(path="DDGP-reportable.txt"):
+def open_known_genes(path="DDGP-reportable.txt", deprecated_genes=None):
     """Loads list of known disease causative genes.
     
     We obtain a list of genes that are known to be involved in disorders, so
@@ -46,6 +46,8 @@ def open_known_genes(path="DDGP-reportable.txt"):
     
     Args:
         path: path to tab-separated file listing known disease-causing genes.
+        deprecated_genes: dictionary of outdated gene symbols, mapped to their
+            updated HGNC symbols. Or None, if we haven't specified a file.
     
     Returns:
         A dictionary of genes, so we can check variants for inclusion in the 
@@ -124,6 +126,11 @@ def open_known_genes(path="DDGP-reportable.txt"):
                 known_genes[gene]["inheritance"]["Biallelic"] = set()
             known_genes[gene]["inheritance"]["Monoallelic"].add(gene_mechanism)
             known_genes[gene]["inheritance"]["Biallelic"].add(gene_mechanism)
+        
+        # make a matching entry for the updated HGNC symbol, if the HGNC symbol 
+        # has been deprecated
+        if deprecated_genes is not None and gene in deprecated_genes:
+            known_genes[deprecated_genes[gene]] = known_genes[gene]
     
     if len(known_genes) == 0:
         raise ValueError("No genes found in the file, check the line endings")
@@ -290,5 +297,34 @@ def open_cnv_regions(path):
     
     return cnv_regions
 
+def open_deprecated_gene_symbols(path):
+    """ opens a file containing deprecated gene HGNC symbols used in the DDG2P
+    
+    These gene symbols have been obtained by taking the set of HGNC symbols in
+    the DDG2P database for genes with "Confirmed DD Gene", "Probable DD Gene" 
+    and "Both DD and IF Gene" types. The updated gene symbols were obatiend from
+    http://www.genenames.org/cgi-bin/symbol_checker , where we excluded genes
+    with "Approved Symbols", and "Synonyms".
+    
+    Args:
+        path: path to file containing deprecated DDG2P HGNC symbols.
+    
+    Returns:
+        dictionary of new HGNC symbols, indexed by their old HGNC symbol.
+    """
+    
+    f = open_file(path)
+    header = f.readline().strip().split("\t")
+    
+    gene_symbols = {}
+    for line in f:
+        line = line.strip().split("\t")
+        
+        hgnc_old = line[0]
+        hgnc_new = line[2]
+        
+        gene_symbols[hgnc_old] = hgnc_new
+    
+    return gene_symbols
 
 
