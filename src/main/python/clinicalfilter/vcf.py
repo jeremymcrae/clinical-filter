@@ -76,6 +76,8 @@ class LoadVCFs(object):
             
             raise(error)
         
+        print(variants)
+        
         return variants
     
     def open_vcf_file(self, path):
@@ -283,7 +285,7 @@ class LoadVCFs(object):
         """
         
         # load the VCF file for each member of the trio
-        logging.info("opening trio " + str(self.counter + 1) + " of " + \
+        logging.info("opening trio " + str(self.counter) + " of " + \
             str(self.total_trios) + ". child path: " + \
             self.family.child.get_path())
         
@@ -323,7 +325,7 @@ class LoadVCFs(object):
         
         variants = []
         for var in child_vars:
-            trio = TrioGenotypes(var)
+            trio = TrioGenotypes(var, SNV.debug_chrom, SNV.debug_pos)
             
             # if we only have the child, then just add the variant to the list
             if self.family.has_parents() == False:

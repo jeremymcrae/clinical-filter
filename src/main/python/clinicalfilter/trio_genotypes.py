@@ -8,7 +8,7 @@ class TrioGenotypes(object):
     """ a class to hold genotypes for the members of a trio
     """
 
-    def __init__(self, child_variant):
+    def __init__(self, child_variant, debug_chrom=None, debug_pos=None):
         """ initiate the class with the childs variant
 
         Args:
@@ -21,6 +21,9 @@ class TrioGenotypes(object):
         self.position = self.child.get_position()
         self.inheritance_type = self.child.inheritance_type
         self.gene = self.child.gene
+        
+        self.debug_chrom = debug_chrom
+        self.debug_pos = debug_pos
 
     def convert_chrom_to_int(self, chrom):
         """ converts a chromosome string to an int (if possible) for sorting.
@@ -150,10 +153,14 @@ class TrioGenotypes(object):
         # check the VCF record to see whether the variant has been screened out.
         # Either DENOVO-SNP or DENOVO-INDEL should be in the info.
         if len(set(self.child.info) & de_novo_field) < 1:
+            if self.get_chrom() == self.debug_chrom and self.get_position() == self.debug_pos:
+                print(self, "failed DENOVO-SNP/INDEL check")
             return False
 
         if "PP_DNM" in self.child.format and \
                 float(self.child.format["PP_DNM"]) < pp_filter:
+            if self.get_chrom() == self.debug_chrom and self.get_position() == self.debug_pos:
+                print(self, "failed PP_DNM threshold")
             return False
 
         return True

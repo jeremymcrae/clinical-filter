@@ -21,11 +21,13 @@ class PostInheritanceFilter(object):
     """ Apply some post inheritance filters to flagged variants
     """
     
-    def __init__(self, variants):
+    def __init__(self, variants, debug_chrom=None, debug_pos=None):
         """intialise the class with the some definitions
         """
         
         self.variants = variants
+        self.debug_chrom = debug_chrom
+        self.debug_pos = debug_pos
     
     def filter_variants(self):
         """ loads trio variants, and screens for candidate variants
@@ -78,6 +80,8 @@ class PostInheritanceFilter(object):
                 passed_vars.append((var, check, inh))
             else:
                 logging.debug(str(var) + " dropped from excess CNVs in proband")
+                if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
+                    print(str(var) + " dropped from excess CNVs in proband")
         
         return  passed_vars
     
@@ -109,6 +113,8 @@ class PostInheritanceFilter(object):
                     passed_vars.append((var, check, inh))
                 else:
                     logging.debug(str(var) + " dropped from low MAF in non-biallelic variant")
+                    if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
+                        print(str(var) + " dropped from low MAF in non-biallelic variant")
         
         return passed_vars
     
@@ -147,6 +153,8 @@ class PostInheritanceFilter(object):
                 passed_vars.append((var, check, inh))
             else:
                 logging.debug(str(var) + " dropped from polyphen prediction")
+                if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
+                    print(str(var) + " dropped from polyphen prediction")
         
         return passed_vars
     
