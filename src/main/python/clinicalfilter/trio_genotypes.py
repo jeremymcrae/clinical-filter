@@ -162,6 +162,12 @@ class TrioGenotypes(object):
             if self.get_chrom() == self.debug_chrom and self.get_position() == self.debug_pos:
                 print(self, "failed PP_DNM threshold")
             return False
+        
+        if "TEAM29_FILTER" in self.child.format:
+            if self.child.format["TEAM29_FILTER"] != "PASS":
+                if self.get_chrom() == self.debug_chrom and self.get_position() == self.debug_pos:
+                    print(self, "failed TEAM29_FILTER")
+                return False
 
         return True
 

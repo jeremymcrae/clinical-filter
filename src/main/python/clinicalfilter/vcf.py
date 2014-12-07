@@ -76,8 +76,6 @@ class LoadVCFs(object):
             
             raise(error)
         
-        print(variants)
-        
         return variants
     
     def open_vcf_file(self, path):

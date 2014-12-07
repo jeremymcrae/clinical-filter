@@ -132,7 +132,7 @@ class VcfInfo(object):
         
         most_severe = ""
         most_severe_score = 1000
-        for cq in self.severity:
+        for cq in consequences:
             if self.severity[cq] < most_severe_score:
                 most_severe = cq
                 most_severe_score = self.severity[cq]
