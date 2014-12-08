@@ -41,7 +41,7 @@ add-version:
 clean-srcdir-git:
 	find $(SRCDIR)/src/main/ | grep "/\.gitignore"$ | xargs -I '{}' rm {}
 
-install-config: $(SRCDIR)/config/tags.txt $(SRCDIR)/config/filters.txt
+install-config: $(SRCDIR)/config/tags.txt $(SRCDIR)/config/filters.txt $(SRCDIR)/config/ddg2p_deprecated_hgnc.txt
 	$(INSTALL) -d -m 0755 $(CLINICAL_FILTER_CONFIGDIR)
 	$(INSTALL) -m 0644 $^ $(CLINICAL_FILTER_CONFIGDIR) 
 
