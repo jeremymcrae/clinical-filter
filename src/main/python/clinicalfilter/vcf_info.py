@@ -150,30 +150,39 @@ class VcfInfo(object):
         
         return self.info["CQ"] in lof_consequences
     
-    def get_number(self, values):
-        """ converts a string into a number
+    def get_allele_frequency(self, values):
+        """ extracts the allele frequency float from a VCF string
         
-        This function is used for GAPI VCF files which might have multiple files
-        seprated by "," at INFO columns. This should be used for generic VCF
-        as the end user may not know the only the first value is returned 
+        The allele frequency for a population can be encoded in several ways,
+        either as a single float (eg "0.01"), or as a missing value (eg "."), 
+        or there can be a list of allele frequencies for the different alternate
+        alleles for the variant (eg "0.01,0.05,0.06"), or list containing floats
+        and missing values. We need to return the allele frequency as a float,
+        but if there are multiple allele frequencies, we return the largest
+        float.
+        
+        Args:
+            values: string for allele frequency eg "0.01" or ".", or 
+                "0.01,.,0.06". Sometimes we might even get values passed in as
+                a float, or a None type.
+        
+        Returns:
+            allele frequency as float
         """
-        # if the string can be directly converted to a float, simply return that
-        try:
-            value = float(values)
-        # occasionally we get comma-separated pairs (eg '.,0.639860'). Try to 
-        # convert each of these in turn, if any can be converted to floats, 
-        # return that value
-        except ValueError:
-            values = values.split(",")
-            for value in values:
-                try:
-                    value = float(value)
-                    break
-                except ValueError:
-                    pass
-        except:
-            value = values
-        return value
+        
+        if isinstance(values, float):
+            return values
+        
+        if values is None:
+            return 0
+        
+        values = values.split(",")
+        values = [ float(x) for x in values if self.is_number(x) ]
+        
+        if values == []:
+            values = [0]
+        
+        return max(values)
     
     def is_number(self, value):
         """ determines whether a value represents a number.
@@ -221,7 +230,7 @@ class VcfInfo(object):
         # popuation (DDD_AF), and a AF_MAX field)
         for key in populations:
             if key in self.info:
-                number = self.get_number(self.info[key])
+                number = self.get_allele_frequency(self.info[key])
                 if not self.is_number(number):
                     continue
                 # if number > 0.5:
@@ -322,11 +331,11 @@ class VcfInfo(object):
         # some of the MAF values are 1 - MAF due to being for a population that 
         # was genotyped on the opposing strand. We need to convert those back.
         # if key in self.tags["MAX_MAF"]:
-        #     value = self.get_number(value)
+        #     value = self.get_allele_frequency(value)
         #     if self.is_number(value):
         #         if value > 0.5:
         #             value = 1 - value
-        value = self.get_number(value)
+        value = self.get_allele_frequency(value)
         
         if not self.is_number(value):
             return True

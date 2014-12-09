@@ -87,27 +87,27 @@ class TestVcfInfoPy(unittest.TestCase):
         self.var.info["CQ"] = None
         self.assertFalse(self.var.is_lof())
     
-    def test_get_number(self):
+    def test_get_allele_frequency(self):
         """ tests that number conversion works as expected
         """
         
         # single number returns that number
-        self.assertEqual(self.var.get_number("1"), 1)
+        self.assertEqual(self.var.get_allele_frequency("1"), 1)
         
         # two numbers return one number
-        self.assertEqual(self.var.get_number("1,1"), 1)
+        self.assertEqual(self.var.get_allele_frequency("1,1"), 1)
         
-        # two numbers return the first number
-        self.assertEqual(self.var.get_number("1,2"), 1)
+        # two numbers return the highest number
+        self.assertEqual(self.var.get_allele_frequency("1,2"), 2)
         
         # number and string return the number
-        self.assertEqual(self.var.get_number("a,1"), 1)
+        self.assertEqual(self.var.get_allele_frequency("a,1"), 1)
         
         # single string value returns that string
-        self.assertEqual(self.var.get_number("a"), "a")
+        self.assertEqual(self.var.get_allele_frequency("a"), 0)
         
         # multiple string values return the first string value
-        self.assertEqual(self.var.get_number("a,b"), "b")
+        self.assertEqual(self.var.get_allele_frequency("a,b"), 0)
     
     def test_is_number(self):
         """ tests that we can check if a value represents a number
