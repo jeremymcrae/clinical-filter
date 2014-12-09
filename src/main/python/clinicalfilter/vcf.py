@@ -63,7 +63,7 @@ class LoadVCFs(object):
             (child_vars, mother_vars, father_vars) = self.load_trio()
             variants = self.combine_trio_variants(child_vars, mother_vars, father_vars)
             variants = self.filter_de_novos(variants, pp_filter)
-        except IOError as error:
+        except OSError as error:
             if self.family.has_parents():
                 mother_id = self.family.mother.get_id()
                 father_id = self.family.father.get_id()
@@ -388,9 +388,15 @@ class LoadVCFs(object):
             directory), and date the VCF file was generated
         """
         
-        handle = open(path, "rb")
-        vcf_checksum = hashlib.sha1(handle.read()).hexdigest()
-        handle.close()
+        # get the SHA1 hash of the VCF file (in a memory efficient manner)
+        BLOCKSIZE=65536
+        vcf_checksum = hashlib.sha1()
+        with open(path, "rb") as handle:
+            buf = handle.read(BLOCKSIZE)
+            while len(buf) > 0:
+                vcf_checksum.update(buf)
+                buf = handle.read(BLOCKSIZE)
+        vcf_checksum = vcf_checksum.hexdigest()
         
         vcf_basename = os.path.basename(path)
         
