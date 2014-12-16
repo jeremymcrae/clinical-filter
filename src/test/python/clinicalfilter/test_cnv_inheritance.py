@@ -7,7 +7,7 @@ from clinicalfilter.ped import Person
 from clinicalfilter.variant import Variant
 from clinicalfilter.variant_cnv import CNV
 from clinicalfilter.inheritance import CNVInheritance
-from clinicalfilter.vcf_info import VcfInfo
+from clinicalfilter.variant_info import VariantInfo
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
 
@@ -30,7 +30,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.variant = self.create_variant(child_gender)
         
         # make sure we've got known genes data
-        self.known_genes = {"TEST": {"inheritance": {"Monoallelic": {"Loss of function"}}, "confirmed_status": {"Confirmed DD Gene"}, "start": "5000", "end": "6000"}}
+        self.known_genes = {"TEST": {"inheritance": {"Monoallelic": {"Loss of function"}}, "confirmed_status": {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         syndrome_regions = {("1", "1000", "2000"): 1}
         
@@ -48,13 +48,11 @@ class TestCNVInheritancePy(unittest.TestCase):
         # set up a SNV object, since SNV inherits VcfInfo
         var = CNV(chrom, pos, snp_id, ref, alt, filt)
         
-        tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
-        
         info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000"
         format_keys = "INHERITANCE:DP"
         sample_values = inh + ":50"
         
-        var.add_info(info, tags)
+        var.add_info(info)
         var.add_format(format_keys, sample_values)
         var.set_gender(gender)
         var.set_genotype()
@@ -275,7 +273,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         gene_inh = {"TEST": {"inheritance": {"Monoallelic": \
             {"Increased gene dosage"}}, "confirmed_status": \
-            {"Confirmed DD Gene"}, "start": "5000", "end": "6000"}}
+            {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         gene = "TEST"
         inh = "Monoallelic"
@@ -335,7 +333,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         gene_inh = {"TEST": {"inheritance": {"Monoallelic": \
             {"Loss of Function"}, "X-linked dominant": \
             {"Loss of Function"}}, "confirmed_status": \
-            {"Confirmed DD Gene"}, "start": "5000", "end": "6000"}}
+            {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         self.inh.known_genes = gene_inh
             
@@ -343,22 +341,22 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.assertTrue(self.inh.passes_intragenic_dup(gene, inh))
         
         # make a CNV that surrounds the entire gene, which will fail
-        self.inh.variant.position = "4800"
+        self.inh.variant.child.position = 4800
         self.inh.variant.child.info["END"] = "6200"
         self.assertFalse(self.inh.passes_intragenic_dup(gene, inh))
         
         # make a CNV where the gene exactly overlaps, which will fail
-        self.inh.variant.position = "5000"
+        self.inh.variant.child.position = 5000
         self.inh.variant.child.info["END"] = "6000"
         self.assertFalse(self.inh.passes_intragenic_dup(gene, inh))
         
         # make a CNV where the gene protrudes at the 5' end, which will pass
-        self.inh.variant.position = "5200"
+        self.inh.variant.child.position = 5200
         self.inh.variant.child.info["END"] = "6200"
         self.assertTrue(self.inh.passes_intragenic_dup(gene, inh))
         
         # make a CNV where the gene protrudes at the 3' end, which will pass
-        self.inh.variant.position = "4800"
+        self.inh.variant.child.position = 4800
         self.inh.variant.child.info["END"] = "5800"
         self.assertTrue(self.inh.passes_intragenic_dup(gene, inh))
         
@@ -376,8 +374,8 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         # set the variant key and copy number to known values
         self.variant.child.chrom = "1"
-        self.variant.child.start_position = "1000"
-        self.variant.child.end_position = "2000"
+        self.variant.child.position = 1000
+        self.variant.child.info["END"] = 2000
         self.variant.child.info["CNS"] = "1"
         
         syndrome_regions = {("2", "5000", "6000"): 1, ("3", "8000", "9000"): 0}
@@ -442,7 +440,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         gene_inh = {"TEST": {"inheritance": {"Biallelic": \
             {"Increased gene dosage"}}, "confirmed_status": \
-            {"Confirmed DD Gene"}, "start": "5000", "end": "6000"}}
+            {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         self.inh.known_genes = gene_inh
         self.inh.variant.chrom = "1"
@@ -479,7 +477,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         gene_inh = {"TEST": {"inheritance": {"Hemizygous": \
             {"Increased gene dosage"}}, "confirmed_status": \
-            {"Confirmed DD Gene"}, "start": "5000", "end": "6000"}}
+            {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         self.inh.known_genes = gene_inh
         self.inh.variant.chrom = "X"
@@ -506,13 +504,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.trio.child.gender = "F"
         self.inh.variant.child.info["CNS"] = "3"
         self.assertFalse(self.inh.check_compound_inheritance())
-        
-        
-        
-        
-        
-        
-        
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -111,8 +111,8 @@ def open_known_genes(path="DDGP-reportable.txt", deprecated_genes=None):
         
         known_genes[gene]["inheritance"][gene_inheritance].add(gene_mechanism)
         known_genes[gene]["confirmed_status"].add(gene_confirmed_status)
-        known_genes[gene]["start"] = line[start_column]
-        known_genes[gene]["end"] = line[stop_column]
+        known_genes[gene]["start"] = int(line[start_column])
+        known_genes[gene]["end"] = int(line[stop_column])
         known_genes[gene]["chrom"] = line[chrom_column]
         
         # some genes are listed with an inheritance mode of "Both", which means 

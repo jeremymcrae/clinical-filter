@@ -10,8 +10,8 @@ assessed after the standard filters
         biallelic variants, they have a 1% threshold. We can only filter these 
         out once we have found variants that pass the different inheritance 
         models - then we can check if they are biallelelic or not.
-    We fail SNVs with polyphen=benign, except if the SNV is in a compound het, 
-        then we require both SNVs to be polyphen=benign
+    We fail SNVs with polyphen=benign, even if a compound pair of the SNV is 
+        polyphen=benign, we require both SNVs to be polyphen=not benign
 """
 
 import sys
@@ -97,19 +97,19 @@ class PostInheritanceFilter(object):
         
         passed_vars = []
         for (var, check, inh) in variants:
-            populations = var.child.tags["MAX_MAF"]
-            max_maf = var.child.find_max_allele_frequency(populations)
-            if max_maf == "NA": # set maf=NA to 0 to reduce later checks
+            # populations = var.child.tags["MAX_MAF"]
+            max_maf = var.child.find_max_allele_frequency()
+            if max_maf is None: # set maf=NA to 0 to reduce later checks
                 max_maf = 0
             
             if inh == "Biallelic":
                 passed_vars.append((var, check, inh))
             # variants with multiple inheritance types should be left as 
             # Biallelic if the other inheritance type fails the MAF threshold
-            elif "Biallelic" in inh and float(max_maf) >= 0.001:
+            elif "Biallelic" in inh and max_maf >= 0.001:
                 passed_vars.append((var, check, "Biallelic"))
             else:
-                if float(max_maf) <= 0.001:
+                if max_maf <= 0.001:
                     passed_vars.append((var, check, inh))
                 else:
                     logging.debug(str(var) + " dropped from low MAF in non-biallelic variant")
@@ -137,6 +137,7 @@ class PostInheritanceFilter(object):
         for (var, check, inh) in variants:
             passes = False
             
+            # check if the variant on it's own would pass
             if "PolyPhen" not in var.child.info or \
                     not var.child.info["PolyPhen"].startswith("benign") or \
                     var.get_trio_genotype() == var.get_de_novo_genotype():
@@ -146,10 +147,7 @@ class PostInheritanceFilter(object):
             # gene, compound_het, and polyphen benign
             benign_match = self.has_compound_match(var, variants)
             
-            if "compound_het" in check and not benign_match:
-                passes = True
-            
-            if passes:
+            if passes and not benign_match:
                 passed_vars.append((var, check, inh))
             else:
                 logging.debug(str(var) + " dropped from polyphen prediction")
@@ -172,29 +170,35 @@ class PostInheritanceFilter(object):
             True/false for whether there is a compound het match
         """
         
-        benign_match = False
+        # get a list of the variants in the gene
+        compound_vars = []
         for (alt_var, alt_check, alt_inh) in variants:
-            # ignore if we are looking at the same var, or in another gene
-            if alt_var == var or var.child.gene != alt_var.child.gene:
+            # ignore if we are looking at another gene
+            if var.child.gene != alt_var.child.gene:
                 continue
-            
             if "compound_het" not in alt_check:
                 continue
+            compound_vars.append(alt_var)
             
-            if "PolyPhen" not in alt_var.child.info:
-                continue
-            
-            # exclude de novos
-            if alt_var.get_trio_genotype() == alt_var.get_de_novo_genotype():
-                continue
-            
-            if alt_var.child.info["PolyPhen"].startswith("benign"):
-                benign_match = True
-            else:
-                benign_match = False
-                break
+        if len(compound_vars) == 0:
+            return False
         
-        return benign_match
+        # run through the variants, find all the variants that are not benign,
+        # or are benign but de novo.
+        not_benign = []
+        for alt_var in compound_vars:
+            if "PolyPhen" not in alt_var.child.info:
+                not_benign.append(alt_var)
+            elif alt_var.get_trio_genotype() == alt_var.get_de_novo_genotype():
+                not_benign.append(alt_var)
+            elif not alt_var.child.info["PolyPhen"].startswith("benign"):
+                not_benign.append(alt_var)
+        
+        # if we have more than two non-benign variants with different genotypes, 
+        # then we don't want to exclude these variants
+        genotypes = set([ x.get_trio_genotype() for x in not_benign ])
+        
+        return len(genotypes) <= 1
         
         
         

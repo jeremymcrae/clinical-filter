@@ -1,7 +1,3 @@
-FILTER	list	PASS,.
-VCQ	list	transcript_ablation,splice_donor_variant,splice_acceptor_variant,frameshift_variant,initiator_codon_variant,inframe_insertion,inframe_deletion,missense_variant,transcript_amplification,stop_gained,stop_lost,coding_sequence_variant
-#UK10KtwinsMAF	smaller_than	0.01
-MAX_MAF	smaller_than	0.01
-#EVS_ALL	smaller_than	1.0
-#SIFT	multiple_not	(SIFT, tolerated), (PolyPhen, benign)
-#PolyPhen	multiple_not	(SIFT, tolerated), (PolyPhen, benign)
+#FILTER	list	PASS,.
+#VCQ	list	transcript_ablation,splice_donor_variant,splice_acceptor_variant,frameshift_variant,initiator_codon_variant,inframe_insertion,inframe_deletion,missense_variant,transcript_amplification,stop_gained,stop_lost,coding_sequence_variant
+#MAX_MAF	smaller_than	0.01

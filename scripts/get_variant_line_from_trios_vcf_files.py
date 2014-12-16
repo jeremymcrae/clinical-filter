@@ -1,29 +1,27 @@
 
-import user
-import gzip
-import logging
-import os
-import sys
-import optparse
-import subprocess
-import random
-import glob
+from __future__ import print_function
 
-user_folder = "/nfs/users/nfs_j/jm33/"
-ped_file = os.path.join(user_folder, "exome_reporting.ped")
+import gzip
+import os
+import argparse
+
+USER_FOLDER = "/nfs/users/nfs_j/jm33/"
+PED_FILE = os.path.join(USER_FOLDER, "exome_reporting.ped")
 
 def get_options():
     """ gets the options from the command line
     """
     
-    parser = optparse.OptionParser()
-    parser.add_option('-i', '--individual', dest='proband_ID', help='ID of proband to be analysed')
-    parser.add_option('--chrom', dest='chrom', help='chrom of variant')
-    parser.add_option('--position', dest='position', help='position')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--individual', dest='proband_ID', \
+        required=True, help='ID of proband to be analysed')
+    parser.add_argument('--chrom', help='chrom of variant')
+    parser.add_argument('--position', help='position')
+    parser.add_argument('--ped', help='path to ped file')
     
-    (opts, args) = parser.parse_args()
+    args = parser.parse_args()
     
-    return opts
+    return args
 
 def load_ped(ped_path, proband_ID):
     """ loads the pedigree details for a prband
@@ -67,10 +65,7 @@ def load_single_position(vcf_path, chrom_name, position):
     """
     
     # open the VCF file
-    if vcf_path.endswith(".gz"):
-        f =  gzip.open(vcf_path,'r')
-    elif vcf_path.endswith(".vcf") or vcf_path.endswith(".txt"):
-        f = open(vcf_path,'r')
+    f =  gzip.open(vcf_path,'r')
     
     # remove the header
     for line in f:
@@ -80,14 +75,11 @@ def load_single_position(vcf_path, chrom_name, position):
             continue
     
     # select the lines for a single chromosome, at a single position
-    vcf_records = []
     for line in f:
-        if line[:7].split("\t")[0] == chrom_name:
-            if line[:30].split("\t")[1] == position:
-                vcf_records.append(line)
-                return vcf_records
+        if line[:7].split("\t")[0] == chrom_name and line[:30].split("\t")[1] == position:
+            return line
     
-    return vcf_records
+    return []
 
 def parse_vcf_lines(vcf_records):
     """ organises the information in VCF lines into a dictionary format, indexed by chr position.
@@ -117,16 +109,15 @@ def parse_vcf_lines(vcf_records):
         info = line[7]
         for item in info.split(";"):
             if "=" in item:
-                k, v = item.split("=")
+                key, value = item.split("=")
             else:
-                k, v = item, "1"
-            variants[pos][k] = v
+                key, value = item, "1"
+            variants[pos][key] = value
         
         # split the format and genotype fields into key value pairs
         tag_labels = line[8].split(":") # the first item in formats are the tags DP:FP:ETC
         tag_values = line[9].split(":") # the second item are the corresponding values.
-        for i, value in enumerate(tag_values):
-            variants[pos][tag_labels[i]] = value
+        variants[pos].update(dict(zip(tag_labels, tag_values)))
         
     return variants
 
@@ -157,10 +148,11 @@ def main():
     chromosome = options.chrom
     position = options.position
     
-    if proband_ID == None:
-        sys.exit("you need to specify a proband ID using '-i' or '--individual'")
+    ped_path = options.ped
+    if options.ped is None:
+        ped_path = PED_FILE
     
-    new_ped = load_ped(ped_file, proband_ID)
+    new_ped = load_ped(ped_path, proband_ID)
     
     for line in new_ped:
         line = line.split()
@@ -186,8 +178,11 @@ def main():
     maternal_vcf = find_single_position(proband_ID, maternal_vcf_path, chromosome, position)
     paternal_vcf = find_single_position(proband_ID, paternal_vcf_path, chromosome, position)
     
-    print proband_vcf
-    print maternal_vcf
-    print paternal_vcf
-    
-main()
+    print(proband_vcf)
+    print(maternal_vcf)
+    print(paternal_vcf)
+
+
+if __name__ == '__main__':
+    main()
+

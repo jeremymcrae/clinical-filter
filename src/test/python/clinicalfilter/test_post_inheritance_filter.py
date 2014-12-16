@@ -24,7 +24,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         self.post_filter = PostInheritanceFilter(variants)
         
-    def create_var(self, chrom, snv=True):
+    def create_var(self, chrom, snv=True, geno=["0/1", "0/1", "0/1"]):
         """ define a family and variant, and start the Inheritance class
         
         Args:
@@ -34,9 +34,9 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # generate a test variant
         if snv:
-            child_var = self.create_snv(chrom)
-            mom_var = self.create_snv(chrom)
-            dad_var = self.create_snv(chrom)
+            child_var = self.create_snv(chrom, geno[0])
+            mom_var = self.create_snv(chrom, geno[1])
+            dad_var = self.create_snv(chrom, geno[2])
         else:
             child_var = self.create_cnv(chrom)
             mom_var = self.create_cnv(chrom)
@@ -48,7 +48,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         return var
     
-    def create_snv(self, chrom):
+    def create_snv(self, chrom, geno="0/1"):
         """ create a default variant
         """
         
@@ -62,37 +62,10 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         var = SNV(chrom, pos, snp_id, ref, alt, filt)
         
         default_info = "HGNC=ATRX;CQ=missense_variant;random_tag;AF_AFR=0.0001"
-        default_tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": \
-            ["VCQ", "CQ"], "MAX_MAF": ["AF_MAX", "MAX_AF", "1000G_AF", \
-            "1KG_AF", "AF_AFR", "AF_AMR", "AF_ASN", "AF_EUR", \
-            "UK10K_cohort_AF", "ESP_AF", "DDD_AF", "ASN_AF", "AFR_AF", \
-            "EUR_AF", "AMR_AF"], "transcript": ["ENSEMBL_TRANSCRIPT", "ENST"]}
-        
-        # here are the default filtering criteria, as loaded into python
-        default_filters = {"FILTER": ("list", set(["PASS", "."])), \
-            "VCQ": ("list", set(["ESSENTIAL_SPLICE_SITE", "STOP_GAINED", \
-                "COMPLEX_INDEL", "FRAMESHIFT_CODING", "NON_SYNONYMOUS_CODING", \
-                "STOP_LOST", "transcript_ablation", "splice_donor_variant", \
-                "splice_acceptor_variant", "frameshift_variant", \
-                "initiator_codon_variant", "inframe_insertion", \
-                "inframe_deletion", "missense_variant", \
-                "transcript_amplification", "stop_gained", "stop_lost", \
-                "coding_sequence_variant"])), \
-            "MAX_MAF": ("smaller_than", 0.01)}
-        
         keys = "GT:DP:TEAM29_FILTER:PP_DNM"
-        values = "0/1:50:PASS:0.99"
+        values = "{0}:50:PASS:0.99".format(geno)
         
-        # add all the populations that have minor allele frequency data in the 
-        # VCF files into the filtering criteria
-        for pop in default_tags["MAX_MAF"]:
-            default_filters[pop] = default_filters["MAX_MAF"]
-        
-        # add all the possible consequence tags to the filter
-        for cq in default_tags["consequence"]:
-            default_filters[cq] = default_filters["VCQ"]
-        
-        var.add_info(default_info, default_tags)
+        var.add_info(default_info)
         var.add_format(keys, values)
         var.set_gender("male")
         var.set_genotype()
@@ -110,17 +83,11 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         # set up a SNV object, since SNV inherits VcfInfo
         var = CNV(chrom, pos, snp_id, ref, alt, filt)
         
-        tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": \
-            ["VCQ", "CQ"], "MAX_MAF": ["AF_MAX", "MAX_AF", "1000G_AF", \
-            "1KG_AF", "AF_AFR", "AF_AMR", "AF_ASN", "AF_EUR", \
-            "UK10K_cohort_AF", "ESP_AF", "DDD_AF", "ASN_AF", "AFR_AF", \
-            "EUR_AF", "AMR_AF"]}
-        
         info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;CNSOLIDATE;WSCORE=0.5;CALLP=0.000;COMMONFORWARDS=0.000;MEANLR2=0.5;MADL2R=0.02;END=16000000;SVLEN=1000000"
         format_keys = "inheritance:DP"
         sample_values = "deNovo:50"
         
-        var.add_info(info, tags)
+        var.add_info(info)
         var.add_format(format_keys, sample_values)
         var.set_gender("F")
         var.set_genotype()
@@ -145,8 +112,6 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         variants.append((self.create_var("3", snv=False), "single_variant", "Biallelic"))
         self.post_filter.variants = variants
         self.assertEqual(self.post_filter.filter_variants(), [])
-        
-        
     
     def test_count_cnv_chroms(self):
         """ test that count_cnv_chroms() works correctly
@@ -229,9 +194,9 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         """ check that filter_polyphen() works correctly
         """
         
-        snv_1 = self.create_var("1", snv=True)
-        snv_2 = self.create_var("1", snv=True)
-        snv_3 = self.create_var("1", snv=True)
+        snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"])
+        snv_2 = self.create_var("1", snv=True, geno=["0/1", "1/0", "0/1"])
+        snv_3 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/0"])
         snv_1.position = 1000
         snv_2.position = 2000
         snv_3.position = 3000
@@ -250,15 +215,22 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
             (snv_2, "compound_het", "Biallelic")]
         self.assertEqual(self.post_filter.filter_polyphen(variants), [])
         
-        # check that if one var is not benign, both compound hets pass
+        # check that if one var is not benign, both compound hets fail to pass
+        # the filter
         snv_2.child.info["PolyPhen"] = "probably_damaging(0.99)"
+        self.assertEqual(self.post_filter.filter_polyphen(variants), [])
+        
+        # check that if one var lacks a polyphen value, and the other is damaging
+        # both vars pass
+        del snv_1.child.info["PolyPhen"]
         self.assertEqual(self.post_filter.filter_polyphen(variants), variants)
         
-        # check that if one var lacks a polyphen value, both compound hets pass
+        # check that if both vars lack polyphen values, both vars pass
         del snv_2.child.info["PolyPhen"]
         self.assertEqual(self.post_filter.filter_polyphen(variants), variants)
         
         # check that single vars with polyphen benign fail
+        snv_1.child.info["PolyPhen"] = "benign"
         variants = [(snv_1, "single_variant", "Biallelic")]
         self.assertEqual(self.post_filter.filter_polyphen(variants), [])
         
@@ -270,15 +242,22 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         variants = [(snv_1, "compound_het", "Biallelic"), \
             (snv_2, "compound_het", "Biallelic"), \
             (snv_3, "compound_het", "Biallelic")]
-        self.assertEqual(self.post_filter.filter_polyphen(variants), variants)
+        self.assertEqual(self.post_filter.filter_polyphen(variants), [])
+        
+        # check if we have three compound_hets in the same gene, and two are
+        # polyphen not benign, then only the two not benign compound hets pass
+        snv_2.child.info["PolyPhen"] = "probably_damaging(0.99)"
+        passing_vars = [(snv_2, "compound_het", "Biallelic"), \
+            (snv_3, "compound_het", "Biallelic")]
+        self.assertEqual(self.post_filter.filter_polyphen(variants), passing_vars)
     
     def test_has_compound_match(self):
         """ check that has_compound_match() works correctly
         """
         
-        snv_1 = self.create_var("1", snv=True)
-        snv_2 = self.create_var("1", snv=True)
-        snv_3 = self.create_var("1", snv=True)
+        snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"])
+        snv_2 = self.create_var("1", snv=True, geno=["0/1", "1/0", "0/1"])
+        snv_3 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/0"])
         snv_1.position = 1000
         snv_2.position = 2000
         snv_3.position = 3000
@@ -294,40 +273,38 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         snv_2.child.info["PolyPhen"] = "benign(0.01)"
         self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
         
-        # check that having one var not polyphen benign returns false
+        # check that having one var not polyphen benign returns True
         snv_2.child.info["PolyPhen"] = "probably_damaging(0.99)"
-        self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
+        self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
+        
+        # check that, if there are more than two compound hets to check in the 
+        # gene, we need two passing variants in order to pass
+        snv_2.child.info["PolyPhen"] = "benign(0.01)"
+        variants = [(snv_1, "compound_het", "Biallelic"), \
+            (snv_2, "compound_het", "Biallelic"),
+            (snv_3, "compound_het", "Biallelic")]
+        self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
         
         # check that if we are checking a benign variant, and there are more
-        # than two compound hets to check in the gene, if any one of those
-        # variants would prevent a match, then the function returns false
-        snv_3.child.info["PolyPhen"] = "benign(0.01)"
+        # than two compound hets to check in the gene, if we have more than
+        # two non-benign variants would prevent a match, then the function 
+        # returns false
+        snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)"
         variants = [(snv_1, "compound_het", "Biallelic"), \
             (snv_2, "compound_het", "Biallelic"),
             (snv_3, "compound_het", "Biallelic")]
         self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
         
-        # check that de novo matches return false
-        snv_1.child.info["PolyPhen"] = "benign(0.01)"
-        snv_2.child.info["PolyPhen"] = "benign(0.01)"
-        snv_2.child.genotype = 1
-        snv_2.mother.genotype = 0
-        snv_2.father.genotype = 0
+        # check that we exclude benign de novos
+        snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)"
+        snv_3.child.info["PolyPhen"] = "benign(0.01)"
         variants = [(snv_1, "compound_het", "Biallelic"), \
-            (snv_2, "compound_het", "Biallelic")]
+            (snv_3, "compound_het", "Biallelic")]
         self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
         
-        # check that single variants in the same gene still return false
+        # check that single variants in the same gene still return True
         variants = [(snv_1, "compound_het", "Biallelic"), \
             (snv_2, "single_variant", "Biallelic")]
-        self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
+        self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
+

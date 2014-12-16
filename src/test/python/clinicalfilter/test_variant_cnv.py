@@ -23,14 +23,11 @@ class TestVariantCnvPy(unittest.TestCase):
         # set up a SNV object, since SNV inherits VcfInfo
         self.var = CNV(chrom, pos, snp_id, ref, alt, filt)
         
-        tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": \
-            ["VCQ", "CQ"]}
-        
         info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;CNSOLIDATE;WSCORE=0.5;CALLP=0.000;COMMONFORWARDS=0.000;MEANLR2=0.5;MADL2R=0.02;END=16000000;SVLEN=1000000"
         format_keys = "inheritance:DP"
         sample_values = "deNovo:50"
         
-        self.var.add_info(info, tags)
+        self.var.add_info(info)
         self.var.add_format(format_keys, sample_values)
         self.var.set_gender("F")
     
@@ -68,8 +65,8 @@ class TestVariantCnvPy(unittest.TestCase):
         
         # set a CNV that lies within a pseudoautosomal region
         self.var.chrom = "X"
-        self.var.position = str(pseudoautosomal_region_start + 1000)
-        self.var.info["END"] = str(pseudoautosomal_region_end - 1000)
+        self.var.position = pseudoautosomal_region_start + 1000
+        self.var.info["END"] = pseudoautosomal_region_end - 1000
         self.var.set_gender("F")
         
         self.var.alt_allele = "<DUP>"
@@ -77,30 +74,28 @@ class TestVariantCnvPy(unittest.TestCase):
         self.assertEqual(self.var.genotype, "DUP")
         self.assertEqual(self.var.get_inheritance_type(), "autosomal")
         
-    def test_set_range(self):
-        """ test that set_range() operates correctly
+    def test_get_range(self):
+        """ test that get_range() operates correctly
         """
         
         # check that range is set correctly under normal function
-        self.var.position = "1000"
+        self.var.position = 1000
         self.var.info["END"] = "2000"
-        self.var.set_range()
-        self.assertEqual(self.var.range, ("1000", "2000"))
+        self.assertEqual(self.var.get_range(), (1000, 2000))
         
         # check that range is set correctly when no info available
         self.var.info = {}
-        self.var.set_range()
-        self.assertEqual(self.var.range, ("1000", "11000"))
+        self.assertEqual(self.var.get_range(), (1000, 11000))
     
     def test_fix_gene_IDs(self):
         """ test that fix_gene_IDs() works correctly
         """
         
-        known_genes = {"TEST": {"start": "1000", "end": "2000", "chrom": "5"}}
+        known_genes = {"TEST": {"start": 1000, "end": 2000, "chrom": "5"}}
         
         # make a CNV that will overlap with the known gene set
         self.var.gene = "TEST"
-        self.var.position = "1000"
+        self.var.position = 1000
         self.var.info["END"] = "1500"
         
         # check that fixing gene names does not alter anything for a CNV in a 
@@ -115,7 +110,7 @@ class TestVariantCnvPy(unittest.TestCase):
         
         # check that fixing gene names drop name of genes where the name is in 
         # the known genes dict, and the CNV and gene do not overlap
-        self.var.position = "900"
+        self.var.position = 900
         self.var.info["END"] = "950"
         self.var.fix_gene_IDs(known_genes)
         self.assertEqual(self.var.gene, "TEST2")
@@ -186,8 +181,7 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.chrom = "Y"
         self.var.set_gender("F")
         
-        filters = "temp"
-        self.assertFalse(self.var.passes_filters(filters))
+        self.assertFalse(self.var.passes_filters())
 
 
 if __name__ == '__main__':

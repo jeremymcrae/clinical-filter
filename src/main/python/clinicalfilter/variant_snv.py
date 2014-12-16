@@ -1,10 +1,10 @@
 """ class for holding single nucleotide variant data for a single individual
 """
 
-from clinicalfilter.vcf_info import VcfInfo
+from clinicalfilter.variant_info import VariantInfo
 from clinicalfilter.variant import Variant
 
-class SNV(Variant, VcfInfo):
+class SNV(Variant, VariantInfo):
     """ a class to take a SNV genotype for an individual, and be able to perform 
     simple functions, like reporting whether it is heterozygous, homozygous, or 
     neither, depending on whether the variant is on the X chromosome, and if so,
@@ -161,3 +161,70 @@ class SNV(Variant, VcfInfo):
             self.convert_autosomal_genotype_code_to_alleles()
         else:
             raise ValueError("Unknown gender: " + self.gender)
+    
+    def passes_filters(self):
+        """Checks whether a VCF record passes user defined criteria.
+            
+        Returns:
+            boolean value for whether the variant passes the filters
+        """
+        
+        pass_value, key = self.check_filters()
+        
+        return pass_value
+    
+    def passes_filters_with_debug(self):
+        """Checks whether a VCF record passes user defined criteria.
+        
+        This method replaces passes_filters() when we specify a chromosome and
+        position for debugging the filtering.
+            
+        Returns:
+            boolean value for whether the variant passes the filters
+        """
+        
+        pass_value, key = self.check_filters()
+        
+        if pass_value == False and self.get_position() == self.debug_pos:
+            
+            if key == "MAF":
+                value = self.find_max_allele_frequency()
+            elif key == "consequence":
+                value = self.consequence
+            elif key == "FILTER":
+                value = self.filter
+            
+            print("failed {0}: {1}".format(key, value))
+        
+        return pass_value
+    
+    def check_filters(self):
+        """Checks whether a VCF record passes user defined criteria.
+        
+        Returns:
+            tuple of (True/False for whether the variant passes the filters, and
+                string for the last checked filter) 
+        """
+        
+        # exclude variants without functional consequences
+        if not self.is_lof() and not self.is_missense():
+            return (False, "consequence")
+        
+        # exclude variants with high minor allele frequencies in any population
+        max_maf = self.find_max_allele_frequency()
+        if max_maf is not None and max_maf > 0.01:
+            return (False, "MAF")
+        
+        # exclude variants outside genes known to be involved in genetic
+        # disorders, unless there isn't any such set of genes available
+        if self.known_genes is not None and self.gene not in self.known_genes:
+            return (False, "HGNC")
+        
+        # exclude variants without PASS values, except where the fail reason is
+        # low_VQSLOD and the variant has been detected by denovogear
+        if self.filter not in ["PASS", "."]:
+            if self.filter != "low_VQSLOD" or \
+                    ("DENOVO-SNP" not in self.info and "DENOVO-INDEL" not in self.info):
+                return (False, "FILTER")
+        
+        return (True, "passed all")

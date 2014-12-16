@@ -67,7 +67,7 @@ class TrioGenotypes(object):
         position = self.get_position()
         (child, mother, father) = self.get_trio_genotype()
 
-        return "chr%s: %s - %s%s%s" % (chrom, position, child, mother, father)
+        return "chr{0}: {1} - {2}{3}{4}".format(chrom, position, child, mother, father)
 
     def __hash__(self):
         return hash(self.__repr__())
@@ -77,12 +77,27 @@ class TrioGenotypes(object):
         """
 
         return isinstance(self.child, CNV)
+    
+    def get_range(self):
+        """
+        """
+        
+        if self.is_cnv():
+            return self.child.get_range()
+        else:
+            return (self.get_position(), self.get_position())
 
     def add_father_variant(self, father_variant):
         self.father = father_variant
 
     def add_mother_variant(self, mother_variant):
         self.mother = mother_variant
+    
+    def get_chrom(self):
+        return self.chrom
+
+    def get_gene(self):
+        return self.gene
 
     def get_position(self):
         return self.position
@@ -104,13 +119,7 @@ class TrioGenotypes(object):
             father_geno = "NA"
 
         return (child_geno, mother_geno, father_geno)
-
-    def get_chrom(self):
-        return self.chrom
-
-    def get_gene(self):
-        return self.gene
-
+    
     def get_de_novo_genotype(self):
         """ get the de novo genotype combination for the chromosome/sex
         """

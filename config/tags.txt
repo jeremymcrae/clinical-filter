@@ -3,7 +3,6 @@
 # column. The gene ID (GN) is expected in INFO column (7th column).
 # symbol	identifiers
 gene	HGNC,VGN,GN
-consequence	VCQ,CQ
-#genotype	GT
-MAX_MAF	AFR_AF,AMR_AF,ASN_AF,DDD_AF,EAS_AF,ESP_AF,EUR_AF,MAX_AF,SAS_AF,UK10K_cohort_AF
+#consequence	VCQ,CQ
+#MAX_MAF	AFR_AF,AMR_AF,ASN_AF,DDD_AF,EAS_AF,ESP_AF,EUR_AF,MAX_AF,SAS_AF,UK10K_cohort_AF
 transcript	ENSEMBL_TRANSCRIPT,ENST

@@ -28,8 +28,6 @@ def get_options():
     parser.add_argument("--mom-aff", dest="mom_aff", help="Mother's affected status (1=unaffected, or 2=affected).")
     parser.add_argument("--dad-aff", dest="dad_aff", help="Father's affected status (1=unaffected, or 2=affected).")
     
-    parser.add_argument("--filter", dest="filters", required=True, help="Path to filter file (see config folder).")
-    parser.add_argument( "--tags", dest="tags_path", required=True, help="Path to tags file (see config folder).")
     parser.add_argument("--syndrome-regions", dest="regions", help="Path to list of CNV regions known to occur in disorders.")
     parser.add_argument("--known-genes", dest="genes", help="Path to table of known disease causative genes.")
     parser.add_argument("--known-genes-date", dest="genes_date", help="Date that the list of known disease causative genes was last updated, used to track the version of known-genes used for analysis.")
@@ -80,23 +78,6 @@ class LoadOptions(object):
     def load_definitions_files(self):
         """loads all the config files for the script (eg filters, gene IDs)
         """
-        self.filters = open_filters(self.options.filters)
-        self.tags_dict = open_tags(self.options.tags_path)
-        
-        # make sure we cover all the possible ways that maximum minor allele 
-        # frequencies can be named as in our VCF files. For the MAF values in 
-        # the file, this should make it so that if the MAF value exists for a 
-        # variant, then the variant has to pass the MAF filter
-        for tag in self.tags_dict["MAX_MAF"]:
-            self.filters[tag] = self.filters["MAX_MAF"]
-        
-        # make sure we cover all possible ways that the variants consequence ID
-        # can be encoded. This should make it so that if the consequence ID 
-        # exists for a variant, then that variant has to pass the consequence 
-        # filter (ie have a consequence like "STOP_GAINED", 
-        # "NON_SYNONYMOUS_CODING", etc)
-        for tag in self.tags_dict["consequence"]:
-            self.filters[tag] = self.filters["VCQ"]
         
         deprecated_genes = None
         if self.options.deprecated_genes is not None:
@@ -108,10 +89,6 @@ class LoadOptions(object):
         self.known_genes = None
         if self.options.genes is not None:
             self.known_genes = open_known_genes(self.options.genes, deprecated_genes)
-            # include all the possible ways IDs that a gene field can be named 
-            # in a VCF file
-            for tag in self.tags_dict["gene"]:
-                self.filters[tag] = ["list", self.known_genes]
         
         # if we have named an ID mapping file, the load a dictionary of IDs and
         # alternate IDs, so we can convert between different ID schemes.

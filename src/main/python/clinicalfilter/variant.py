@@ -13,29 +13,32 @@ class Variant(object):
         (88456802, 92375509)]
     y_pseudoautosomal_regions = [(10001, 2649520), (59034050, 59363566)]
     
-    def __init__(self, chrom, position, snp_id, ref_allele, alt_allele, filter):
+    def __init__(self, chrom, position, variant_id, ref_allele, alt_allele, filt):
         """ initialise the object with the definition values
         """
         
         self.chrom = chrom
-        self.position = position
-        self.id = snp_id
-        self.set_mutation_id()
+        self.position = int(position)
+        
+        self.variant_id = variant_id
+        self.mutation_id = "NA"
+        self.set_mutation_id(variant_id)
         
         self.ref_allele = ref_allele
         self.alt_allele = alt_allele
         
         # self.quality = quality
-        self.filter = filter
+        self.filter = filt
         
         # intialise variables that will be set later
-        self.mutation_id = "NA"
         self.gender = None
         self.vcf_line = None
         self.format = None
         self.inheritance_type = None
-        self.tags = None
         self.info = {}
+        self.gene = None
+        self.consequence = None
+        self.genotype = None
         
     def set_gender(self, gender):
         """ sets the gender of the individual for the variant
@@ -50,19 +53,27 @@ class Variant(object):
         
         self.set_inheritance_type()
     
-    def set_mutation_id(self):
-        """ sets the mutation ID based on the ID column value
+    def get_gender(self):
+        """returns the gender for a person (1, M = male, 2, F = female).
+        """
+        return self.gender
+    
+    def set_mutation_id(self, variant_id):
+        """ sets the mutation ID based on the VCF ID field
+        
+        The variant ID can be either "." for null value, an rsID, a HGMD ID,
+        a COSMIC ID, or any combination of those (including multiple HGMD IDs
+        for a single variant).
+        
+        Args:
+            variant_id: string from the VCF ID field, can be rsID, or a list of
+                &-separated IDs, which can include COSMIC and HGMD IDs.
         """
         
-        # the variant ID can be either "." for null value, an rsID, a HGMD ID,
-        # a COSMIC ID, or any combination of those (including multiple HGMD IDs
-        # for a single variant). 
-        mutation_id = self.id
-        
-        if mutation_id != ".":
-            mutation_id = mutation_id.split("&")
+        if variant_id != ".":
+            variant_id = variant_id.split("&")
             ids = []
-            for value in mutation_id:
+            for value in variant_id:
                 # include everything that isn't an rsID
                 if not value.startswith("rs"):
                     ids.append(value)
@@ -72,11 +83,6 @@ class Variant(object):
                     
     def get_mutation_id(self):
         return self.mutation_id
-    
-    def get_gender(self):
-        """returns the gender for a person (1, M = male, 2, F = female).
-        """
-        return self.gender
     
     def is_male(self):
         """ returns True/False for whether the person is male
@@ -92,9 +98,8 @@ class Variant(object):
     
     def __str__(self):
         
-        string = "%s chr%s: %s %s in %s" % (str(self.__class__.__name__), \
+        return "{0} chr{1}: {2} {3} in {4}".format(str(self.__class__.__name__), \
                   self.chrom, self.position, self.genotype, self.gene)
-        return string
     
     def add_format(self, format_keys, sample_values):
         """Parses the FORMAT column from VCF files.
@@ -134,7 +139,7 @@ class Variant(object):
         elif self.chrom in ["chrX", "ChrX", "X"]:
             # check if the gene lies within a pseudoautosomal region
             for start, end in self.x_pseudoautosomal_regions:
-                if start < int(self.position) < end:
+                if start < self.position < end:
                     self.inheritance_type = "autosomal"
                     return
             
@@ -145,7 +150,7 @@ class Variant(object):
         elif self.chrom in ["chrY", "ChrY", "Y"]:
             # check if the gene lies within a pseudoautosomal region
             for start, end in self.y_pseudoautosomal_regions:
-                if start < int(self.position) < end:
+                if start < self.position < end:
                     self.inheritance_type = "autosomal"
                     return
             if self.is_male():
@@ -169,7 +174,7 @@ class Variant(object):
         """ return the variant chromosomal position
         """
         
-        return str(self.position)
+        return self.position
     
     def get_genotype(self):
         """ return the genotype value

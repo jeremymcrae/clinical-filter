@@ -8,7 +8,7 @@ from clinicalfilter.variant import Variant
 from clinicalfilter.variant_cnv import CNV
 from clinicalfilter.variant_snv import SNV
 from clinicalfilter.inheritance import Autosomal
-from clinicalfilter.vcf_info import VcfInfo
+from clinicalfilter.variant_info import VariantInfo
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
 
@@ -58,13 +58,11 @@ class TestAutosomalPy(unittest.TestCase):
         # set up a SNV object, since SNV inherits VcfInfo
         var = SNV(chrom, pos, snp_id, ref, alt, filt)
         
-        tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
-        
         info = "HGNC=TEST;CQ=missense_variant;random_tag"
         format_keys = "GT:DP"
         sample_values = genotype + ":50"
         
-        var.add_info(info, tags)
+        var.add_info(info)
         var.add_format(format_keys, sample_values)
         var.set_gender(gender)
         var.set_genotype()
@@ -83,13 +81,11 @@ class TestAutosomalPy(unittest.TestCase):
         # set up a SNV object, since SNV inherits VcfInfo
         var = CNV(chrom, pos, snp_id, ref, alt, filt)
         
-        tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
-        
         info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000"
         format_keys = "INHERITANCE:DP"
         sample_values = inh + ":50"
         
-        var.add_info(info, tags)
+        var.add_info(info)
         var.add_format(format_keys, sample_values)
         var.set_gender(gender)
         var.set_genotype()

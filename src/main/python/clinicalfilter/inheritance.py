@@ -732,23 +732,20 @@ class CNVInheritance(object):
             return False
         
         # find the CNV start and end, as well as the gene start and end
-        cnv_start = int(self.variant.get_position())
-        cnv_end = int(self.variant.child.info["END"])
+        cnv_start, cnv_end = self.variant.get_range()
         
-        gene_start = int(self.known_genes[gene]["start"])
-        gene_end = int(self.known_genes[gene]["end"])
+        gene_start = self.known_genes[gene]["start"]
+        gene_end = self.known_genes[gene]["end"]
         
-        # check if any part of the gene is outside the CNv boundaries
+        # check if any part of the gene is outside the CNV boundaries
         return gene_start < cnv_start or gene_end > cnv_end
     
     def check_cnv_region_overlap(self, cnv_regions):
         """ finds CNVs that overlap DECIPHER syndrome regions
         """
         
-        key = self.variant.child.get_key()
-        chrom = key[0]
-        start = int(key[1])
-        end = int(key[2])
+        chrom = self.variant.child.get_chrom()
+        start, end = self.variant.child.get_range()
         copy_number = int(self.variant.child.info["CNS"])
         
         for region_key in cnv_regions:

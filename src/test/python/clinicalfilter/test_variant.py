@@ -62,10 +62,10 @@ class TestVariantPy(unittest.TestCase):
     def test_set_gender_pseudoautosomal(self):
         """ test gender on a pseudoautosomal region
         """
+        
         # now check a variant in the pseudoautosomal regions
-        var = self.var
         self.var.chrom = "X"
-        self.var.position = "2699510"
+        self.var.position = 2699510
         self.var.set_gender("male")
         self.assertEqual(self.var.get_inheritance_type(), "autosomal")
         
@@ -88,11 +88,11 @@ class TestVariantPy(unittest.TestCase):
         """
         
         # check the default position
-        self.assertEqual(self.var.get_position(), "15000000")
+        self.assertEqual(self.var.get_position(), 15000000)
         
         # check that we can change the chrom and it still returns correctly
-        self.var.position = "123456789"
-        self.assertEqual(self.var.get_position(), "123456789")
+        self.var.position = 123456789
+        self.assertEqual(self.var.get_position(), 123456789)
     
     def test_get_mutation_id(self):
         """ test that the mutation ID is parsed correctly
@@ -100,23 +100,19 @@ class TestVariantPy(unittest.TestCase):
         var = self.var
         
         # check a null ID value
-        var.id = "."
-        var.set_mutation_id()
+        var.set_mutation_id(".")
         self.assertEqual(var.get_mutation_id(), "NA")
         
         # check a rsID value
-        var.id = "rs12546"
-        var.set_mutation_id()
+        var.set_mutation_id("rs12546")
         self.assertEqual(var.get_mutation_id(), "NA")
         
         # check a rsID and a mutation ID
-        var.id = "rs12546&CM0001"
-        var.set_mutation_id()
+        var.set_mutation_id("rs12546&CM0001")
         self.assertEqual(var.get_mutation_id(), "CM0001")
         
         # check multiple mutation IDs
-        var.id = "CM0001&CM0002"
-        var.set_mutation_id()
+        var.set_mutation_id("CM0001&CM0002")
         self.assertEqual(var.get_mutation_id(), "CM0001,CM0002")
     
     def test_get_vcf_line(self):

@@ -1,13 +1,13 @@
 """ class for holding copy number information for a single individual
 """
 
-from clinicalfilter.vcf_info import VcfInfo
+from clinicalfilter.variant_info import VariantInfo
 from clinicalfilter.variant import Variant
 from clinicalfilter.variant_cnv_acgh_filter import ACGH_CNV
 from clinicalfilter.variant_cnv_exome_filter import ExomeCNV
 from clinicalfilter.variant_cnv_breakdancer_filter import BreakdancerCNV
 
-class CNV(Variant, VcfInfo):
+class CNV(Variant, VariantInfo):
     """  class to take CNV data for an individual, and
     """
     
@@ -26,7 +26,7 @@ class CNV(Variant, VcfInfo):
             cnv_start_inh = self.get_inheritance_type()
             
             cnv_end = self.info["END"]
-            self.position = cnv_end
+            self.position = int(cnv_end)
             self.set_inheritance_type()
             cnv_end_inh = self.get_inheritance_type()
             
@@ -50,39 +50,32 @@ class CNV(Variant, VcfInfo):
             self.genotype = "DEL"
         else:
             raise ValueError("unknown CNV allele code")
-        
-        self.set_range()
     
     def set_default_genotype(self):
         """ set a default genotype for individuals without one
         """
         
         self.genotype = "REF"
-        self.set_range()
     
-    def set_range(self):
-        """ sets the range for the CNV
+    def get_range(self):
+        """ gets the range for the CNV
         """
         
-        self.start_position = self.position
+        start_position = self.get_position()
         
+        end_position = start_position + 10000
         if self.has_info():
-            self.end_position = self.info["END"]
-        else:
-            self.end_position = str(int(self.start_position) + 10000)
+            end_position = int(self.info["END"])
         
-        self.range = (self.start_position, self.end_position)
+        return (start_position, end_position)
     
     def get_key(self):
         """ return a tuple to identify the variant
         """
         
-        try:
-            return (self.chrom, self.start_position, self.end_position)
-        except AttributeError:
-            self.set_range()
+        start, end = self.get_range()
         
-        return (self.chrom, self.start_position, self.end_position)
+        return (self.get_chrom(), start, end)
     
     def fix_gene_IDs(self, known_genes):
         """ find the genes that the CNV overlaps from a dict of known genes
@@ -97,7 +90,7 @@ class CNV(Variant, VcfInfo):
                 or None
         """
         
-        self.set_range()
+        (start, end) = self.get_range()
         
         genes = []
         for gene in self.get_genes():
@@ -107,12 +100,12 @@ class CNV(Variant, VcfInfo):
             if known_genes is None or gene not in known_genes:
                 genes.append(gene)
             else:
-                start = int(known_genes[gene]["start"])
-                end = int(known_genes[gene]["end"])
+                gene_start = known_genes[gene]["start"]
+                gene_end = known_genes[gene]["end"]
                 
                 # only add the known gene if the DDG2P GENCODE positions
                 # indicate that it overlaps with the CNV, otherwise exclude it.
-                if int(self.start_position) <= end and int(self.end_position) >= start:
+                if start <= gene_end and end >= gene_start:
                     genes.append(gene)
         
         if len(genes) > 0:
@@ -154,11 +147,8 @@ class CNV(Variant, VcfInfo):
         
         return genes
     
-    def passes_filters(self, filters):
+    def passes_filters(self):
         """Checks whether a VCF variant passes user defined criteria.
-        
-        Args:
-            filters: filtering criteria (used for SNV filtering)
         
         Returns:
             boolean value for whether the variant passes the filters

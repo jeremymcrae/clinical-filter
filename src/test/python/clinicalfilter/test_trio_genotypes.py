@@ -9,7 +9,7 @@ from clinicalfilter.ped import Person
 from clinicalfilter.variant import Variant
 from clinicalfilter.variant_cnv import CNV
 from clinicalfilter.variant_snv import SNV
-from clinicalfilter.vcf_info import VcfInfo
+from clinicalfilter.variant_info import VariantInfo
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
 
@@ -51,13 +51,11 @@ class TestTrioGenotypesPy(unittest.TestCase):
         # set up a SNV object, since SNV inherits VcfInfo
         var = SNV(chrom, pos, snp_id, ref, alt, filt)
         
-        tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"]}
-        
         info = "HGNC=TEST;CQ=missense_variant;DENOVO-SNP;PP_DNM=0.99"
         keys = "GT:DP:TEAM29_FILTER:PP_DNM"
         values = genotype + ":50:PASS:0.99"
         
-        var.add_info(info, tags)
+        var.add_info(info)
         var.add_format(keys, values)
         var.set_gender(gender)
         var.set_genotype()

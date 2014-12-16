@@ -25,14 +25,11 @@ class TestAcghCnvPy(unittest.TestCase):
         cnv = CNV(chrom, pos, snp_id, ref, alt, filt)
         self.var = ACGH_CNV(cnv)
         
-        tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": \
-            ["VCQ", "CQ"]}
-        
         info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;CNSOLIDATE;WSCORE=0.5;CALLP=0.000;COMMONFORWARDS=0.000;MEANLR2=0.5;MADL2R=0.02;END=16000000;SVLEN=1000000"
         format_keys = "inheritance:DP"
         sample_values = "deNovo:50"
         
-        self.var.cnv.add_info(info, tags)
+        self.var.cnv.add_info(info)
         self.var.cnv.add_format(format_keys, sample_values)
         self.var.cnv.set_gender("F")
     

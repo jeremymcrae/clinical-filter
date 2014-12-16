@@ -12,22 +12,19 @@ class Report(object):
     """ A class to report candidate variants.
     """
     
-    def __init__(self, output_path, export_vcf, ID_mapper, tags_dict, \
-        known_genes_date=None):
+    def __init__(self, output_path, export_vcf, ID_mapper, known_genes_date=None):
         """ initialise the class
         
         Args:
             output_path: path string to list filtered variants in, or None
             export vcf: path string to export VCF files(s), or None
             ID_mapper: original_ID - alternate ID dictionary for study probands
-            tags_dict: dictionary of alternate tags for VCF fields
             known_genes_date: date the known gene list was generated, or None
         """
         
         self.output_path = output_path
         self.export_vcf = export_vcf
         self.ID_mapper = ID_mapper
-        self.tags_dict = tags_dict
         self.known_genes_date = known_genes_date
         
         # clear the tabular output file if it exists
@@ -122,11 +119,14 @@ class Report(object):
         alleles = var.child.ref_allele + "/" + var.child.alt_allele
         trio_genotype = "{0}/{1}/{2}".format(*var.get_trio_genotype())
         
-        max_maf = var.child.find_max_allele_frequency(self.tags_dict["MAX_MAF"])
+        max_maf = var.child.find_max_allele_frequency()
+        if max_maf is None:
+            max_maf = "NA"
+        max_maf = str(max_maf)
         
         output_line = [self.family.child.get_id(), alternate_ID, \
             self.family.child.get_gender(), var.get_chrom(), \
-            var.get_position(), var.get_gene(), var.child.get_mutation_id(), \
+            str(var.get_position()), var.get_gene(), var.child.get_mutation_id(), \
             transcript, consequence, alleles, max_maf, candidate[2], \
             trio_genotype, mom_aff, dad_aff, candidate[1]]
         

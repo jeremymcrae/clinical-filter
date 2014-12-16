@@ -16,7 +16,7 @@ from clinicalfilter.variant_snv import SNV
 from clinicalfilter.variant_cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 from clinicalfilter.match_cnvs import MatchCNVs
-from clinicalfilter.vcf import LoadVCFs
+from clinicalfilter.load_vcfs import LoadVCFs
 from clinicalfilter.ped import Family, Person
 
 IS_PYTHON2 = sys.version_info[0] == 2
@@ -32,10 +32,11 @@ class TestLoadVCFsPy(unittest.TestCase):
         """
         
         total_trios = 1
-        filters = {}
-        tags_dict = {"gene": ["HGNC", "GN"]}
+        known_genes = {"ATRX": {"inheritance": {"Hemizygous": \
+            {"Loss of function"}}, "start": "1", "chrom": "1", \
+            "confirmed_status": {"Confirmed DD Gene"}, "end": "20000000"}}
         
-        self.vcf_loader = LoadVCFs(total_trios, filters, tags_dict, None, None)
+        self.vcf_loader = LoadVCFs(total_trios, known_genes, None, None)
         
         # make a temp directory for the cache file
         self.temp_dir = tempfile.mkdtemp()
@@ -244,7 +245,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         line = ["1", "100", ".", "T", "<DEL>", "1000", "PASS", "END=200", "GT", "0/1"]
         gender = "M"
         test_var = CNV(*line[:6])
-        test_var.add_info(line[7], {})
+        test_var.add_info(line[7])
         
         variant = self.vcf_loader.construct_variant(line, gender)
         
@@ -259,32 +260,31 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         child_variants = False
         gender = "M"
-        # make a child var which passes the filters (by virtue of not having
-        # initalised any filters), which should return True
-        line = ["1", "100", ".", "T", "A", "1000", "PASS", ".", "GT", "0/1"]
+        # make a child var which passes the filters
+        line = ["1", "100", ".", "T", "A", "1000", "PASS", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
+        self.assertEqual(self.vcf_loader.include_variant(line, child_variants, gender), True)
         self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender))
         
         # make a child var that fails the filters, which should return False
-        self.vcf_loader.filters = {"FILTER": ["list", "PASS", "."]} 
-        line = ["1", "100", ".", "T", "A", "1000", "FAIL", ".", "GT", "0/1"]
+        line = ["1", "100", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
         self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender))
         
         # now check for parents variants
         child_variants = True
         # check a parents var, where we have a matching child var
         self.vcf_loader.child_keys = set([("1", "100"), ("X", "200")])
-        line = ["1", "100", ".", "T", "A", "1000", "FAIL", ".", "GT", "0/1"]
+        line = ["1", "100", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
         self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender))
         
         # check a parents var, where we don't have a matching child var
-        line = ["1", "200", ".", "T", "A", "1000", "FAIL", ".", "GT", "0/1"]
+        line = ["1", "200", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
         self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender))
         
         # and check parental CNVs
         line = ["1", "100", ".", "T", "<DEL>", "1000", "PASS", "END=200", "GT", "0/1"]
         gender = "M"
         test_var = CNV(*line[:6])
-        test_var.add_info(line[7], {})
+        test_var.add_info(line[7])
         
         # in this function we look for overlap in CNVs. Set up a child CNV 
         # that the parents CNV must match.
@@ -311,7 +311,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         line = ["1", "100", ".", "T", "G", "1000", "PASS", ".", "GT", "0/1"]
         gender = "M"
         child_var = SNV(*line[:6])
-        child_var.add_info(line[7], self.vcf_loader.tags_dict)
+        child_var.add_info(line[7])
         child_var.add_format(line[8], line[9])
         child_var.set_gender(child_gender)
         child_var.set_genotype()
@@ -348,10 +348,9 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         counter = 0
         total_trios = 1
-        filters = {}
-        tags_dict = {"gene": ["HGNC", "GN"]}
+        known_genes = {}
         
-        self.vcf_loader = LoadVCFs(total_trios, filters, tags_dict, "1", "10000")
+        self.vcf_loader = LoadVCFs(total_trios, known_genes, "1", "10000")
         
         # check that the debug filter function got set correctly
         self.assertEqual(SNV.passes_filters, SNV.passes_filters_with_debug)

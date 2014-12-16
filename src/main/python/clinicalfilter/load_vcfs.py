@@ -21,26 +21,31 @@ class LoadVCFs(object):
     """ load VCF files for a trio
     """
     
-    def __init__(self, total_trios, filters, tags_dict, debug_chrom, debug_pos):
+    def __init__(self, total_trios, known_genes, debug_chrom, debug_pos):
         """ intitalise the class with the filters and tags details etc
         
         Args:
             counter: count of how many trios have been analysed
             total_trios: count of how many trios are to be analysed
-            filters: dictionary of filtering criteria for variants
+            known_genes: dictionary of genes known to be involved with genetic
+                disorders.
             tags_dict: dictionary of alternate tags for INFO fields
         """
         
         self.family = None
         self.counter = 0
         self.total_trios = total_trios
-        self.filters = filters
-        self.tags_dict = tags_dict
+        self.known_genes = known_genes
         
+        # define several parameters of the variant classes, before we have 
+        # initialised any class objects
         SNV.debug_chrom = debug_chrom
         SNV.debug_pos = debug_pos
         CNV.debug_chrom = debug_chrom
         CNV.debug_pos = debug_pos
+        
+        SNV.known_genes = known_genes
+        CNV.known_genes = known_genes
         
         if debug_chrom is not None:
             SNV.passes_filters = SNV.passes_filters_with_debug
@@ -195,15 +200,15 @@ class LoadVCFs(object):
         # CNVs are found by their alt_allele values, as either <DUP>, or <DEL>
         if line[4] == "<DUP>" or line[4] == "<DEL>":
             var = CNV(line[0], line[1], line[2], line[3], line[4], line[6])
-            var.add_info(line[7], self.tags_dict)
+            var.add_info(line[7])
             # CNVs require the format values for filtering
             var.set_gender(gender)
             var.add_format(line[8], line[9])
-            if "HGNC" in self.filters:
-                var.fix_gene_IDs(self.filters["HGNC"][1])
+            if self.known_genes is not None:
+                var.fix_gene_IDs(self.known_genes)
         else:
             var = SNV(line[0], line[1], line[2], line[3], line[4], line[6])
-            var.add_info(line[7], self.tags_dict)
+            var.add_info(line[7])
         
         return var
     
@@ -232,7 +237,7 @@ class LoadVCFs(object):
                     use_variant = True
         else:
             var = self.construct_variant(line, gender)
-            if var.passes_filters(self.filters):
+            if var.passes_filters():
                 use_variant = True
             
         return use_variant
@@ -368,9 +373,9 @@ class LoadVCFs(object):
         # if the childs variant does not exist in the parents VCF, then we 
         # create a default variant for the parent
         if isinstance(var, CNV):
-            parental = CNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.filter)
+            parental = CNV(var.chrom, var.position, var.variant_id, var.ref_allele, var.alt_allele, var.filter)
         else:
-            parental = SNV(var.chrom, var.position, var.id, var.ref_allele, var.alt_allele, var.filter)
+            parental = SNV(var.chrom, var.position, var.variant_id, var.ref_allele, var.alt_allele, var.filter)
         
         parental.set_gender(gender)
         parental.set_default_genotype()
@@ -445,7 +450,7 @@ class LoadVCFs(object):
         # look like de novos, since we insert "0" for missing parental genotypes
         if self.family.has_parents() == False:
             return variants
-       
+        
         # run through the variants in the child, and remove de novos that fail
         # denovogear filtering criteria
         passed_variants = []

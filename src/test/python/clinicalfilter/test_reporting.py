@@ -32,13 +32,10 @@ class TestReportPy(unittest.TestCase):
         
         self.trio = self.create_family(child_gender, mom_aff, dad_aff)
         
-        tags = {"gene": ["HGNC", "VGN", "GN"], "consequence": ["VCQ", "CQ"], 
-            "MAX_MAF": ["AFR_AF", "EUR_AF"]}
-        
         # generate a test variant
-        child_var = self.create_snv(child_gender, "0/1", tags)
-        mom_var = self.create_snv("F", "0/0", tags)
-        dad_var = self.create_snv("M", "0/0", tags)
+        child_var = self.create_snv(child_gender, "0/1")
+        mom_var = self.create_snv("F", "0/0")
+        dad_var = self.create_snv("M", "0/0")
         
         var = TrioGenotypes(child_var)
         var.add_mother_variant(mom_var)
@@ -47,9 +44,9 @@ class TestReportPy(unittest.TestCase):
         
         self.report = Report(None, None, None, None)
         self.report.family = self.trio
-        self.report.tags_dict = tags
+        # self.report.tags_dict = tags
     
-    def create_snv(self, gender, genotype, tags):
+    def create_snv(self, gender, genotype):
         """ create a default variant
         """
         
@@ -70,7 +67,7 @@ class TestReportPy(unittest.TestCase):
         
         var.vcf_line = [chrom, pos, snp_id, ref, alt, qual, filt, info, format_keys, sample_values]
         
-        var.add_info(info, tags)
+        var.add_info(info)
         var.add_format(format_keys, sample_values)
         var.set_gender(gender)
         var.set_genotype()

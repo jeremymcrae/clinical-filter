@@ -7,17 +7,18 @@ require(gdata)
 HOME = "/nfs/users/nfs_j/jm33"
 DIAGNOSES_PATH="/nfs/ddd0/Data/datafreeze/1133trios_20131218/Diagnosis_Summary_1133_20140328.xlsx"
 
-exclude_cnv_based_variants <- function(initial) {
-    # trim out CNVs, and variants which are present because they are compound hets
-    # with a CNV
-    cnvs = initial[grepl("DUP|DEL", initial$trio_genotype), c("proband", "chrom", "gene")]
+# trim out CNVs, and variants which are present because they are compound hets
+# with a CNV
+exclude_cnv_based_variants <- function(variants) {
+    
+    cnvs = variants[grepl("DUP|DEL", variants$trio_genotype), c("proband", "chrom", "gene")]
     remove = cnvs[0, ]
     for (row_num in 1:nrow(cnvs)) {
         cnv = cnvs[row_num, ]
         cnv_genes = gsub(",", "|", cnv$gene)
         
         # get the variants for the same proband and on the same chrom
-        matching = initial[initial$proband == cnv$proband & initial$chrom == cnv$chrom, ]
+        matching = variants[variants$proband == cnv$proband & variants$chrom == cnv$chrom, ]
         
         # convert variant genes to vectors, and find which variants match any CNV gene
         genes = strsplit(matching$gene, ",")
@@ -27,9 +28,9 @@ exclude_cnv_based_variants <- function(initial) {
     }
     
     # and drop the CNV related variants from the dataset
-    initial = initial[!row.names(initial) %in% row.names(remove), ]
+    variants = variants[!row.names(variants) %in% row.names(remove), ]
     
-    return(initial)
+    return(variants)
 }
 
 # identifies the VCF path for a person from within a PED file
@@ -57,52 +58,59 @@ construct_pedigree_file <- function(proband_id, original_path, new_path) {
     write.table(family, file=new_path, sep="\t", col.names=FALSE, quote=FALSE, row.names=FALSE)
 }
 
-# run clinical filtering on a set of variants, debugging each time, so that can
-# identify the reason why each individual variant failed the clinical filtering
-check_variant_fail <- function(variants, ped_path) {
+#' run clinical filtering on a set of variants, debugging each time, so that can
+#' identify the reason why each individual variant failed the clinical filtering
+#' 
+#' @param variant data frame or list for single variant, providing proband, 
+#'     chrom and position info
+#' @param ped_path path to a pedigree file that contains family information for
+#'     the proband and the probands parents. Note that the ped file can contain
+#'     info for other families, since we construct a ped file specifically for
+#'     the proband of interest within this function, using the info from the 
+#'     ped_path argument.
+#' 
+#' @examples
+#' check_variant_fail(list(proband="DDDP100099", chrom=6, position=152712420), 
+#'    "~/samples.ped")
+check_variant_fail <- function(variant, ped_path) {
     
-    variants$fail_reason = NA
-    for (row_num in 1:nrow(variants)) {
-        proband_id = variants$proband[row_num]
-        new_path = tempfile(fileext=".ped")
-        construct_pedigree_file(proband_id, ped_path, new_path)
-        
-        pos = variants$position[row_num]
-        chrom = variants$chrom[row_num]
-        
-        print(c(proband_id, chrom, pos))
-        
-        command = "python3" 
-        args = c("/nfs/users/nfs_j/jm33/apps/clinical-filter/src/main/python/clinical_filter.py",
-            "--ped",  new_path, 
-            "--filter", "/nfs/users/nfs_j/jm33/apps/clinical-filter/config/filters.txt", 
-            "--tags", "/nfs/users/nfs_j/jm33/apps/clinical-filter/config/tags.txt",
-            "--deprecated-genes", "/nfs/users/nfs_j/jm33/apps/clinical-filter/config/ddg2p_deprecated_hgnc.txt", 
-            "--output", "test.txt", 
-            "--syndrome-regions", "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt",
-            "--known-genes", "/nfs/ddd0/Data/datafreeze/1133trios_20131218/DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv", 
-            "--debug-chrom", chrom, 
-            "--debug-pos", pos)
-        
-        reason = system2(command, args, stdout=TRUE)
-        # allow for character(0) standard out
-        if (is.character(reason) & length(reason) == 0L) { reason = NA}
-        # trim multi-line output
-        reason = reason[1]
-        if (nchar(reason) > 100) { reason = substr(reason, 1, 100) }
-        
-        if (is.na(reason)) {
-            path = get_vcf_path(proband_id, ped_path)
-            string = paste("^", chrom, "\t", pos, sep="")
-            grep_check = grep(string, readLines(path))
-            if (is.integer(grep_check) & length(grep_check) == 0L) { reason = "variant not in VCF"}
-        }
-        print(reason)
-        
-        variants$fail_reason[row_num] = reason
-        file.remove(new_path)
+    proband_id = variant[["proband"]]
+    new_path = tempfile(fileext=".ped")
+    construct_pedigree_file(proband_id, ped_path, new_path)
+    
+    pos = variant[["position"]]
+    chrom = variant[["chrom"]]
+    cat(c(proband_id, chrom, pos, "\t"))
+    
+    command = "python3" 
+    args = c("/nfs/users/nfs_j/jm33/apps/clinical-filter/src/main/python/clinical_filter.py",
+        "--ped",  new_path, 
+        "--filter", "/nfs/users/nfs_j/jm33/apps/clinical-filter/config/filters.txt", 
+        "--tags", "/nfs/users/nfs_j/jm33/apps/clinical-filter/config/tags.txt",
+        "--deprecated-genes", "/nfs/users/nfs_j/jm33/apps/clinical-filter/config/ddg2p_deprecated_hgnc.txt", 
+        "--output", "test.txt", 
+        "--syndrome-regions", "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt",
+        "--known-genes", "/nfs/ddd0/Data/datafreeze/1133trios_20131218/DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv", 
+        "--debug-chrom", chrom, 
+        "--debug-pos", pos)
+    
+    reason = system2(command, args, stdout=TRUE)
+    # allow for character(0) standard out
+    if (is.character(reason) & length(reason) == 0L) { reason = NA}
+    # trim multi-line output
+    reason = reason[1]
+    if (nchar(reason) > 100) { reason = substr(reason, 1, 100) }
+    
+    if (is.na(reason)) {
+        path = get_vcf_path(proband_id, ped_path)
+        string = paste("^", chrom, "\t", pos, sep="")
+        grep_check = grep(string, readLines(path))
+        if (is.integer(grep_check) & length(grep_check) == 0L) { reason = "variant not in VCF"}
     }
-    return(variants)
+    cat(c(reason, "\n"))
+    file.remove(new_path)
+    
+    return(reason)
 }
 
 # aggregate the fail categories, so we can easily make tables
@@ -130,52 +138,59 @@ combine_fail_categories <- function(variants) {
 }
 
 main <- function() {
-    diagnoses = read.xls(DIAGNOSES_PATH, sheet="Exome variants reviewed", stringsAsFactors=FALSE)
-    diagnoses = subset(diagnoses, select=c("proband", "chrom", "position", "DECISION"))
-    initial_path = file.path(HOME, "clinical_reporting.2014-10-30.txt")
-    current_path = file.path(HOME, "clinical_reporting.txt")
+    # diagnoses = read.xls(DIAGNOSES_PATH, sheet="Exome variants reviewed", stringsAsFactors=FALSE)
+    # diagnoses = subset(diagnoses, select=c("proband", "chrom", "position", "DECISION"))
     
-    initial = read.table(initial_path, sep="\t", stringsAsFactors=FALSE, header=TRUE, blank.lines.skip=TRUE)
-    current = read.table(current_path, sep="\t", stringsAsFactors=FALSE, header=TRUE, blank.lines.skip=TRUE)
-    initial = exclude_cnv_based_variants(initial)
+    # initial_path = file.path(HOME, "clinical_reporting.2014-10-30.txt")
+    # current_path = file.path(HOME, "clinical_reporting.txt")
     
-    # standardise the individuals in the datasets
-    current = current[current$proband %in% initial$proband, ]
-    initial = initial[initial$proband %in% current$proband, ]
+    # initial = read.table(initial_path, sep="\t", stringsAsFactors=FALSE, header=TRUE, blank.lines.skip=TRUE)
+    # current = read.table(current_path, sep="\t", stringsAsFactors=FALSE, header=TRUE, blank.lines.skip=TRUE)
+    # initial = exclude_cnv_based_variants(initial)
     
-    both = merge(initial, current, by=c("proband", "chrom", "position", "sex"), all=TRUE)
-    both = merge(both, diagnoses, by=c("proband", "chrom", "position"), all.x=TRUE)
+    # # standardise the individuals in the datasets
+    # current = current[current$proband %in% initial$proband, ]
+    # initial = initial[initial$proband %in% current$proband, ]
     
-    initial_only = both[is.na(both$ref.alt_alleles.y), ]
-    current_only = both[is.na(both$ref.alt_alleles.x), ]
+    # both = merge(initial, current, by=c("proband", "chrom", "position", "sex"), all=TRUE)
+    # both = merge(both, diagnoses, by=c("proband", "chrom", "position"), all.x=TRUE)
     
-    # show the proportions for each trio genotype type
-    table(initial$trio_genotype)/nrow(initial)
-    table(current$trio_genotype)/nrow(current)
+    # initial_only = both[is.na(both$ref.alt_alleles.y), ]
+    # current_only = both[is.na(both$ref.alt_alleles.x), ]
     
-    # check the reasons why each variant failed
-    initial_only = check_variant_fail(initial_only, "~/samples.ped")
-    current_only = check_variant_fail(current_only, "~/exome_reporting.ped")
+    # # show the proportions for each trio genotype type
+    # table(initial$trio_genotype)/nrow(initial)
+    # table(current$trio_genotype)/nrow(current)
     
-    # categorize the fail reasons
-    initial_only = combine_fail_categories(initial_only)
-    current_only = combine_fail_categories(current_only)
+    # # plot a venn diagram of the numbers of variants in each group
+    # v = venneuler(c(previous=nrow(initial_only), current=nrow(current_only), "previous&current"=(nrow(both)-(nrow(initial_only) + nrow(current_only)))))
+    # Cairo(file="variants_venn_diagram.pdf", type="pdf", height=10, width=10, units="cm")
+    # plot(v)
+    # dev.off()
     
-    # get the numbers of variants in each fail category (in the inital_only
-    # cross-tabulate by reporting decision)
-    table(initial_only$fail_category, initial_only$DECISION)
-    table(current_only$fail_category)
+    # # check the reasons why each variant failed
+    # initial_only$fail_reason = apply(initial_only, 1, check_variant_fail, "~/samples.ped")
+    # current_only$fail_reason = apply(current_only, 1, check_variant_fail, "~/exome_reporting.ped")
     
-    # plot a venn diagram of the numbers of variants in each group
-    v = venneuler(c(previous=nrow(initial_only), current=nrow(current_only), "previous&current"=(nrow(both)-(nrow(initial_only) + nrow(current_only)))))
-    Cairo(file="variants_venn_diagram.pdf", type="pdf", height=10, width=10, units="cm")
-    plot(v)
-    dev.off()
+    # # categorize the fail reasons
+    # initial_only = combine_fail_categories(initial_only)
+    # current_only = combine_fail_categories(current_only)
     
-    # construct_pedigree_file("DDDP100149", "~/samples.ped", "temp.ped")
+    # # get the numbers of variants in each fail category (in the inital_only
+    # # cross-tabulate by reporting decision)
+    # table(initial_only$fail_category, initial_only$DECISION)
+    # table(current_only$fail_category)
+    
+    # # construct_pedigree_file("DDDP100149", "~/samples.ped", "temp.ped")
+    # # check_variant_fail(list(proband="DDDP100099", chrom=6, position=152712420), "~/samples.ped")
+    
+    missing = read.table("~/problem_de_novos.txt", header=TRUE, sep="\t", stringsAsFactors=FALSE)
+    missing$fail_reason = apply(missing, 1, check_variant_fail, "~/samples.ped")
+    write.table(missing, file="~/problem_de_novos.txt", row.names=FALSE, sep="\t", quote=FALSE)
+    
 }
 
 
-  
+main()
 
 
