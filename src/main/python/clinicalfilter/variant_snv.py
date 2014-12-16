@@ -11,6 +11,12 @@ class SNV(Variant, VariantInfo):
     whether the individual is male or female.
     """
     
+    def is_cnv(self):
+        """ checks whether the variant is for a CNV
+        """
+        
+        return False
+    
     def get_key(self):
         """ return a tuple to identify the variant
         """
@@ -217,7 +223,7 @@ class SNV(Variant, VariantInfo):
         
         # exclude variants outside genes known to be involved in genetic
         # disorders, unless there isn't any such set of genes available
-        if self.known_genes is not None and self.gene not in self.known_genes:
+        if self.known_genes is not None and len(self.get_overlapping_known_genes()) == 0:
             return (False, "HGNC")
         
         # exclude variants without PASS values, except where the fail reason is
@@ -228,3 +234,5 @@ class SNV(Variant, VariantInfo):
                 return (False, "FILTER")
         
         return (True, "passed all")
+
+

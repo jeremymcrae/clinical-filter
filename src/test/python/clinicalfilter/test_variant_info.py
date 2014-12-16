@@ -37,18 +37,18 @@ class TestVariantInfoPy(unittest.TestCase):
         
         self.var.add_info(self.default_info)
     
-    def test_add_gene_from_info(self):
-        """ test that test_add_gene_from_info() works correctly
+    def test_set_gene_from_info(self):
+        """ test that test_set_gene_from_info() works correctly
         """
         
         # check for when a HGNC key exists
         self.var.info["HGNC"] = "A"
-        self.var.add_gene_from_info()
+        self.var.set_gene_from_info()
         self.assertEqual(self.var.gene, "A")
         
         # check for when a HGNC key doesn't exist
         del self.var.info["HGNC"]
-        self.var.add_gene_from_info()
+        self.var.set_gene_from_info()
         self.assertIsNone(self.var.gene)
     
     def test_is_lof(self):

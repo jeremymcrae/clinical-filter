@@ -33,8 +33,8 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         total_trios = 1
         known_genes = {"ATRX": {"inheritance": {"Hemizygous": \
-            {"Loss of function"}}, "start": "1", "chrom": "1", \
-            "confirmed_status": {"Confirmed DD Gene"}, "end": "20000000"}}
+            {"Loss of function"}}, "start": 1, "chrom": "1", \
+            "confirmed_status": {"Confirmed DD Gene"}, "end": 20000000}}
         
         self.vcf_loader = LoadVCFs(total_trios, known_genes, None, None)
         
@@ -262,7 +262,6 @@ class TestLoadVCFsPy(unittest.TestCase):
         gender = "M"
         # make a child var which passes the filters
         line = ["1", "100", ".", "T", "A", "1000", "PASS", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertEqual(self.vcf_loader.include_variant(line, child_variants, gender), True)
         self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender))
         
         # make a child var that fails the filters, which should return False

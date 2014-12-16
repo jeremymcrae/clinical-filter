@@ -66,7 +66,7 @@ class VariantInfo(object):
             self.info[key] = value
         
         self.set_consequence()
-        self.add_gene_from_info()
+        self.set_gene_from_info()
     
     def has_info(self):
         """ checks if the INFO field has been parsed and added to the object
@@ -74,14 +74,66 @@ class VariantInfo(object):
         
         return self.info != {}
     
-    def add_gene_from_info(self):
-        """ adds a gene to the var using the info. CNVs and SNVs act differently
+    def get_range(self):
+        """ gets the range for the CNV
+        """
+        
+        start_position = self.get_position()
+        
+        if self.is_cnv():
+            end_position = start_position + 10000
+            if self.has_info() and "END" in self.info:
+                end_position = int(self.info["END"])
+        else:
+            end_position = start_position
+        
+        return (start_position, end_position)
+    
+    def set_gene_from_info(self):
+        """ sets a gene to the var using the info. CNVs and SNVs act differently
         """
         
         self.gene = None
         # sometimes the variant lacks an HGNC field
         if "HGNC" in self.info:
             self.gene = self.info["HGNC"]
+        
+    def set_gene_from_known_gene_overlap(self):
+        """ sets the gene according to overlap with the positions of known genes
+        """
+        
+        overlapping = self.get_overlapping_known_genes()
+        
+        previous = []
+        if self.gene is not None:
+            previous = self.gene.split(",")
+        
+        self.gene = ",".join(sorted(set(overlapping + previous)))
+    
+    def get_overlapping_known_genes(self):
+        """ finds the names of known genes that a variant overlaps
+        """
+        
+        (start, end) = self.get_range()
+        
+        if self.known_genes is None:
+            raise ValueError("we don't have a set of known genes to look through")
+        
+        current_chrom = self.get_chrom()
+        current_pos = self.get_position()
+        
+        overlapping = []
+        for gene in self.known_genes:
+            if self.known_genes[gene]["chrom"] != current_chrom:
+                continue
+            
+            gene_start = self.known_genes[gene]["start"]
+            gene_end = self.known_genes[gene]["end"]
+            
+            if start <= gene_end and end >= gene_start:
+                overlapping.append(gene)
+        
+        return overlapping
     
     def set_consequence(self):
         """ makes sure a consequence field is available in the info dict

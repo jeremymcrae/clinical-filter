@@ -205,7 +205,7 @@ class LoadVCFs(object):
             var.set_gender(gender)
             var.add_format(line[8], line[9])
             if self.known_genes is not None:
-                var.fix_gene_IDs(self.known_genes)
+                var.fix_gene_IDs()
         else:
             var = SNV(line[0], line[1], line[2], line[3], line[4], line[6])
             var.add_info(line[7])
@@ -274,6 +274,7 @@ class LoadVCFs(object):
             # check if we want to include the variant or not
             if self.include_variant(line, child_variants, gender):
                 var = self.construct_variant(line, gender)
+                var.set_gene_from_known_gene_overlap()
                 self.add_single_variant(variants, var, gender, line)
         
         return variants

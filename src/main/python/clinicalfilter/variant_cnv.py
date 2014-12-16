@@ -14,6 +14,12 @@ class CNV(Variant, VariantInfo):
     ref_genotypes = set(["REF"])
     alt_genotypes = set(["DEL", "DUP"])
     
+    def is_cnv(self):
+        """ checks whether the variant is for a CNV
+        """
+        
+        return True
+    
     def set_genotype(self):
         """ sets the genotype of the variant
         """
@@ -57,18 +63,6 @@ class CNV(Variant, VariantInfo):
         
         self.genotype = "REF"
     
-    def get_range(self):
-        """ gets the range for the CNV
-        """
-        
-        start_position = self.get_position()
-        
-        end_position = start_position + 10000
-        if self.has_info():
-            end_position = int(self.info["END"])
-        
-        return (start_position, end_position)
-    
     def get_key(self):
         """ return a tuple to identify the variant
         """
@@ -77,17 +71,13 @@ class CNV(Variant, VariantInfo):
         
         return (self.get_chrom(), start, end)
     
-    def fix_gene_IDs(self, known_genes):
+    def fix_gene_IDs(self):
         """ find the genes that the CNV overlaps from a dict of known genes
         
         Sometimes the gene annotation for a CNV is incorrect - VEP annotated
         that the CNV overlaps a gene when other tools show there is not overlap.
         We correct for these by checking against a set of known genes 
         (currently the DDG2P set).
-        
-        Args:
-            known_genes: dictionary of known genes, indexed by gene name, 
-                or None
         """
         
         (start, end) = self.get_range()
@@ -97,11 +87,11 @@ class CNV(Variant, VariantInfo):
             # if the gene isn't in the DDG2P set we just include it as is, in
             # order to allow for non DDG2P variant analyses.
             # TODO: ideally we would match against all gencode positions
-            if known_genes is None or gene not in known_genes:
+            if self.known_genes is None or gene not in self.known_genes:
                 genes.append(gene)
             else:
-                gene_start = known_genes[gene]["start"]
-                gene_end = known_genes[gene]["end"]
+                gene_start = self.known_genes[gene]["start"]
+                gene_end = self.known_genes[gene]["end"]
                 
                 # only add the known gene if the DDG2P GENCODE positions
                 # indicate that it overlaps with the CNV, otherwise exclude it.
@@ -111,8 +101,8 @@ class CNV(Variant, VariantInfo):
         if len(genes) > 0:
             self.gene = ",".join(genes)
     
-    def add_gene_from_info(self):
-        """ adds a gene to the var using the info. CNVs and SNVs act differently
+    def set_gene_from_info(self):
+        """ sets a gene to the var using the info. CNVs and SNVs act differently
         """
         
         # sometimes the variant lacks an HGNC field, but does have a HGNC_ALL

@@ -91,7 +91,7 @@ class TestVariantCnvPy(unittest.TestCase):
         """ test that fix_gene_IDs() works correctly
         """
         
-        known_genes = {"TEST": {"start": 1000, "end": 2000, "chrom": "5"}}
+        self.var.known_genes = {"TEST": {"start": 1000, "end": 2000, "chrom": "5"}}
         
         # make a CNV that will overlap with the known gene set
         self.var.gene = "TEST"
@@ -100,40 +100,41 @@ class TestVariantCnvPy(unittest.TestCase):
         
         # check that fixing gene names does not alter anything for a CNV in a 
         # single known gene
-        self.var.fix_gene_IDs(known_genes)
+        self.var.fix_gene_IDs()
         self.assertEqual(self.var.gene, "TEST")
         
         # check that fixing gene names does not alter names not in the gene dict
         self.var.gene = "TEST,TEST2"
-        self.var.fix_gene_IDs(known_genes)
+        self.var.fix_gene_IDs()
         self.assertEqual(self.var.gene, "TEST,TEST2")
         
         # check that fixing gene names drop name of genes where the name is in 
         # the known genes dict, and the CNV and gene do not overlap
         self.var.position = 900
         self.var.info["END"] = "950"
-        self.var.fix_gene_IDs(known_genes)
+        self.var.fix_gene_IDs()
         self.assertEqual(self.var.gene, "TEST2")
         
         # check that when we do not have any known genes, the gene names are 
         # unaltered
         self.var.gene = "TEST,TEST2"
-        self.var.fix_gene_IDs(None)
+        self.var.known_genes = None
+        self.var.fix_gene_IDs()
         self.assertEqual(self.var.gene, "TEST,TEST2")
     
-    def test_add_gene_from_info_cnv(self):
-        """ test that test_add_gene_from_info() works correctly
+    def test_set_gene_from_info_cnv(self):
+        """ test that set_add_gene_from_info() works correctly
         """
         
         # check that HGNC_ALL takes precedence
         self.var.info["HGNC"] = "A"
         self.var.info["HGNC_ALL"] = "B"
-        self.var.add_gene_from_info()
+        self.var.set_gene_from_info()
         self.assertEqual(self.var.gene, "B")
         
         # check that HGNC is used in the absence of HGNC_ALL
         del self.var.info["HGNC_ALL"]
-        self.var.add_gene_from_info()
+        self.var.set_gene_from_info()
         self.assertEqual(self.var.gene, "A")
         
         # check that when HGNC and HGNC_ALL are undefined, we can still include
@@ -142,17 +143,17 @@ class TestVariantCnvPy(unittest.TestCase):
         
         # first test for NUMBERGENES = 0
         self.var.info["NUMBERGENES"] = 0
-        self.var.add_gene_from_info()
+        self.var.set_gene_from_info()
         self.assertIsNone(self.var.gene)
         
         # and then make sure we are correct for NUMBERGENES > 0
         self.var.info["NUMBERGENES"] = 1
-        self.var.add_gene_from_info()
+        self.var.set_gene_from_info()
         self.assertEqual(self.var.gene, ".")
         
         # finally check for no HGNC, HGNC_ALL, or NUMBERGENES
         del self.var.info["NUMBERGENES"]
-        self.var.add_gene_from_info()
+        self.var.set_gene_from_info()
         self.assertIsNone(self.var.gene)
     
     def test_get_genes(self):

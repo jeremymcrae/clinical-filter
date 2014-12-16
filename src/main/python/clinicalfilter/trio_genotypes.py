@@ -76,7 +76,7 @@ class TrioGenotypes(object):
         """ checks whether the variant is for a CNV
         """
 
-        return isinstance(self.child, CNV)
+        return self.child.is_cnv()
     
     def get_range(self):
         """
