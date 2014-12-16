@@ -45,7 +45,7 @@ process, so you can define all the families and their VCF paths in the ped
 file, and run with that.
 
 Other options are:
- *`--syndrome-regions SYNDROMES_PATH` # path to file listing DECIPHER regions
+ * `--syndrome-regions SYNDROMES_PATH` # path to file listing DECIPHER regions
  * `--known-genes KNOWN_GENES_PATH` # to specify the DDG2P database file
  * `--known-genes-date 2014-01-01` # to specify the version of the known genes file
  * `--alternate-ids ALTERNATE_IDS_PATH` # path to file for mapping individuals 
