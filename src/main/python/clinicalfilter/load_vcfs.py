@@ -228,7 +228,7 @@ class LoadVCFs(object):
         
         use_variant = False
         if child_variants:
-            key = (line[0], line[1])
+            key = (line[0], int(line[1]))
             if key in self.child_keys:
                 use_variant = True
             elif line[4] == "<DUP>" or line[4] == "<DEL>":

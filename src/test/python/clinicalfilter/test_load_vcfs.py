@@ -272,7 +272,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         # now check for parents variants
         child_variants = True
         # check a parents var, where we have a matching child var
-        self.vcf_loader.child_keys = set([("1", "100"), ("X", "200")])
+        self.vcf_loader.child_keys = set([("1", 100), ("X", 200)])
         line = ["1", "100", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
         self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender))
         

@@ -82,8 +82,8 @@ class Inheritance(object):
                 check = self.examine_variant(variant, inheritance)
                 self.add_variant_to_appropriate_list(variant, check, inheritance)
             
-            logging.debug(self.trio.child.get_id() + " position " + \
-                variant.get_position() + " " + self.log_string)
+            logging.debug("{0} position {1} {2}".format(self.trio.child.get_id(),
+                variant.get_position(), self.log_string))
         
         self.compound_hets = self.check_compound_hets(self.compound_hets)
         
