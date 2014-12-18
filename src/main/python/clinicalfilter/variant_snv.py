@@ -199,6 +199,8 @@ class SNV(Variant, VariantInfo):
                 value = self.consequence
             elif key == "FILTER":
                 value = self.filter
+            elif key == "HGNC":
+                value = "not in a known gene"
             
             print("failed {0}: {1}".format(key, value))
         
@@ -229,7 +231,7 @@ class SNV(Variant, VariantInfo):
         # exclude variants without PASS values, except where the fail reason is
         # low_VQSLOD and the variant has been detected by denovogear
         if self.filter not in ["PASS", "."]:
-            if self.filter != "low_VQSLOD" or \
+            if self.filter != "LOW_VQSLOD" or \
                     ("DENOVO-SNP" not in self.info and "DENOVO-INDEL" not in self.info):
                 return (False, "FILTER")
         
