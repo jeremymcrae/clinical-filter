@@ -66,7 +66,9 @@ class LoadOptions(object):
         self.output_path = self.options.output
         self.export_vcf = self.options.export_vcf
         self.debug_chrom = self.options.debug_chrom
-        self.debug_pos = int(self.options.debug_pos)
+        self.debug_pos = self.options.debug_pos
+        if self.debug_pos is not None:
+            self.debug_pos = int(self.debug_pos)
         
         # Attempt to recover a date for the dictionary of genes
         self.known_genes_date = self.options.genes_date

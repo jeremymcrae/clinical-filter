@@ -24,11 +24,11 @@ filters = os.path.join(app_folder, "config", "filters.txt")
 tag_names = os.path.join(app_folder, "config", "tags.txt")
 deprecated_genes = os.path.join(app_folder, "config", "ddg2p_deprecated_hgnc.txt")
 
-datafreeze = "/nfs/ddd0/Data/datafreeze/1133trios_20131218/"
-known_genes = os.path.join(datafreeze, "DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv")
-alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.private.txt")
-individuals_filename = os.path.join(datafreeze, "family_relationships.shared.txt")
-working_vcfs_filename = os.path.join(datafreeze, "all_working_paths.private.txt")
+datafreeze = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
+known_genes = "/nfs/ddd0/Data/datafreeze/1133trios_20131218/DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv"
+alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.txt")
+individuals_filename = os.path.join(datafreeze, "family_relationships.txt")
+# working_vcfs_filename = os.path.join(datafreeze, "all_working_paths.txt")
 syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
     
 def get_options():
@@ -61,26 +61,11 @@ def make_ped(ped_filename):
     """
     
     individuals = open(individuals_filename, "r")
-    working_vcfs = open(working_vcfs_filename, "r")
-    
-    # get all the paths to the VCF files
-    vcfs = {}
-    for line in working_vcfs:
-        if line.strip() == "":
-            continue
-        split_line = line.strip().split("vcfs/")[1]
-        individual_ID = split_line.split(".")[0]
-        vcfs[individual_ID] = line
+    individuals.readline()
     
     output = open(ped_filename, "w")
-    
-    # for each individual in the proto ped file, get the VCF path, then write a new ped line
     for line in individuals:
-        split_line = line.strip().split()
-        individual_ID = split_line[1]
-        if individual_ID == "individual_id":
-            continue
-        output.write(line.strip() + "\t" + vcfs[individual_ID])
+        output.write(line)
     
     output.close()
 
@@ -166,8 +151,7 @@ def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_pat
     fast_syndrome_regions = os.path.join(home_lustre, os.path.basename(syndrome_regions_filename))
     shutil.copyfile(syndrome_regions_filename, fast_syndrome_regions)
     
-    # command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--alternate-ids", fast_alternate_ids, "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", syndrome_regions_filename] + log_options
-    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--filter", filters, "--tags", tag_names, "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", fast_syndrome_regions, "--deprecated-genes", deprecated_genes] + log_options
+    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", fast_syndrome_regions, "--deprecated-genes", deprecated_genes] + log_options
     
     # sometimes we don't want to restrict to the DDG2P genes, then all_genes
     # would be False and variants would be assessed in every gene.
@@ -198,7 +182,7 @@ def run_cleanup(hash_string, output_name, temp_name):
     remove_sh_file(sh_file)
     
     # submit a cleanup job to the cluster
-    command = ['bsub -J "cleanup" -w "merge2_' + hash_string + '"', "-o", "clinical_reporting.cleanup.txt", "bash", "-c", "\"rm", temp_name + "*\""]
+    command = ['bsub -J "cleanup" -w "merge1_' + hash_string + '"', "-o", "clinical_reporting.cleanup.txt", "bash", "-c", "\"rm", temp_name + "*\""]
     sh_file = write_sh_file(hash_string, command)
     subprocess.Popen(["sh", sh_file])
     remove_sh_file(sh_file)
@@ -225,7 +209,7 @@ def main():
         log_options = []
     
     if opts.ped_path is None:
-        ped_path = os.path.join(home_folder, "exome_reporting.ped")
+        ped_path = os.path.join(home_folder, "exome_reporting_2.ped")
         make_ped(ped_path)
     else:
         ped_path = opts.ped_path
