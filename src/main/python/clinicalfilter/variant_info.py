@@ -102,6 +102,10 @@ class VariantInfo(object):
         """ sets the gene according to overlap with the positions of known genes
         """
         
+        # don't change anything if we don't have a set of known genes
+        if self.known_genes is None:
+            return
+        
         overlapping = self.get_overlapping_known_genes()
         
         previous = []
