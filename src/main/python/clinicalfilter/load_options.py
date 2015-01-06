@@ -89,8 +89,9 @@ class LoadOptions(object):
         # add them to the filters, so we can screen variants for being in genes 
         # known to be involved with disorders
         self.known_genes = None
+        self.excluded_genes = None
         if self.options.genes is not None:
-            self.known_genes = open_known_genes(self.options.genes, deprecated_genes)
+            self.known_genes, self.excluded_genes = open_known_genes(self.options.genes, deprecated_genes)
         
         # if we have named an ID mapping file, the load a dictionary of IDs and
         # alternate IDs, so we can convert between different ID schemes.

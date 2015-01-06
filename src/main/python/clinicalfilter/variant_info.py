@@ -131,6 +131,9 @@ class VariantInfo(object):
             if self.known_genes[gene]["chrom"] != current_chrom:
                 continue
             
+            if self.excluded_genes is not None and "HGNC" in self.info and self.info["HGNC"] in self.excluded_genes:
+                continue
+            
             gene_start = self.known_genes[gene]["start"]
             gene_end = self.known_genes[gene]["end"]
             

@@ -21,7 +21,7 @@ class LoadVCFs(object):
     """ load VCF files for a trio
     """
     
-    def __init__(self, total_trios, known_genes, debug_chrom, debug_pos):
+    def __init__(self, total_trios, known_genes, excluded_genes, debug_chrom, debug_pos):
         """ intitalise the class with the filters and tags details etc
         
         Args:
@@ -45,7 +45,9 @@ class LoadVCFs(object):
         CNV.debug_pos = debug_pos
         
         SNV.known_genes = known_genes
+        SNV.excluded_genes = excluded_genes
         CNV.known_genes = known_genes
+        CNV.excluded_genes = excluded_genes
         
         if debug_chrom is not None:
             SNV.passes_filters = SNV.passes_filters_with_debug

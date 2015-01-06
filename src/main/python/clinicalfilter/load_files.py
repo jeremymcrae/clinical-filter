@@ -91,6 +91,7 @@ def open_known_genes(path="DDGP-reportable.txt", deprecated_genes=None):
     allowed_confirmed_statuses = ["Confirmed DD Gene", "Probable DD gene", \
         "Both DD and IF"]
     
+    excluded_genes = set([])
     known_genes = {}
     for line in f:
         line = line.strip().split("\t")
@@ -101,6 +102,7 @@ def open_known_genes(path="DDGP-reportable.txt", deprecated_genes=None):
         
         # ignore genes with insufficient evidence
         if gene_confirmed_status not in allowed_confirmed_statuses:
+            excluded_genes.add(gene)
             continue 
         
         if gene not in known_genes:
@@ -137,7 +139,7 @@ def open_known_genes(path="DDGP-reportable.txt", deprecated_genes=None):
     
     f.close()
     
-    return known_genes
+    return known_genes, excluded_genes
 
 def create_person_ID_mapper(path="/nfs/ddd0/Data/datafreeze/1139trios_20131030/person_sanger_decipher.private.txt"):
     """creates a dictionary of IDs to map between different ID systems.
