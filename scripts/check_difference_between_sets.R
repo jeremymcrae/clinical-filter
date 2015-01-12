@@ -12,6 +12,8 @@ DIAGNOSES_PATH="/nfs/ddd0/Data/datafreeze/1133trios_20131218/Diagnosis_Summary_1
 exclude_cnv_based_variants <- function(variants) {
     
     cnvs = variants[grepl("DUP|DEL", variants$trio_genotype), c("proband", "chrom", "gene")]
+    if (nrow(cnvs) == 0) { return(variants) }
+    
     remove = cnvs[0, ]
     for (row_num in 1:nrow(cnvs)) {
         cnv = cnvs[row_num, ]
@@ -85,8 +87,6 @@ check_variant_fail <- function(variant, ped_path) {
     command = "python3" 
     args = c("/nfs/users/nfs_j/jm33/apps/clinical-filter/src/main/python/clinical_filter.py",
         "--ped",  new_path, 
-        "--filter", "/nfs/users/nfs_j/jm33/apps/clinical-filter/config/filters.txt", 
-        "--tags", "/nfs/users/nfs_j/jm33/apps/clinical-filter/config/tags.txt",
         "--deprecated-genes", "/nfs/users/nfs_j/jm33/apps/clinical-filter/config/ddg2p_deprecated_hgnc.txt", 
         "--output", "test.txt", 
         "--syndrome-regions", "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt",
@@ -138,55 +138,55 @@ combine_fail_categories <- function(variants) {
 }
 
 main <- function() {
-    # diagnoses = read.xls(DIAGNOSES_PATH, sheet="Exome variants reviewed", stringsAsFactors=FALSE)
-    # diagnoses = subset(diagnoses, select=c("proband", "chrom", "position", "DECISION"))
+    diagnoses = read.xls(DIAGNOSES_PATH, sheet="Exome variants reviewed", stringsAsFactors=FALSE)
+    diagnoses = subset(diagnoses, select=c("proband", "chrom", "position", "DECISION"))
     
-    # initial_path = file.path(HOME, "clinical_reporting.2014-10-30.txt")
-    # current_path = file.path(HOME, "clinical_reporting.txt")
+    initial_path = file.path(HOME, "clinical_reporting.2014-12-10.txt")
+    current_path = file.path(HOME, "clinical_reporting.txt")
     
-    # initial = read.table(initial_path, sep="\t", stringsAsFactors=FALSE, header=TRUE, blank.lines.skip=TRUE)
-    # current = read.table(current_path, sep="\t", stringsAsFactors=FALSE, header=TRUE, blank.lines.skip=TRUE)
-    # initial = exclude_cnv_based_variants(initial)
+    initial = read.table(initial_path, sep="\t", stringsAsFactors=FALSE, header=TRUE, blank.lines.skip=TRUE)
+    current = read.table(current_path, sep="\t", stringsAsFactors=FALSE, header=TRUE, blank.lines.skip=TRUE)
+    initial = exclude_cnv_based_variants(initial)
     
-    # # standardise the individuals in the datasets
-    # current = current[current$proband %in% initial$proband, ]
-    # initial = initial[initial$proband %in% current$proband, ]
+    # standardise the individuals in the datasets
+    current = current[current$proband %in% initial$proband, ]
+    initial = initial[initial$proband %in% current$proband, ]
     
-    # both = merge(initial, current, by=c("proband", "chrom", "position", "sex"), all=TRUE)
-    # both = merge(both, diagnoses, by=c("proband", "chrom", "position"), all.x=TRUE)
+    both = merge(initial, current, by=c("proband", "chrom", "position", "sex"), all=TRUE)
+    both = merge(both, diagnoses, by=c("proband", "chrom", "position"), all.x=TRUE)
     
-    # initial_only = both[is.na(both$ref.alt_alleles.y), ]
-    # current_only = both[is.na(both$ref.alt_alleles.x), ]
+    initial_only = both[is.na(both$ref.alt_alleles.y), ]
+    current_only = both[is.na(both$ref.alt_alleles.x), ]
     
-    # # show the proportions for each trio genotype type
-    # table(initial$trio_genotype)/nrow(initial)
-    # table(current$trio_genotype)/nrow(current)
+    # show the proportions for each trio genotype type
+    table(initial$trio_genotype)/nrow(initial)
+    table(current$trio_genotype)/nrow(current)
     
-    # # plot a venn diagram of the numbers of variants in each group
-    # v = venneuler(c(previous=nrow(initial_only), current=nrow(current_only), "previous&current"=(nrow(both)-(nrow(initial_only) + nrow(current_only)))))
-    # Cairo(file="variants_venn_diagram.pdf", type="pdf", height=10, width=10, units="cm")
-    # plot(v)
-    # dev.off()
+    # plot a venn diagram of the numbers of variants in each group
+    v = venneuler(c(previous=nrow(initial_only), current=nrow(current_only), "previous&current"=(nrow(both)-(nrow(initial_only) + nrow(current_only)))))
+    Cairo(file="variants_venn_diagram.pdf", type="pdf", height=10, width=10, units="cm")
+    plot(v)
+    dev.off()
     
-    # # check the reasons why each variant failed
-    # initial_only$fail_reason = apply(initial_only, 1, check_variant_fail, "~/samples.ped")
-    # current_only$fail_reason = apply(current_only, 1, check_variant_fail, "~/exome_reporting.ped")
+    # check the reasons why each variant failed
+    initial_only$fail_reason = apply(initial_only, 1, check_variant_fail, "~/exome_reporting_2.ped")
+    current_only$fail_reason = apply(current_only, 1, check_variant_fail, "~/exome_reporting.ped")
     
-    # # categorize the fail reasons
-    # initial_only = combine_fail_categories(initial_only)
-    # current_only = combine_fail_categories(current_only)
+    # categorize the fail reasons
+    initial_only = combine_fail_categories(initial_only)
+    current_only = combine_fail_categories(current_only)
     
-    # # get the numbers of variants in each fail category (in the inital_only
-    # # cross-tabulate by reporting decision)
-    # table(initial_only$fail_category, initial_only$DECISION)
-    # table(current_only$fail_category)
+    # get the numbers of variants in each fail category (in the inital_only
+    # cross-tabulate by reporting decision)
+    table(initial_only$fail_category, initial_only$DECISION)
+    table(current_only$fail_category)
     
-    # # construct_pedigree_file("DDDP100149", "~/samples.ped", "temp.ped")
-    # # check_variant_fail(list(proband="DDDP100099", chrom=6, position=152712420), "~/samples.ped")
+    construct_pedigree_file("DDDP100149", "~/exome_reporting_2.ped", "temp.ped")
+    check_variant_fail(list(proband="DDDP100099", chrom=6, position=152712420), "~/samples.ped")
     
-    missing = read.table("~/problem_de_novos.txt", header=TRUE, sep="\t", stringsAsFactors=FALSE)
-    missing$fail_reason = apply(missing, 1, check_variant_fail, "~/samples.ped")
-    write.table(missing, file="~/problem_de_novos.txt", row.names=FALSE, sep="\t", quote=FALSE)
+    # missing = read.table("~/problem_de_novos.txt", header=TRUE, sep="\t", stringsAsFactors=FALSE)
+    # missing$fail_reason = apply(missing, 1, check_variant_fail, "~/exome_reporting_2.ped")
+    # write.table(missing, file="~/problem_de_novos.txt", row.names=FALSE, sep="\t", quote=FALSE)
     
 }
 

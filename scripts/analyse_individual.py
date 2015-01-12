@@ -18,11 +18,9 @@ app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
 filter_code = os.path.join(app_folder, "src", "main", "python", "clinical_filter.py")
 ped_file = os.path.join(home_folder, "exome_reporting.ped")
-filters = os.path.join(app_folder, "config", "filters.txt")
-tag_names = os.path.join(app_folder, "config", "tags.txt")
 
 datafreeze = "/nfs/ddd0/Data/datafreeze/1133trios_20131218/"
-known_genes = os.path.join(datafreeze, "DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv")
+known_genes = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2014-11-04/DDG2P/dd_genes_for_clinical_filter"
 alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.private.txt")
 syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
 
@@ -99,7 +97,12 @@ def main():
     
     # now set up the command for analysing the given pedigree file
     bjobs_preamble = ["bsub", "-q", "normal", "-o", random_filename + ".bjob_output.txt"]
-    filter_command = ["python3", filter_code, "--ped", random_filename, "--filter", filters, "--tags", tag_names, "--alternate-ids", alternate_ids, "--output", random_filename + ".output.txt", "--export-vcf", os.getcwd(), "--syndrome-regions", syndrome_regions_filename] + logging_option
+    filter_command = ["python3", filter_code, \
+        "--ped", random_filename, \
+        "--alternate-ids", alternate_ids, \
+        "--output", random_filename + ".output.txt", \
+        "--export-vcf", os.getcwd(), \
+        "--syndrome-regions", syndrome_regions_filename] + logging_option
     
     if not options.all_genes:
         filter_command += ["--known-genes", known_genes]

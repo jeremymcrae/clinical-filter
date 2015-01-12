@@ -25,7 +25,7 @@ tag_names = os.path.join(app_folder, "config", "tags.txt")
 deprecated_genes = os.path.join(app_folder, "config", "ddg2p_deprecated_hgnc.txt")
 
 datafreeze = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
-known_genes = "/nfs/ddd0/Data/datafreeze/1133trios_20131218/DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv"
+known_genes = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2014-11-04/DDG2P/dd_genes_for_clinical_filter"
 alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.txt")
 individuals_filename = os.path.join(datafreeze, "family_relationships.txt")
 # working_vcfs_filename = os.path.join(datafreeze, "all_working_paths.txt")
@@ -95,7 +95,7 @@ def split_pedigree_file(tempname, ped_file, number_of_jobs):
             file_counter += 1
             family_counter = 1
         if family_counter == 1:
-            output_file = open(tempname + str(file_counter) + ".txt", "w")
+            output_file = open("{0}{1}.txt".format(tempname, file_counter), "w")
         output_file.writelines(lines)
         
     return file_counter
@@ -108,50 +108,108 @@ def tidy_directory_before_start():
     files = glob.glob("tmp_ped*")
     for filename in files:
         os.remove(filename)
-    
-def write_sh_file(hash_string, command):
-    """
-    """
-    
-    # the command cannot be run directly from subprocess, as the quote marks are not processed 
-    # correctly. Write it to a file, then check that directly.
-    random_filename = hash_string + ".sh"
-    random_file = open(random_filename, 'w')
-    random_file.write(" ".join(command))
-    random_file.close()
-    
-    return random_filename
 
-def remove_sh_file(filename):
-    """ cleans up the sh file
+def is_number(string):
+    """ check whether a string can be converted to a number
+    
+    Args:
+        string: value as a string, could be a number
+        
+    Returns:
+        True/False for whether the value can be converted to a number
     """
     
-    # wait for the script to be run and the job to be picked up, then remove the script file
-    time.sleep(1)
-    os.remove(filename)
+    try:
+        number = float(string)
+    except ValueError:
+        return False
     
-    if os.path.exists("clinical_reporting.log"):
-        os.remove("clinical_reporting.log")
+    return True
+
+def get_random_string():
+    """ make a random string, which we can use for bsub job IDs, so that 
+    different jobs do not have the same job IDs.
+    """
+    
+    # set up a random string to associate with the run
+    hash_string = "%8x" % random.getrandbits(32)
+    hash_string = hash_string.strip()
+    
+    # done't allow the random strings to be equivalent to a number, since 
+    # the LSF cluster interprets those differently from letter-containing 
+    # strings
+    while is_number(hash_string):
+        hash_string = "%8x" % random.getrandbits(32)
+        hash_string = hash_string.strip()
+    
+    return hash_string
+
+
+def submit_bsub_job(command, job_id=None, dependent_id=None, memory=None, requeue_code=None, logfile=None):
+    """ construct a bsub job submission command
+    
+    Args:
+        command: list of strings that forma unix command
+        job_id: string for job ID for submission
+        dependent_id: job ID, or list of job IDs which the current command needs
+            to have finished before the current command will start. Note that 
+            the list can be empty, in which case there are no dependencies.
+        memory: minimum memory requirements (in megabytes)
+    
+    Returns:
+        nothing
+    """
+    
+    if job_id is None:
+        job_id = get_random_string()
+    
+    job = "-J \"{0}\"".format(job_id)
+    
+    mem = ""
+    if memory is not None:
+        mem = "-R 'select[mem>{0}] rusage[mem={0}]' -M {0}".format(memory)
+    
+    requeue = ""
+    if requeue_code is not None:
+        requeue = "-Q 'EXCLUDE({0})'".format(requeue_code)
+    
+    dependent = ""
+    if dependent_id is not None:
+        if type(dependent_id) == list:
+            dependent_id = " && ".join(dependent_id)
+        dependent = "-w '{0}'".format(dependent_id)
+    
+    log = "bjob_output.txt"
+    if logfile is not None:
+        log = logfile
+    
+    preamble = ["bsub", job, dependent, requeue, "-q", "normal", "-o", log, mem]
+    command = ["bash", "-c", "\""] + command + ["\""]
+    
+    command = " ".join(preamble + command)
+    subprocess.call(command, shell=True)
 
 def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_path, all_genes, log_options):
     """ sets up a lsf job array
     """
     
     # set up run parameters
-    job_name = hash_string + '[1-' + str(trio_counter)
-    job_array_params = '-J "' + job_name + ']"'
-    
+    job_id = "{0}[1-{1}]".format(hash_string, trio_counter)
     bjob_output_name = temp_name + "bjob_output"
     
     # copy the alternate IDs to a faster filesystem
     fast_alternate_ids = os.path.join(home_lustre, os.path.basename(alternate_ids))
     shutil.copyfile(alternate_ids, fast_alternate_ids)
     
-    # copy the syndrome regions to potentiall faster system
+    # copy the syndrome regions to potentially faster filesystem
     fast_syndrome_regions = os.path.join(home_lustre, os.path.basename(syndrome_regions_filename))
     shutil.copyfile(syndrome_regions_filename, fast_syndrome_regions)
     
-    command = ["bsub", job_array_params, "-o", bjob_output_name + ".%I.txt", "python3", filter_code, "--ped", temp_name + "\$LSB_JOBINDEX\.txt", "--output", output_name + "\$LSB_JOBINDEX\.txt", "--syndrome-regions", fast_syndrome_regions, "--deprecated-genes", deprecated_genes] + log_options
+    command = ["python3", filter_code, \
+        "--ped", "{0}\$LSB_JOBINDEX\.txt".format(temp_name), \
+        "--output", "{0}\$LSB_JOBINDEX\.txt".format(output_name), \
+        "--syndrome-regions", fast_syndrome_regions, \
+        "--deprecated-genes", deprecated_genes] + log_options
     
     # sometimes we don't want to restrict to the DDG2P genes, then all_genes
     # would be False and variants would be assessed in every gene.
@@ -161,42 +219,24 @@ def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_pat
         shutil.copyfile(known_genes_path, genes_path)
         command += ["--known-genes", genes_path]
     
-    sh_file = write_sh_file(hash_string, command)
-    subprocess.Popen(["sh", sh_file])
-    remove_sh_file(sh_file)
+    submit_bsub_job(command, job_id=job_id, logfile=bjob_output_name + ".%I.txt")
 
 def run_cleanup(hash_string, output_name, temp_name):
     """ runs a lsf job to clean up the files
     """
     
     # merge the array output after the array finishes
-    command = ['bsub -J "merge1_' + hash_string + '" -w "done(' + hash_string + ')"', "-o", temp_name + "bjob_output.var_merge.txt", "bash", "-c", "\"head", "-n", "1", output_name + "1.txt", ">", "clinical_reporting.txt", "; tail", "-q", "-n", "+2", output_name + "*", ">>", "clinical_reporting.txt\""]
-    sh_file = write_sh_file(hash_string, command)
-    subprocess.Popen(["sh", sh_file])
-    remove_sh_file(sh_file)
+    merge_job_id = "merge1_{0}".format(hash_string)
+    command = ["head", "-n", "1", output_name + "1.txt", ">", "clinical_reporting.txt", "; tail", "-q", "-n", "+2", output_name + "*", ">>", "clinical_reporting.txt"]
+    submit_bsub_job(command, job_id=merge_job_id, dependent_id=hash_string, logfile=temp_name + "bjob_output.var_merge.txt")
     
     # merge the log files after the array finishes
-    command = ['bsub -J "merge2_' + hash_string + '" -w "done(' + hash_string + ')"', "-o", temp_name + "bjob_output.log_merge.txt", "bash", "-c", "\"cat", temp_name + "*.log", ">", "clinical_reporting.log\""]
-    sh_file = write_sh_file(hash_string, command)
-    subprocess.Popen(["sh", sh_file])
-    remove_sh_file(sh_file)
+    command = ["cat", temp_name + "*.log", ">", "clinical_reporting.log"]
+    submit_bsub_job(command, job_id="merge2_" + hash_string, dependent_id=hash_string, logfile=temp_name + "bjob_output.log_merge.txt")
     
-    # submit a cleanup job to the cluster
-    command = ['bsub -J "cleanup" -w "merge1_' + hash_string + '"', "-o", "clinical_reporting.cleanup.txt", "bash", "-c", "\"rm", temp_name + "*\""]
-    sh_file = write_sh_file(hash_string, command)
-    subprocess.Popen(["sh", sh_file])
-    remove_sh_file(sh_file)
-
-def is_number(string):
-    """ check whether a string can be converted to a number
-    """
-    
-    try:
-        number = float(string)
-    except ValueError:
-        return False
-    
-    return True
+    # remove the temporary files
+    command = ["rm", temp_name + "*"]
+    submit_bsub_job(command, job_id="cleanup", dependent_id=merge_job_id, logfile="clinical_reporting.cleanup.txt")
 
 def main():
     
@@ -209,20 +249,15 @@ def main():
         log_options = []
     
     if opts.ped_path is None:
-        ped_path = os.path.join(home_folder, "exome_reporting_2.ped")
+        ped_path = os.path.join(home_folder, "exome_reporting.ped")
         make_ped(ped_path)
     else:
         ped_path = opts.ped_path
     
     # set up a random string to associate with the run
-    hash_string = "%8x" % random.getrandbits(32)
-    hash_string = hash_string.strip()
+    hash_string = get_random_string()
     
-    while is_number(hash_string):
-        hash_string = "%8x" % random.getrandbits(32)
-        hash_string = hash_string.strip()
-    
-    temp_name = "tmp_ped." + hash_string + "."
+    temp_name = "tmp_ped.{0}.".format(hash_string)
     output_name = temp_name + "output."
     
     tidy_directory_before_start()
