@@ -20,15 +20,11 @@ home_lustre = "/lustre/scratch113/teams/hurles/users/jm33/"
 app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
 filter_code = os.path.join(app_folder, "src", "main", "python", "clinical_filter.py")
-filters = os.path.join(app_folder, "config", "filters.txt")
-tag_names = os.path.join(app_folder, "config", "tags.txt")
-deprecated_genes = os.path.join(app_folder, "config", "ddg2p_deprecated_hgnc.txt")
 
 datafreeze = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
 known_genes = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2014-11-04/DDG2P/dd_genes_for_clinical_filter"
 alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.txt")
 individuals_filename = os.path.join(datafreeze, "family_relationships.txt")
-# working_vcfs_filename = os.path.join(datafreeze, "all_working_paths.txt")
 syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
     
 def get_options():
@@ -208,8 +204,7 @@ def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_pat
     command = ["python3", filter_code, \
         "--ped", "{0}\$LSB_JOBINDEX\.txt".format(temp_name), \
         "--output", "{0}\$LSB_JOBINDEX\.txt".format(output_name), \
-        "--syndrome-regions", fast_syndrome_regions, \
-        "--deprecated-genes", deprecated_genes] + log_options
+        "--syndrome-regions", fast_syndrome_regions] + log_options
     
     # sometimes we don't want to restrict to the DDG2P genes, then all_genes
     # would be False and variants would be assessed in every gene.
@@ -226,17 +221,18 @@ def run_cleanup(hash_string, output_name, temp_name):
     """
     
     # merge the array output after the array finishes
-    merge_job_id = "merge1_{0}".format(hash_string)
+    merge_id = "merge1_{0}".format(hash_string)
     command = ["head", "-n", "1", output_name + "1.txt", ">", "clinical_reporting.txt", "; tail", "-q", "-n", "+2", output_name + "*", ">>", "clinical_reporting.txt"]
-    submit_bsub_job(command, job_id=merge_job_id, dependent_id=hash_string, logfile=temp_name + "bjob_output.var_merge.txt")
+    submit_bsub_job(command, job_id=merge_id, dependent_id=hash_string, logfile=temp_name + "bjob_output.var_merge.txt")
     
     # merge the log files after the array finishes
+    log_merge_id = "merge2_" + hash_string
     command = ["cat", temp_name + "*.log", ">", "clinical_reporting.log"]
-    submit_bsub_job(command, job_id="merge2_" + hash_string, dependent_id=hash_string, logfile=temp_name + "bjob_output.log_merge.txt")
+    submit_bsub_job(command, job_id=log_merge_id, dependent_id=hash_string, logfile=temp_name + "bjob_output.log_merge.txt")
     
     # remove the temporary files
     command = ["rm", temp_name + "*"]
-    submit_bsub_job(command, job_id="cleanup", dependent_id=merge_job_id, logfile="clinical_reporting.cleanup.txt")
+    submit_bsub_job(command, job_id="cleanup", dependent_id=[merge_id, log_merge_id], logfile="clinical_reporting.cleanup.txt")
 
 def main():
     
