@@ -94,9 +94,17 @@ class VariantInfo(object):
         """
         
         self.gene = None
-        # sometimes the variant lacks an HGNC field
+        # grab the HGNC symbol from the INFO
         if "HGNC" in self.info:
             self.gene = self.info["HGNC"]
+        # If we are not using a set of known genes, we still want to check
+        # variants that haven't been annotated with a HGNC, since some of these 
+        # have a functional VEP annotation, presumably due to difficulties in 
+        # identifying an HGNC symbol. We don't need to worry about this when
+        # using a set of known genes, since we check whether variants lie within
+        # the known genes chromosomal ranges.
+        elif self.gene is None and self.known_genes is None:
+            self.gene = "{0}:{1}".format(self.chrom, self.position)
         
     def set_gene_from_known_gene_overlap(self):
         """ sets the gene according to overlap with the positions of known genes
