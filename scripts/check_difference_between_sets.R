@@ -87,7 +87,6 @@ check_variant_fail <- function(variant, ped_path) {
     command = "python3" 
     args = c("/nfs/users/nfs_j/jm33/apps/clinical-filter/src/main/python/clinical_filter.py",
         "--ped",  new_path, 
-        "--deprecated-genes", "/nfs/users/nfs_j/jm33/apps/clinical-filter/config/ddg2p_deprecated_hgnc.txt", 
         "--output", "test.txt", 
         "--syndrome-regions", "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt",
         "--known-genes", "/nfs/ddd0/Data/datafreeze/1133trios_20131218/DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv", 

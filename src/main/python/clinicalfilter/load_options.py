@@ -5,8 +5,7 @@ import argparse
 import sys
 
 from clinicalfilter.load_files import open_filters, open_tags, \
-    open_known_genes, create_person_ID_mapper, open_cnv_regions, \
-    open_deprecated_gene_symbols
+    open_known_genes, create_person_ID_mapper, open_cnv_regions
 from clinicalfilter import ped
 
 
@@ -32,7 +31,6 @@ def get_options():
     parser.add_argument("--known-genes", dest="genes", help="Path to table of known disease causative genes.")
     parser.add_argument("--known-genes-date", dest="genes_date", help="Date that the list of known disease causative genes was last updated, used to track the version of known-genes used for analysis.")
     parser.add_argument("--alternate-ids", dest="alternate_ids", help="Path to table of alternate IDs, used to map individual IDs to their alternate study IDs.")
-    parser.add_argument("--deprecated-genes", help="Path to table of deprecated HGNC symbols, matched to their current symbol.")
     parser.add_argument("-o", "--output", dest="output", help="Path for analysis output in tabular format.")
     parser.add_argument("--export-vcf", dest="export_vcf", help="Directory or file path for analysis output in VCF format.")
     parser.add_argument("--log", dest="loglevel", default="debug", help="Level of logging to use, choose from: debug, info, warning, error or critical.")
@@ -76,14 +74,10 @@ class LoadOptions(object):
         self.load_definitions_files()
         self.load_trio_paths()
         self.pp_filter = self.options.pp_filter
-        
+    
     def load_definitions_files(self):
         """loads all the config files for the script (eg filters, gene IDs)
         """
-        
-        deprecated_genes = None
-        if self.options.deprecated_genes is not None:
-            deprecated_genes = open_deprecated_gene_symbols(self.options.deprecated_genes)
         
         # if we have named a gene file, then load a dictionary of genes, and 
         # add them to the filters, so we can screen variants for being in genes 
@@ -91,7 +85,7 @@ class LoadOptions(object):
         self.known_genes = None
         self.excluded_genes = None
         if self.options.genes is not None:
-            self.known_genes, self.excluded_genes = open_known_genes(self.options.genes, deprecated_genes)
+            self.known_genes, self.excluded_genes = open_known_genes(self.options.genes)
         
         # if we have named an ID mapping file, the load a dictionary of IDs and
         # alternate IDs, so we can convert between different ID schemes.

@@ -173,6 +173,9 @@ class LoadVCFs(object):
             line: list of elements of the VCF line for the variant
         """
         
+        # Complete the variant setup, now that the variant has passed the 
+        # filtering. If we do this earlier, it slows all the unneeded variants.
+        var.set_gene_from_known_gene_overlap()
         var.add_format(line[8], line[9])
         var.add_vcf_line(line)
         var.set_gender(gender)
@@ -276,7 +279,6 @@ class LoadVCFs(object):
             # check if we want to include the variant or not
             if self.include_variant(line, child_variants, gender):
                 var = self.construct_variant(line, gender)
-                var.set_gene_from_known_gene_overlap()
                 self.add_single_variant(variants, var, gender, line)
         
         return variants

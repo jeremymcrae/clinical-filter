@@ -17,11 +17,11 @@ home_folder = "/nfs/users/nfs_j/jm33/"
 app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
 filter_code = os.path.join(app_folder, "src", "main", "python", "clinical_filter.py")
-ped_file = os.path.join(home_folder, "exome_reporting.ped")
 
-datafreeze = "/nfs/ddd0/Data/datafreeze/1133trios_20131218/"
+datafreeze = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
 known_genes = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2014-11-04/DDG2P/dd_genes_for_clinical_filter"
-alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.private.txt")
+ped_file = os.path.join(datafreeze, "family_relationships.txt")
+alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.txt")
 syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
 
 def get_options():

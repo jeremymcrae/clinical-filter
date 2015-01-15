@@ -567,9 +567,9 @@ class CNVInheritance(object):
         genes = self.variant.child.get_genes()
         for gene in genes:
             if self.known_genes is not None and gene in self.known_genes:
-                if "Biallelic" in self.known_genes[gene]["inheritance"] or \
+                if "Biallelic" in self.known_genes[gene]["inh"] or \
                      (self.variant.get_chrom() == "X" and \
-                     "Hemizygous" in self.known_genes[gene]["inheritance"] and \
+                     "Hemizygous" in self.known_genes[gene]["inh"] and \
                      self.trio.child.is_female() and \
                      self.variant.child.info["CNS"] == "1"):
                     return True
@@ -654,7 +654,7 @@ class CNVInheritance(object):
                 continue
             
             self.log_string = "non-reported DDG2P CNV"
-            gene_type = self.known_genes[gene]["confirmed_status"]
+            gene_type = self.known_genes[gene]["status"]
             
             inh_passes = []
             if "Both DD and IF" in gene_type:
@@ -664,7 +664,7 @@ class CNVInheritance(object):
                 # drop out genes with insufficient evidence
                 continue
             
-            for inh in self.known_genes[gene]["inheritance"]:
+            for inh in self.known_genes[gene]["inh"]:
                 passes = self.passes_gene_inheritance(gene, inh) or \
                     self.passes_intragenic_dup(gene, inh)
                 inh_passes.append(passes)
@@ -714,7 +714,7 @@ class CNVInheritance(object):
         return (chrom =="all" or 
             (chrom == "X" and self.variant.get_chrom() == "X")) and \
             self.variant.child.info["CNS"] in copy_number and \
-            len(self.known_genes[gene]["inheritance"][inh] & cnv_mech) > 0
+            len(self.known_genes[gene]["inh"][inh] & cnv_mech) > 0
     
     def passes_intragenic_dup(self, gene, inh):
         """ checks if the CNV is an intragenic dup (in an appropriate gene)
@@ -728,7 +728,7 @@ class CNVInheritance(object):
             return False
         
         # only allow genes with loss-of-function mechanisms
-        if len(self.known_genes[gene]["inheritance"][inh] & allowed_mech) < 1:
+        if len(self.known_genes[gene]["inh"][inh] & allowed_mech) < 1:
             return False
         
         # find the CNV start and end, as well as the gene start and end

@@ -4,7 +4,6 @@
 import os
 import io
 import time
-import random
 import sys
 
 def open_file(path):
@@ -26,18 +25,18 @@ def open_file(path):
     
     while retry < 5:
         try:
-            return io.open(path, "r", encoding = "latin_1")
+            return io.open(path, "r", encoding="latin_1")
         except PermissionError as e:
             # if we get an error, wait a few seconds for other processes to
             # release the file, before retrying
-            time.sleep(random.uniform(5, 10))
+            time.sleep(3)
             retry += 1
     
     raise IOError("cannot access file, even after " + str(retry) + " tries.\n" \
         + "This is often seen when multiple processes try to access a file,\n" \
         + "and the lustre filesystem is being stressed.")
 
-def open_known_genes(path="DDGP-reportable.txt", deprecated_genes=None):
+def open_known_genes(path="DDGP-reportable.txt"):
     """Loads list of known disease causative genes.
     
     We obtain a list of genes that are known to be involved in disorders, so
@@ -46,8 +45,6 @@ def open_known_genes(path="DDGP-reportable.txt", deprecated_genes=None):
     
     Args:
         path: path to tab-separated file listing known disease-causing genes.
-        deprecated_genes: dictionary of outdated gene symbols, mapped to their
-            updated HGNC symbols. Or None, if we haven't specified a file.
     
     Returns:
         A dictionary of genes, so we can check variants for inclusion in the 
@@ -62,57 +59,42 @@ def open_known_genes(path="DDGP-reportable.txt", deprecated_genes=None):
     
     # allow for gene files with different column names and positions
     header = f.readline().strip().split("\t")
-    if "DDG2P_Status" in header:
-        gene_label = "Gene"
-        confirmed_status_label = "DDG2P_Status"
-        inheritance_label = "Inheritance"
-        mechanism_label = "Mechanism"
-    elif "type" in header:
-        gene_label = "gene"
-        confirmed_status_label = "type"
-        inheritance_label = "mode"
-        mechanism_label = "mech"
-        start_label = "start"
-        stop_label = "stop"
-        chrom_label = "chr"
-    else:
-        raise ValueError("The gene file doesn't contain expected column names")
     
     # get the positions of the columns in the list of header labels
-    gene_column = header.index(gene_label)
-    confirmed_status_column = header.index(confirmed_status_label)
-    inheritance_column = header.index(inheritance_label)
-    mechanism_column = header.index(mechanism_label)
-    start_column = header.index(start_label)
-    stop_column = header.index(stop_label)
-    chrom_column = header.index(chrom_label)
+    gene_column = header.index("gene")
+    confirmed_status_column = header.index("type")
+    inheritance_column = header.index("mode")
+    mechanism_column = header.index("mech")
+    start_column = header.index("start")
+    stop_column = header.index("stop")
+    chrom_column = header.index("chr")
     
     # only include genes with sufficient DDG2P status
-    allowed_confirmed_statuses = ["Confirmed DD Gene", "Probable DD gene", \
-        "Both DD and IF"]
+    allowed_statuses = set(["Confirmed DD Gene", "Probable DD gene", \
+        "Both DD and IF"])
     
     excluded_genes = set([])
     known_genes = {}
     for line in f:
         line = line.strip().split("\t")
         gene = line[gene_column]
-        gene_confirmed_status = line[confirmed_status_column]
-        gene_inheritance = line[inheritance_column]
-        gene_mechanism = line[mechanism_column]
+        confirmed_status = line[confirmed_status_column]
+        inheritance = line[inheritance_column]
+        mechanism = line[mechanism_column]
         
         # ignore genes with insufficient evidence
-        if gene_confirmed_status not in allowed_confirmed_statuses:
+        if confirmed_status not in allowed_statuses:
             excluded_genes.add(gene)
             continue 
         
         if gene not in known_genes:
-            known_genes[gene] = {"inheritance": {}, "confirmed_status": set()}
+            known_genes[gene] = {"inh": {}, "status": set()}
         
-        if gene_inheritance not in known_genes[gene]["inheritance"]:
-            known_genes[gene]["inheritance"][gene_inheritance] = set()
+        if inheritance not in known_genes[gene]["inh"]:
+            known_genes[gene]["inh"][inheritance] = set()
         
-        known_genes[gene]["inheritance"][gene_inheritance].add(gene_mechanism)
-        known_genes[gene]["confirmed_status"].add(gene_confirmed_status)
+        known_genes[gene]["inh"][inheritance].add(mechanism)
+        known_genes[gene]["status"].add(confirmed_status)
         known_genes[gene]["start"] = int(line[start_column])
         known_genes[gene]["end"] = int(line[stop_column])
         known_genes[gene]["chrom"] = line[chrom_column]
@@ -121,18 +103,13 @@ def open_known_genes(path="DDGP-reportable.txt", deprecated_genes=None):
         # the gene has been observed in disorders with both monoallelic and 
         # biallelic inheritance. Make sure the monoallelic and biallelic modes 
         # are shown for the gene.
-        if gene_inheritance == "Both":
-            if "Monoallelic" not in known_genes[gene]["inheritance"]:
-                known_genes[gene]["inheritance"]["Monoallelic"] = set()
-            if "Biallelic" not in known_genes[gene]["inheritance"]:
-                known_genes[gene]["inheritance"]["Biallelic"] = set()
-            known_genes[gene]["inheritance"]["Monoallelic"].add(gene_mechanism)
-            known_genes[gene]["inheritance"]["Biallelic"].add(gene_mechanism)
-        
-        # make a matching entry for the updated HGNC symbol, if the HGNC symbol 
-        # has been deprecated
-        if deprecated_genes is not None and gene in deprecated_genes:
-            known_genes[deprecated_genes[gene]] = known_genes[gene]
+        if inheritance == "Both":
+            if "Monoallelic" not in known_genes[gene]["inh"]:
+                known_genes[gene]["inh"]["Monoallelic"] = set()
+            if "Biallelic" not in known_genes[gene]["inh"]:
+                known_genes[gene]["inh"]["Biallelic"] = set()
+            known_genes[gene]["inh"]["Monoallelic"].add(mechanism)
+            known_genes[gene]["inh"]["Biallelic"].add(mechanism)
     
     if len(known_genes) == 0:
         raise ValueError("No genes found in the file, check the line endings")
@@ -155,19 +132,22 @@ def create_person_ID_mapper(path="/nfs/ddd0/Data/datafreeze/1139trios_20131030/p
         different individuals.
     """
     
-    f = open_file(path)
+    converter = {}
+    with open(path) as f:
+        for line in f:
+            # don't bother to include the maternal or paternal IDs, since we 
+            # only want the probands IDs
+            if ":mat" in line or ":pat" in line:
+                continue
+            
+            line = line.split("\t")
+            person_id = line[0]
+            alternate_id = line[1]
+            
+            if person_id not in converter:
+                converter[person_id] = alternate_id
     
-    ID_converter = {}
-    for line in f:
-        line = line.strip().split("\t")
-        person_ID = line[0]
-        alternate_ID = line[1]
-        
-        ID_converter[person_ID] = alternate_ID
-    
-    f.close()
-    
-    return ID_converter
+    return converter
 
 def open_filters(path):
     """ Opens user-defined criteria for filtering variants.
@@ -298,35 +278,3 @@ def open_cnv_regions(path):
     f.close()
     
     return cnv_regions
-
-def open_deprecated_gene_symbols(path):
-    """ opens a file containing deprecated gene HGNC symbols used in the DDG2P
-    
-    These gene symbols have been obtained by taking the set of HGNC symbols in
-    the DDG2P database for genes with "Confirmed DD Gene", "Probable DD Gene" 
-    and "Both DD and IF Gene" types. The updated gene symbols were obatiend from
-    http://www.genenames.org/cgi-bin/symbol_checker , where we excluded genes
-    with "Approved Symbols", and "Synonyms".
-    
-    Args:
-        path: path to file containing deprecated DDG2P HGNC symbols.
-    
-    Returns:
-        dictionary of new HGNC symbols, indexed by their old HGNC symbol.
-    """
-    
-    f = open_file(path)
-    header = f.readline().strip().split("\t")
-    
-    gene_symbols = {}
-    for line in f:
-        line = line.strip().split("\t")
-        
-        hgnc_old = line[0]
-        hgnc_new = line[2]
-        
-        gene_symbols[hgnc_old] = hgnc_new
-    
-    return gene_symbols
-
-

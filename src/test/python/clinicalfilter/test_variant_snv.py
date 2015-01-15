@@ -259,7 +259,7 @@ class TestVariantSnvPy(unittest.TestCase):
         self.assertFalse(self.var.passes_filters())
         
         # check that low VQSLOD in a de novo will still pass
-        self.var.filter = "low_VQSLOD"
+        self.var.filter = "LOW_VQSLOD"
         self.var.info["DENOVO-SNP"] = True
         self.assertTrue(self.var.passes_filters())
     

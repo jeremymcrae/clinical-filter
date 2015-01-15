@@ -30,7 +30,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.variant = self.create_variant(child_gender)
         
         # make sure we've got known genes data
-        self.known_genes = {"TEST": {"inheritance": {"Monoallelic": {"Loss of function"}}, "confirmed_status": {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
+        self.known_genes = {"TEST": {"inh": {"Monoallelic": {"Loss of function"}}, "status": {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         syndrome_regions = {("1", "1000", "2000"): 1}
         
@@ -157,11 +157,11 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         # check that a CNV with all the right characteristics passes
         # for mech in
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Increased gene dosage"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         self.assertTrue(self.inh.passes_gene_inheritance(gene, inh))
         
         # check that a CNV in a gene with differing inheritance mechanism fails
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Loss of function"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Loss of function"}
         self.assertFalse(self.inh.passes_gene_inheritance(gene, inh))
         
         # check that a DEL CNV requires a different mechanism
@@ -169,17 +169,17 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.variant.child.info["CNS"] = "0"
         self.assertTrue(self.inh.passes_gene_inheritance(gene, inh))
         
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Increased gene dosage"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         self.assertFalse(self.inh.passes_gene_inheritance(gene, inh))
         
         # check that a CNV in a gene with "Uncertain" mechanism passes
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Uncertain"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Uncertain"}
         self.assertTrue(self.inh.passes_gene_inheritance(gene, inh))
         
         # check that a CNV in a gene with "Uncertain" mechanism passes
         self.inh.variant.child.genotype = "DEL"
         self.inh.variant.child.info["CNS"] = "1"
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Uncertain"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Uncertain"}
         self.assertTrue(self.inh.passes_gene_inheritance(gene, inh))
     
     def test_passes_gene_inheritance_biallelic(self):
@@ -192,19 +192,19 @@ class TestCNVInheritancePy(unittest.TestCase):
         inh = "Biallelic"
         self.inh.variant.child.genotype = "DEL"
         self.inh.variant.child.info["CNS"] = "3"
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Increased gene dosage"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         self.assertFalse(self.inh.passes_gene_inheritance(gene, inh))
         
         # check that a CNV with correct copy number passes
         inh = "Biallelic"
         self.inh.variant.child.info["CNS"] = "0"
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Loss of function"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Loss of function"}
         self.assertTrue(self.inh.passes_gene_inheritance(gene, inh))
         
         # check that a CNV with mismatched copy number fails
         inh = "Biallelic"
         self.inh.variant.child.info["CNS"] = "1"
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Increased gene dosage"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         self.assertFalse(self.inh.passes_gene_inheritance(gene, inh))
     
     def test_passes_gene_inheritance_x_linked(self):
@@ -217,7 +217,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         inh = "X-linked dominant"
         self.inh.variant.child.genotype = "DUP"
         self.inh.variant.child.info["CNS"] = "3"
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Increased gene dosage"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         self.assertFalse(self.inh.passes_gene_inheritance(gene, inh))
         
         # check that a CNV with correct chrom passes
@@ -237,12 +237,12 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.variant.child.gender = "F"
         self.inh.variant.chrom = "X"
         self.inh.variant.child.info["CNS"] = "3"
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Increased gene dosage"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         self.assertTrue(self.inh.passes_gene_inheritance(gene, inh))
         
         self.inh.variant.child.genotype = "DEL"
         self.inh.variant.child.info["CNS"] = "1"
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Loss of function"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Loss of function"}
         self.assertFalse(self.inh.passes_gene_inheritance(gene, inh))
         
         # check that male hemizygous CNV can be either DEL or DUP
@@ -251,7 +251,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         self.inh.variant.child.genotype = "DUP"
         self.inh.variant.child.info["CNS"] = "3"
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Increased gene dosage"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         self.assertTrue(self.inh.passes_gene_inheritance(gene, inh))
     
     def test_passes_gene_inheritance_unsupported_inh(self):
@@ -264,22 +264,22 @@ class TestCNVInheritancePy(unittest.TestCase):
         # otherwise would
         inh = "Mosaic"
         self.inh.variant.child.info["CNS"] = "1"
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Increased gene dosage"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         self.assertFalse(self.inh.passes_gene_inheritance(gene, inh))
     
     def test_passes_ddg2p_filter(self):
         """ test if passes_ddg2p_filter() works correctly
         """
         
-        gene_inh = {"TEST": {"inheritance": {"Monoallelic": \
-            {"Increased gene dosage"}}, "confirmed_status": \
+        gene_inh = {"TEST": {"inh": {"Monoallelic": \
+            {"Increased gene dosage"}}, "status": \
             {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         gene = "TEST"
         inh = "Monoallelic"
         self.inh.variant.chrom = "1"
         self.inh.variant.child.info["CNS"] = "3"
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Increased gene dosage"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         
         # check we don't get anything if there are no DDG2P genes
         self.inh.known_genes = {}
@@ -299,17 +299,17 @@ class TestCNVInheritancePy(unittest.TestCase):
         # check if the variant passes if the confirmed type is "Both DD and IF",
         # even if the variant wouldn't otherwise pass
         self.inh.variant.child.gene = "TEST"
-        self.inh.known_genes[gene]["confirmed_status"] = {"Both DD and IF"}
-        self.inh.known_genes[gene]["inheritance"][inh] = {"Loss of function"}
+        self.inh.known_genes[gene]["status"] = {"Both DD and IF"}
+        self.inh.known_genes[gene]["inh"][inh] = {"Loss of function"}
         self.assertTrue(self.inh.passes_ddg2p_filter())
         
         # fail on genes that don't have a robust confirmed status
-        self.inh.known_genes[gene]["confirmed_status"] = {"Possible DD Gene"}
+        self.inh.known_genes[gene]["status"] = {"Possible DD Gene"}
         self.assertFalse(self.inh.passes_ddg2p_filter())
         
         # add another gene to the DDG2P dictionary
-        self.inh.known_genes["TEST2"] = {"inheritance": {"Monoallelic": \
-            {"Increased gene dosage"}}, "confirmed_status": {"Both DD and IF"}}
+        self.inh.known_genes["TEST2"] = {"inh": {"Monoallelic": \
+            {"Increased gene dosage"}}, "status": {"Both DD and IF"}}
         self.assertFalse(self.inh.passes_ddg2p_filter())
         
         # now check that if the CNV lies across any gene that passes, we pass
@@ -330,9 +330,9 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.variant.position = "5200"
         self.inh.variant.child.info["END"] = "5800"
         
-        gene_inh = {"TEST": {"inheritance": {"Monoallelic": \
+        gene_inh = {"TEST": {"inh": {"Monoallelic": \
             {"Loss of Function"}, "X-linked dominant": \
-            {"Loss of Function"}}, "confirmed_status": \
+            {"Loss of Function"}}, "status": \
             {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         self.inh.known_genes = gene_inh
@@ -438,8 +438,8 @@ class TestCNVInheritancePy(unittest.TestCase):
         """ test that check_compound_inheritance() works correctly
         """
         
-        gene_inh = {"TEST": {"inheritance": {"Biallelic": \
-            {"Increased gene dosage"}}, "confirmed_status": \
+        gene_inh = {"TEST": {"inh": {"Biallelic": \
+            {"Increased gene dosage"}}, "status": \
             {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         self.inh.known_genes = gene_inh
@@ -464,7 +464,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.assertTrue(self.inh.check_compound_inheritance())
         
         # check that low SVLEN combined with no DDG2P match fails
-        del self.inh.known_genes["TEST"]["inheritance"]["Biallelic"]
+        del self.inh.known_genes["TEST"]["inh"]["Biallelic"]
         self.assertFalse(self.inh.check_compound_inheritance())
         
         # check that high SVLEN can overcome not having a DDG2P match
@@ -475,8 +475,8 @@ class TestCNVInheritancePy(unittest.TestCase):
         """ test that check_compound_inheritance() works correctly
         """
         
-        gene_inh = {"TEST": {"inheritance": {"Hemizygous": \
-            {"Increased gene dosage"}}, "confirmed_status": \
+        gene_inh = {"TEST": {"inh": {"Hemizygous": \
+            {"Increased gene dosage"}}, "status": \
             {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         self.inh.known_genes = gene_inh

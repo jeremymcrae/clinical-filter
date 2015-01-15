@@ -150,7 +150,7 @@ class ClinicalFilter(LoadOptions):
         # to use
         gene_inh = None
         if self.known_genes is not None and gene in self.known_genes:
-            gene_inh = self.known_genes[gene]["inheritance"]
+            gene_inh = self.known_genes[gene]["inh"]
         
         # ignore intergenic variants
         if gene is None:
@@ -197,7 +197,6 @@ class ClinicalFilter(LoadOptions):
         unique_vars = [tuple(unique_vars[x]) for x in unique_vars] 
         
         return unique_vars
-
 
 def main():
     """ run the clinical filtering analyses
