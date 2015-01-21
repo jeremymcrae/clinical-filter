@@ -1,31 +1,28 @@
-""" a helper script to process all the trios efficiently on the farm as a job 
-array. Splits trios in a PED file across multiple ped files in order to run 
-them in parallel. 
+""" a helper script to process all the trios efficiently on the farm as a job
+array. Splits trios in a PED file across multiple ped files in order to run
+them in parallel.
 
 Not recommended for use, as this is very scrappy code, and highly user-specific,
 but it works if all the files are in the expected locations.
 """
 
-import math
 import subprocess
 import random
 import os
-import shutil
 import time
 import glob
 import argparse
 
-home_folder = "/nfs/users/nfs_j/jm33/"
-home_lustre = "/lustre/scratch113/teams/hurles/users/jm33/"
-app_folder = os.path.join(home_folder, "apps", "clinical-filter")
+USER_DIR = "~/"
+APP_FOLDER = os.path.join(USER_DIR, "apps", "clinical-filter")
 
-filter_code = os.path.join(app_folder, "src", "main", "python", "clinical_filter.py")
+FILTER_CODE = os.path.join(APP_FOLDER, "src", "main", "python", "clinical_filter.py")
 
-datafreeze = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
-known_genes = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2014-11-04/DDG2P/dd_genes_for_clinical_filter"
-alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.txt")
-individuals_filename = os.path.join(datafreeze, "family_relationships.txt")
-syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
+DATAFREEZE = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
+KNOWN_GENES_PATH = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2014-11-04/DDG2P/dd_genes_for_clinical_filter"
+ALT_IDS_PATH = os.path.join(DATAFREEZE, "person_sanger_decipher.txt")
+PED_PATH = os.path.join(DATAFREEZE, "family_relationships.txt")
+SYNDROMES_PATH = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
     
 def get_options():
     """ gets the options from the command line
@@ -33,43 +30,39 @@ def get_options():
     
     parser = argparse.ArgumentParser(description="Submit trio analysis to an \
         LSF cluster.")
-    parser.add_argument('--ped', dest='ped_path', default=None, help='path of the ped file (default=construct from DDD datasets)')
-    parser.add_argument('--log', dest='loglevel', help='level of logging to use (default=all)')
-    parser.add_argument('--ddg2p', dest='ddg2p_path', default=known_genes, help='optional path to the ddg2p file to use (default = current DDD DDG2P file)')
-    parser.add_argument('--njobs', dest='n_jobs', default=100, help='number of jobs you want to divide the run across')
-    parser.add_argument('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
+    parser.add_argument("--ped", dest="ped_path", default=None, \
+        help="path of the ped file (default=construct from DDD datasets)")
+    parser.add_argument("--log", dest="loglevel", \
+        help="level of logging to use (default=all)")
+    parser.add_argument("--ddg2p", dest="ddg2p_path", default=KNOWN_GENES_PATH, \
+        help="optional path to the ddg2p file to use (default = current DDD DDG2P file)")
+    parser.add_argument("--njobs", dest="n_jobs", default=100, \
+        help="number of jobs you want to divide the run across")
+    parser.add_argument("--all-genes", dest="all_genes", default=False, \
+        action="store_true", help="Option to assess variants in all genes. \
+        If unused, restricts variants to DDG2P genes.")
     
     args = parser.parse_args()
     
     return args
 
-def make_ped(ped_filename):
-    """ create a PED file for clinical filtering, using DDD datafreeze files
-    
-    The DDD datafreeze folder contains two files from which we can create a ped
-    file for filtering, the first file contains the first five columns in 
-    linkage pedigree format, the second file contains paths to VCF files for 
-    all the individuals in the first file. Unfortunately, that second file 
-    only contains the paths, which we have to search for the individual IDs.
+def split_pedigree_file(tempname, ped_path, number_of_jobs):
+    """ split the ped file into multiple smaller ped files
     
     Args:
-        ped_filename: path to write ped file output to.
+        tempname: string for the output path
+        ped_path: path to pedigree file
+        number_of_jobs: how many computational jobs to split the families over.
+            Note that due to how the families are striuctured (siblings etc), we
+            might get more files than this
+    
+    Returns:
+        The number of files that the cohort has been split across (which will
+        now be the number of jobs to run).
     """
     
-    individuals = open(individuals_filename, "r")
-    individuals.readline()
-    
-    output = open(ped_filename, "w")
-    for line in individuals:
-        output.write(line)
-    
-    output.close()
-
-def split_pedigree_file(tempname, ped_file, number_of_jobs):
-    """ split the ped file into multiple smaller ped files
-    """
-    
-    ped = open(ped_file, "r")
+    ped = open(ped_path, "r")
+    ped.readline() # drop the header line
     
     # create a dictionary of lines by family ID
     families = {}
@@ -123,34 +116,39 @@ def is_number(string):
     return True
 
 def get_random_string():
-    """ make a random string, which we can use for bsub job IDs, so that 
+    """ make a random string, which we can use for bsub job IDs, so that
     different jobs do not have the same job IDs.
+    
+    Returns:
+        random 8 character string
     """
     
     # set up a random string to associate with the run
-    hash_string = "%8x" % random.getrandbits(32)
+    hash_string = "{0:8x}".format(random.getrandbits(32))
     hash_string = hash_string.strip()
     
-    # done't allow the random strings to be equivalent to a number, since 
-    # the LSF cluster interprets those differently from letter-containing 
+    # don't allow the random strings to be equivalent to a number, since
+    # the LSF cluster interprets those differently from letter-containing
     # strings
     while is_number(hash_string):
-        hash_string = "%8x" % random.getrandbits(32)
+        hash_string = "{0:8x}".format(random.getrandbits(32))
         hash_string = hash_string.strip()
     
     return hash_string
-
 
 def submit_bsub_job(command, job_id=None, dependent_id=None, memory=None, requeue_code=None, logfile=None):
     """ construct a bsub job submission command
     
     Args:
-        command: list of strings that forma unix command
+        command: list of strings that form a unix command
         job_id: string for job ID for submission
         dependent_id: job ID, or list of job IDs which the current command needs
-            to have finished before the current command will start. Note that 
+            to have finished before the current command will start. Note that
             the list can be empty, in which case there are no dependencies.
         memory: minimum memory requirements (in megabytes)
+        requeue_code: exit codes under which it is acceptable to requeue the
+            job, or None
+        logfile: path for bjob output
     
     Returns:
         nothing
@@ -185,85 +183,82 @@ def submit_bsub_job(command, job_id=None, dependent_id=None, memory=None, requeu
     command = " ".join(preamble + command)
     subprocess.call(command, shell=True)
 
-def run_array(hash_string, trio_counter, temp_name, output_name, known_genes_path, all_genes, log_options):
-    """ sets up a lsf job array
+def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, log_options):
+    """ runs clinical filtering, split across multiple compute jobs
+    
+    Args:
+        hash_string: random hash string as identifier for the jobs
+        n_jobs: number of compute jobs to run (same as the number of ped files
+            to run on, which we have created earlier)
+        temp_name: prefix of the ped file basenames
+        genes_path: path to the known genes file, or None
+        all_genes: True/False whether to test all geens, or restrict variants to
+            the known genes.
+        log_options: logging level to use
     """
     
     # set up run parameters
-    job_id = "{0}[1-{1}]".format(hash_string, trio_counter)
-    bjob_output_name = temp_name + "bjob_output"
+    job_id = "{0}[1-{1}]".format(hash_string, n_jobs)
+    bjob_output_name = "{0}.bjob_output".format(temp_name)
+    output_name = "{0}.output".format(temp_name)
     
-    # copy the alternate IDs to a faster filesystem
-    fast_alternate_ids = os.path.join(home_lustre, os.path.basename(alternate_ids))
-    shutil.copyfile(alternate_ids, fast_alternate_ids)
-    
-    # copy the syndrome regions to potentially faster filesystem
-    fast_syndrome_regions = os.path.join(home_lustre, os.path.basename(syndrome_regions_filename))
-    shutil.copyfile(syndrome_regions_filename, fast_syndrome_regions)
-    
-    command = ["python3", filter_code, \
-        "--ped", "{0}\$LSB_JOBINDEX\.txt".format(temp_name), \
-        "--output", "{0}\$LSB_JOBINDEX\.txt".format(output_name), \
-        "--syndrome-regions", fast_syndrome_regions] + log_options
+    command = ["python3", FILTER_CODE, \
+        "--ped", "{0}.\$LSB_JOBINDEX\.txt".format(temp_name), \
+        "--output", "{0}.\$LSB_JOBINDEX\.txt".format(output_name), \
+        "--syndrome-regions", SYNDROMES_PATH, \
+        "--alternate-ids", ALT_IDS_PATH] + log_options
     
     # sometimes we don't want to restrict to the DDG2P genes, then all_genes
     # would be False and variants would be assessed in every gene.
     if not all_genes:
-        # copy the known genes to a faster filesystem
-        genes_path = os.path.join(home_lustre, os.path.basename(known_genes_path))
-        shutil.copyfile(known_genes_path, genes_path)
         command += ["--known-genes", genes_path]
     
     submit_bsub_job(command, job_id=job_id, logfile=bjob_output_name + ".%I.txt")
 
-def run_cleanup(hash_string, output_name, temp_name):
+def run_cleanup(hash_string):
     """ runs a lsf job to clean up the files
     """
     
+    output_name = "tmp_ped.{0}.output".format(hash_string)
+    
     # merge the array output after the array finishes
     merge_id = "merge1_{0}".format(hash_string)
-    command = ["head", "-n", "1", output_name + "1.txt", ">", "clinical_reporting.txt", "; tail", "-q", "-n", "+2", output_name + "*", ">>", "clinical_reporting.txt"]
-    submit_bsub_job(command, job_id=merge_id, dependent_id=hash_string, logfile=temp_name + "bjob_output.var_merge.txt")
+    command = ["head", "-n", "1", output_name + "1.txt", \
+        ">", "clinical_reporting.txt", ";", \
+        "tail", "-q", "-n", "+2", output_name + "*", \
+        ">>", "clinical_reporting.txt"]
+    submit_bsub_job(command, job_id=merge_id, dependent_id=hash_string, \
+        logfile=temp_name + "bjob_output.var_merge.txt")
     
     # merge the log files after the array finishes
-    log_merge_id = "merge2_" + hash_string
+    log_merge_id = "merge2_{0}".format(hash_string)
     command = ["cat", temp_name + "*.log", ">", "clinical_reporting.log"]
-    submit_bsub_job(command, job_id=log_merge_id, dependent_id=hash_string, logfile=temp_name + "bjob_output.log_merge.txt")
+    submit_bsub_job(command, job_id=log_merge_id, dependent_id=hash_string, \
+        logfile=temp_name + "bjob_output.log_merge.txt")
     
     # remove the temporary files
-    command = ["rm", temp_name + "*"]
-    submit_bsub_job(command, job_id="cleanup", dependent_id=[merge_id, log_merge_id], logfile="clinical_reporting.cleanup.txt")
+    command = ["rm", "tmp_ped.{0}*".format(hash_string)]
+    submit_bsub_job(command, job_id="cleanup", dependent_id=[merge_id, log_merge_id], \
+        logfile="clinical_reporting.cleanup.txt")
 
 def main():
     
     opts = get_options()
     
+    log_options = []
     if opts.loglevel != None:
-        loglevel = opts.loglevel
-        log_options = ["--log", loglevel]
-    else:
-        log_options = []
-    
-    if opts.ped_path is None:
-        ped_path = os.path.join(home_folder, "exome_reporting.ped")
-        make_ped(ped_path)
-    else:
-        ped_path = opts.ped_path
+        log_options = ["--log", opts.loglevel]
     
     # set up a random string to associate with the run
     hash_string = get_random_string()
     
-    temp_name = "tmp_ped.{0}.".format(hash_string)
-    output_name = temp_name + "output."
+    temp_name = "tmp_ped.{0}".format(hash_string)
     
     tidy_directory_before_start()
-    trio_counter = split_pedigree_file(temp_name, ped_path, opts.n_jobs)
-    run_array(hash_string, trio_counter, temp_name, output_name, opts.ddg2p_path, opts.all_genes, log_options)
-    run_cleanup(hash_string, output_name, temp_name)
+    trio_counter = split_pedigree_file(temp_name, PED_PATH, opts.n_jobs)
+    run_array(hash_string, trio_counter, temp_name, opts.ddg2p_path, opts.all_genes, log_options)
+    run_cleanup(hash_string)
 
 
 if __name__ == "__main__":
     main()
-
-
-

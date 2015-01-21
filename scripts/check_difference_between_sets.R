@@ -6,6 +6,8 @@ require(gdata)
 
 HOME = "/nfs/users/nfs_j/jm33"
 DIAGNOSES_PATH="/nfs/ddd0/Data/datafreeze/1133trios_20131218/Diagnosis_Summary_1133_20140328.xlsx"
+ORIGINAL_PED = "/nfs/ddd0/Data/datafreeze/1133trios_20131218/family_relationships.private.txt"
+CURRENT_PED = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/family_relationships.txt"
 
 # trim out CNVs, and variants which are present because they are compound hets
 # with a CNV
@@ -62,17 +64,17 @@ construct_pedigree_file <- function(proband_id, original_path, new_path) {
 
 #' run clinical filtering on a set of variants, debugging each time, so that can
 #' identify the reason why each individual variant failed the clinical filtering
-#' 
-#' @param variant data frame or list for single variant, providing proband, 
+#'
+#' @param variant data frame or list for single variant, providing proband,
 #'     chrom and position info
 #' @param ped_path path to a pedigree file that contains family information for
 #'     the proband and the probands parents. Note that the ped file can contain
 #'     info for other families, since we construct a ped file specifically for
-#'     the proband of interest within this function, using the info from the 
+#'     the proband of interest within this function, using the info from the
 #'     ped_path argument.
-#' 
+#'
 #' @examples
-#' check_variant_fail(list(proband="DDDP100099", chrom=6, position=152712420), 
+#' check_variant_fail(list(proband="DDDP100099", chrom=6, position=152712420),
 #'    "~/samples.ped")
 check_variant_fail <- function(variant, ped_path) {
     
@@ -84,13 +86,13 @@ check_variant_fail <- function(variant, ped_path) {
     chrom = variant[["chrom"]]
     cat(c(proband_id, chrom, pos, "\t"))
     
-    command = "python3" 
+    command = "python3"
     args = c("/nfs/users/nfs_j/jm33/apps/clinical-filter/src/main/python/clinical_filter.py",
-        "--ped",  new_path, 
-        "--output", "test.txt", 
+        "--ped",  new_path,
+        "--output", "test.txt",
         "--syndrome-regions", "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt",
-        "--known-genes", "/nfs/ddd0/Data/datafreeze/1133trios_20131218/DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv", 
-        "--debug-chrom", chrom, 
+        "--known-genes", "/nfs/ddd0/Data/datafreeze/1133trios_20131218/DDG2P_with_genomic_coordinates_20131107_updated_TTN.tsv",
+        "--debug-chrom", chrom,
         "--debug-pos", pos)
     
     reason = system2(command, args, stdout=TRUE)
@@ -141,10 +143,10 @@ main <- function() {
     diagnoses = subset(diagnoses, select=c("proband", "chrom", "position", "DECISION"))
     
     initial_path = file.path(HOME, "clinical_reporting.2014-12-10.txt")
-    current_path = file.path(HOME, "clinical_reporting.txt")
+    current_path = file.path(HOME, "clinical_reporting.2015-01-21.txt")
     
-    initial = read.table(initial_path, sep="\t", stringsAsFactors=FALSE, header=TRUE, blank.lines.skip=TRUE)
-    current = read.table(current_path, sep="\t", stringsAsFactors=FALSE, header=TRUE, blank.lines.skip=TRUE)
+    initial = read.table(initial_path, sep="\t", stringsAsFactors=FALSE, header=TRUE)
+    current = read.table(current_path, sep="\t", stringsAsFactors=FALSE, header=TRUE)
     initial = exclude_cnv_based_variants(initial)
     
     # standardise the individuals in the datasets
@@ -168,8 +170,8 @@ main <- function() {
     dev.off()
     
     # check the reasons why each variant failed
-    initial_only$fail_reason = apply(initial_only, 1, check_variant_fail, "~/exome_reporting_2.ped")
-    current_only$fail_reason = apply(current_only, 1, check_variant_fail, "~/exome_reporting.ped")
+    initial_only$fail_reason = apply(initial_only, 1, check_variant_fail, ORIGINAL_PED)
+    current_only$fail_reason = apply(current_only, 1, check_variant_fail, CURRENT_PED)
     
     # categorize the fail reasons
     initial_only = combine_fail_categories(initial_only)
@@ -180,8 +182,8 @@ main <- function() {
     table(initial_only$fail_category, initial_only$DECISION)
     table(current_only$fail_category)
     
-    construct_pedigree_file("DDDP100149", "~/exome_reporting_2.ped", "temp.ped")
-    check_variant_fail(list(proband="DDDP100099", chrom=6, position=152712420), "~/samples.ped")
+    # construct_pedigree_file("DDDP100149", "~/exome_reporting_2.ped", "temp.ped")
+    # check_variant_fail(list(proband="DDDP100099", chrom=6, position=152712420), "~/samples.ped")
     
     # missing = read.table("~/problem_de_novos.txt", header=TRUE, sep="\t", stringsAsFactors=FALSE)
     # missing$fail_reason = apply(missing, 1, check_variant_fail, "~/exome_reporting_2.ped")
@@ -191,5 +193,3 @@ main <- function() {
 
 
 main()
-
-

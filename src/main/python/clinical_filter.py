@@ -3,10 +3,10 @@
 Find variants in affected children that might contribute to their disorder. We
 load VCF files (either named on the command line, or listed in a PED file) for
 members of a family, filter for rare, functionally disruptive variants, and
-assess whether each variant might affect the child's disorder. We take into 
+assess whether each variant might affect the child's disorder. We take into
 account the parents genotypes (if available) and whether the parents are also
 affected with a (the?) disorder. For variants in known disease causative genes
-we check whether the inheritance patterns matches one expected for the  
+we check whether the inheritance patterns matches one expected for the
 inheritance models of the gene.
 
 Usage:
@@ -20,7 +20,7 @@ python clinical_filter.py \
     --output output_name.txt \
     --pp-dnm-threshold threshold_as_float (default 0.9)
 
-Written by Jeremy McRae (jm33@sanger.ac.uk), derived from code by Saeed Al 
+Written by Jeremy McRae (jm33@sanger.ac.uk), derived from code by Saeed Al
 Turki (sa9@sanger.ac.uk) and Jeff Barrett.
 """
 
@@ -34,7 +34,7 @@ from clinicalfilter.reporting import Report
 from clinicalfilter.load_options import LoadOptions, get_options
 
 class ClinicalFilter(LoadOptions):
-    """ filters trios for candidate variants that might contribute to a 
+    """ filters trios for candidate variants that might contribute to a
     probands disorder.
     """
     
@@ -57,7 +57,7 @@ class ClinicalFilter(LoadOptions):
         for family_ID in sorted(self.families):
             self.family = self.families[family_ID]
             
-            # some families have more than one child in the family, so run 
+            # some families have more than one child in the family, so run
             # through each child.
             self.family.set_child()
             while self.family.child is not None:
@@ -74,9 +74,9 @@ class ClinicalFilter(LoadOptions):
         """identify candidate variants in exome data for a single trio.
         
         takes variants that passed the initial filtering from VCF loading, and
-        splits the variants into groups for each gene with variants. Then 
+        splits the variants into groups for each gene with variants. Then
         analyses variants in a single gene (so we can utilise the appropriate
-        inheritance mechanisms for that gene), before running some 
+        inheritance mechanisms for that gene), before running some
         pos-inheritance filters, and exporting the data (ir required).
         
         Args:
@@ -91,7 +91,7 @@ class ClinicalFilter(LoadOptions):
             gene_vars = genes_dict[gene]
             found_vars += self.find_variants(gene_vars, gene)
         
-        # remove any duplicate variants (which might ocur due to CNVs being 
+        # remove any duplicate variants (which might ocur due to CNVs being
         # checked against all the genes that they encompass)
         found_vars = self.exclude_duplicates(found_vars)
         
@@ -116,7 +116,7 @@ class ClinicalFilter(LoadOptions):
         # organise the variants into entries for each gene
         genes_dict = {}
         for var in variants:
-            # cnvs can span mulitple genes, so we need to check each gene 
+            # cnvs can span mulitple genes, so we need to check each gene
             # separately, and then collapse duplicates later
             if var.is_cnv():
                 for gene in var.child.get_genes():
@@ -146,7 +146,7 @@ class ClinicalFilter(LoadOptions):
         """
         
         # get the inheritance for the gene (monoalleleic, biallelic, hemizygous
-        # etc), but allow for times when we haven't specified a list of genes 
+        # etc), but allow for times when we haven't specified a list of genes
         # to use
         gene_inh = None
         if self.known_genes is not None and gene in self.known_genes:
@@ -154,6 +154,9 @@ class ClinicalFilter(LoadOptions):
         
         # ignore intergenic variants
         if gene is None:
+            for var in variants:
+                if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
+                    print(var, "lacks HGNC/gene symbol")
             return []
         
         logging.debug(self.family.child.get_id() + " " + gene + " " + \
@@ -174,7 +177,7 @@ class ClinicalFilter(LoadOptions):
             variants: list of candidate variants
         
         Returns:
-            list of (variant, check_type, inheritance) tuples, with duplicates 
+            list of (variant, check_type, inheritance) tuples, with duplicates
             excluded, and originals modified to show both mechanisms
         """
         
@@ -194,7 +197,7 @@ class ClinicalFilter(LoadOptions):
                 if inh not in unique_vars[key][2]:
                     unique_vars[key][2] += "," +  inh
         
-        unique_vars = [tuple(unique_vars[x]) for x in unique_vars] 
+        unique_vars = [tuple(unique_vars[x]) for x in unique_vars]
         
         return unique_vars
 
@@ -205,14 +208,12 @@ def main():
     options = get_options()
     
     # set the level of logging to generate
-    loglevel = options.loglevel
-    numeric_level = getattr(logging, loglevel.upper(), None)
-    if not isinstance(numeric_level, int):
-        raise ValueError("Invalid log level: %s" % loglevel)
+    numeric_level = getattr(logging, options.loglevel.upper(), None)
+    
+    log_filename = "clinical-filter.log"
     if options.ped is not None:
         log_filename = options.ped + ".log"
-    else:
-        log_filename = "clinical-filter.log"
+    
     logging.basicConfig(level=numeric_level, filename=log_filename)
     
     finder = ClinicalFilter(options)
@@ -220,4 +221,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
