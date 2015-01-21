@@ -8,8 +8,8 @@ import gzip
 import logging
 import hashlib
 
-from clinicalfilter.variant_snv import SNV
-from clinicalfilter.variant_cnv import CNV
+from clinicalfilter.variant.snv import SNV
+from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 from clinicalfilter.match_cnvs import MatchCNVs
 
@@ -37,7 +37,7 @@ class LoadVCFs(object):
         self.total_trios = total_trios
         self.known_genes = known_genes
         
-        # define several parameters of the variant classes, before we have 
+        # define several parameters of the variant classes, before we have
         # initialised any class objects
         SNV.debug_chrom = debug_chrom
         SNV.debug_pos = debug_pos
@@ -140,10 +140,10 @@ class LoadVCFs(object):
         """ removes the header from a VCF file object
         
         We remove the header from the VCF file, since the header is ~200 lines
-        long, and an exome VCF file is 100,000 lines long, so it's better to 
-        remove the header once, rather than continually check if lines are part 
-        of the header as we traverse the VCF. We simply run through the VCF 
-        until we find a non-header line, then seek back to the start of that 
+        long, and an exome VCF file is 100,000 lines long, so it's better to
+        remove the header once, rather than continually check if lines are part
+        of the header as we traverse the VCF. We simply run through the VCF
+        until we find a non-header line, then seek back to the start of that
         line.
         
         Args:
@@ -157,7 +157,7 @@ class LoadVCFs(object):
             if not line.startswith("#"):
                 in_header = False
                 break
-            file_pos = f.tell()   
+            file_pos = f.tell()
         
         # jump back to the start of the last line, which should be the first
         # line following the header
@@ -173,7 +173,7 @@ class LoadVCFs(object):
             line: list of elements of the VCF line for the variant
         """
         
-        # Complete the variant setup, now that the variant has passed the 
+        # Complete the variant setup, now that the variant has passed the
         # filtering. If we do this earlier, it slows all the unneeded variants.
         var.set_gene_from_known_gene_overlap()
         var.add_format(line[8], line[9])
@@ -193,9 +193,9 @@ class LoadVCFs(object):
         
         Args:
             line: list of elements of a single sample VCF line:
-                [chrom, position, snp_id, ref_allele, alt_allele, quality, 
+                [chrom, position, snp_id, ref_allele, alt_allele, quality,
                 filter_value, info, format_keys, format_values]
-            gender: gender of the individual to whom the variant line belongs 
+            gender: gender of the individual to whom the variant line belongs
                 (eg "1" or "M" for male, "2", or "F" for female).
         
         Returns:
@@ -223,7 +223,7 @@ class LoadVCFs(object):
         Args:
             line: list of elements from the VCF line for the variant.
             child_variants: True/False for whether variants have been filtered
-                for the proband (if so, we can simply check the parent's 
+                for the proband (if so, we can simply check the parent's
                 variants for matches in the child's variants).
             gender: the gender of the proband (used in CNV filtering).
         
@@ -257,7 +257,7 @@ class LoadVCFs(object):
         Args:
             individual: Person object for individual
             child_variants: True/False for whether variants have been filtered
-                for the proband (if so, we can simply check the parent's 
+                for the proband (if so, we can simply check the parent's
                 variants for matches in the child's variants).
         
         Returns:
@@ -267,7 +267,7 @@ class LoadVCFs(object):
         path = individual.get_path()
         gender = individual.get_gender()
         
-        # open the vcf, and adjust the position in the file to immediately after 
+        # open the vcf, and adjust the position in the file to immediately after
         # the header, so we can run through the variants
         vcf = self.open_vcf_file(path)
         self.exclude_header(vcf)
@@ -288,7 +288,7 @@ class LoadVCFs(object):
         
         We need to load the VCF data for each of the members of the trio. As a
         bare minimum we need VCF data for the child in the family. Occasionally
-        we lack parents for the child, so we create blank entries when that 
+        we lack parents for the child, so we create blank entries when that
         happens.
         """
         
@@ -351,7 +351,7 @@ class LoadVCFs(object):
         return variants
     
     def get_parental_var(self, var, parental_vars, gender, matcher):
-        """ get the corresponding parental variant to a childs variant, or 
+        """ get the corresponding parental variant to a childs variant, or
         create a default variant with reference genotype.
         
         Args:
@@ -366,7 +366,7 @@ class LoadVCFs(object):
         
         key = var.get_key()
         
-        # if the variant is a CNV, the corresponding variant might not match 
+        # if the variant is a CNV, the corresponding variant might not match
         # the start site, so we look a variant that overlaps
         if isinstance(var, CNV) and matcher.has_match(var):
             key = matcher.get_overlap_key(key)
@@ -375,7 +375,7 @@ class LoadVCFs(object):
             if key == parental.get_key():
                 return parental
         
-        # if the childs variant does not exist in the parents VCF, then we 
+        # if the childs variant does not exist in the parents VCF, then we
         # create a default variant for the parent
         if isinstance(var, CNV):
             parental = CNV(var.chrom, var.position, var.variant_id, var.ref_allele, var.alt_allele, var.filter)
@@ -447,7 +447,7 @@ class LoadVCFs(object):
             pp_filter float between 0 and 1, being the threshold for the PP_DNM filter
         
         Returns:
-            a list of TrioGenotypes without the de novo variants that failed the 
+            a list of TrioGenotypes without the de novo variants that failed the
             de novo filter.
         """
         
@@ -464,4 +464,3 @@ class LoadVCFs(object):
                 passed_variants.append(var)
         
         return passed_variants
-

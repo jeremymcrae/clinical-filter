@@ -2,8 +2,8 @@
 """
 
 import unittest
-from clinicalfilter.variant_cnv import CNV
-from clinicalfilter.variant_cnv_acgh_filter import ACGH_CNV
+from clinicalfilter.variant.cnv import CNV
+from clinicalfilter.variant.cnv_acgh_filter import ACGH_CNV
 
 
 class TestAcghCnvPy(unittest.TestCase):
@@ -157,5 +157,3 @@ class TestAcghCnvPy(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

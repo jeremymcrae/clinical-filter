@@ -3,12 +3,9 @@
 
 import unittest
 from clinicalfilter.ped import Family
-from clinicalfilter.ped import Person
-from clinicalfilter.variant import Variant
-from clinicalfilter.variant_cnv import CNV
-from clinicalfilter.variant_snv import SNV
+from clinicalfilter.variant.cnv import CNV
+from clinicalfilter.variant.snv import SNV
 from clinicalfilter.inheritance import Autosomal
-from clinicalfilter.variant_info import VariantInfo
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
 
@@ -182,7 +179,7 @@ class TestAutosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.check_heterozygous("Monoallelic"), "single_variant")
         self.assertEqual(self.inh.log_string, "transmitted from aff, other parent non-carrier or aff")
         
-        # check that when the other parent is also non-ref, the variant is no 
+        # check that when the other parent is also non-ref, the variant is no
         # longer captured, unless the parent is affected
         self.set_trio_genos(var, "111")
         self.assertEqual(self.inh.check_heterozygous("Monoallelic"), "nothing")
@@ -205,7 +202,7 @@ class TestAutosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.check_heterozygous("Monoallelic"), "single_variant")
         self.assertEqual(self.inh.log_string, "transmitted from aff, other parent non-carrier or aff")
         
-        # check that when the other parent is also non-ref, the variant is no 
+        # check that when the other parent is also non-ref, the variant is no
         # longer captured, unless the parent is affected
         self.set_trio_genos(var, "111")
         self.assertEqual(self.inh.check_heterozygous("Monoallelic"), "nothing")
@@ -244,7 +241,7 @@ class TestAutosomalPy(unittest.TestCase):
         var = self.variants[0]
         self.set_trio_genos(var, "110")
         self.assertEqual(self.inh.check_heterozygous("Biallelic"), "compound_het")
-        self.assertEqual(self.inh.log_string, "het-check for recessive genes and unaff parents not homoz") 
+        self.assertEqual(self.inh.log_string, "het-check for recessive genes and unaff parents not homoz")
         
         # check for trio = 120, with affected mother comes through other route
         var = self.variants[0]
@@ -394,5 +391,3 @@ class TestAutosomalPy(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

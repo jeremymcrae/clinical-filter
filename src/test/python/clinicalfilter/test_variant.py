@@ -2,7 +2,7 @@
 """
 
 import unittest
-from clinicalfilter.variant import Variant
+from clinicalfilter.variant.variant import Variant
 
 
 class TestVariantPy(unittest.TestCase):
@@ -128,5 +128,3 @@ class TestVariantPy(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

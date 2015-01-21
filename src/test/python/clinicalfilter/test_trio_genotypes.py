@@ -5,11 +5,8 @@ import unittest
 import copy
 
 from clinicalfilter.ped import Family
-from clinicalfilter.ped import Person
-from clinicalfilter.variant import Variant
-from clinicalfilter.variant_cnv import CNV
-from clinicalfilter.variant_snv import SNV
-from clinicalfilter.variant_info import VariantInfo
+from clinicalfilter.variant.cnv import CNV
+from clinicalfilter.variant.snv import SNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
 
@@ -166,7 +163,7 @@ class TestTrioGenotypesPy(unittest.TestCase):
         """
         
         # check that an autosomal chrom works
-        self.assertEqual(self.var.convert_chrom_to_int("1"), 1) 
+        self.assertEqual(self.var.convert_chrom_to_int("1"), 1)
         
         # check that an X chrom works
         self.assertEqual(self.var.convert_chrom_to_int("X"), 23)
@@ -180,5 +177,3 @@ class TestTrioGenotypesPy(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

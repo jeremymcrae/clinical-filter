@@ -5,7 +5,7 @@ import unittest
 from io import StringIO
 import sys
 
-from clinicalfilter.variant_snv import SNV
+from clinicalfilter.variant.snv import SNV
 
 class TestVariantSnvPy(unittest.TestCase):
     """
@@ -355,5 +355,3 @@ class TestVariantSnvPy(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

@@ -8,10 +8,8 @@ import os
 import datetime
 
 from clinicalfilter.ped import Family
-from clinicalfilter.ped import Person
-from clinicalfilter.variant import Variant
-from clinicalfilter.variant_cnv import CNV
-from clinicalfilter.variant_snv import SNV
+from clinicalfilter.variant.cnv import CNV
+from clinicalfilter.variant.snv import SNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 from clinicalfilter.reporting import Report
 
@@ -103,7 +101,7 @@ class TestReportPy(unittest.TestCase):
         """ check that _get_vcf_export_path() works correctly
         """
         
-        # use a folder to place the VCFG file in, which means we join the 
+        # use a folder to place the VCFG file in, which means we join the
         # proband ID to get a full path
         self.report.export_vcf = os.getcwd()
         self.assertEqual(self.report._get_vcf_export_path(), os.path.join(os.getcwd(), "child.vcf.gz"))
@@ -127,7 +125,7 @@ class TestReportPy(unittest.TestCase):
         
         # define the VCF provenances
         provenance = [("checksum", "proband.calls.date.vcf.gz", "2014-01-01"),
-            ("checksum", "mother.calls.date.vcf.gz", "2014-01-02"), 
+            ("checksum", "mother.calls.date.vcf.gz", "2014-01-02"),
             ("checksum", "father.calls.date.vcf.gz", "2014-01-03")]
         
         processed_header = ["####fileformat=VCFv4.1\n",
@@ -156,7 +154,7 @@ class TestReportPy(unittest.TestCase):
         # check that the standard function returns the expected value. Note that
         # I haven't checked the output if self.known_genes_date is not None, nor
         # have I checked if the _clinicalFilterVersion is available
-        self.assertEqual(self.report._make_vcf_header(header, provenance), 
+        self.assertEqual(self.report._make_vcf_header(header, provenance),
            processed_header)
     
     def test__get_parental_inheritance(self):
@@ -196,7 +194,7 @@ class TestReportPy(unittest.TestCase):
         
         # define the VCF provenances
         provenance = [("checksum", "proband.calls.date.vcf.gz", "2014-01-01"),
-            ("checksum", "mother.calls.date.vcf.gz", "2014-01-02"), 
+            ("checksum", "mother.calls.date.vcf.gz", "2014-01-02"),
             ("checksum", "father.calls.date.vcf.gz", "2014-01-03")]
         
         # define what the header will become
@@ -227,7 +225,7 @@ class TestReportPy(unittest.TestCase):
         line = ["X\t15000000\t.\tA\tG\t50\tPASS\tHGNC=TEST;CQ=missense_variant;random_tag;EUR_AF=0.0005;ClinicalFilterGeneInheritance=Monoallelic;ClinicalFilterType=single_variant\tGT:DP:INHERITANCE:INHERITANCE_GENOTYPE\t0/1:50:deNovo:1,0,0\n"]
         
         # check that a list of one variant produces the correct VCF output. Note
-        # that we haven't checked against CNVs, which can change the 
+        # that we haven't checked against CNVs, which can change the
         # INHERITANCE_GENOTYPE flag, nor have we tested a larger list of variants
         var = (self.variants[0], "single_variant", "Monoallelic")
         self.assertEqual(self.report._get_vcf_lines([var], header, provenance), vcf_lines + line)

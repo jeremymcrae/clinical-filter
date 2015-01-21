@@ -2,7 +2,7 @@
 """
 
 import unittest
-from clinicalfilter.variant_cnv import CNV
+from clinicalfilter.variant.cnv import CNV
 
 
 class TestVariantCnvPy(unittest.TestCase):
@@ -98,7 +98,7 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.position = 1000
         self.var.info["END"] = "1500"
         
-        # check that fixing gene names does not alter anything for a CNV in a 
+        # check that fixing gene names does not alter anything for a CNV in a
         # single known gene
         self.var.fix_gene_IDs()
         self.assertEqual(self.var.gene, "TEST")
@@ -108,14 +108,14 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.fix_gene_IDs()
         self.assertEqual(self.var.gene, "TEST,TEST2")
         
-        # check that fixing gene names drop name of genes where the name is in 
+        # check that fixing gene names drop name of genes where the name is in
         # the known genes dict, and the CNV and gene do not overlap
         self.var.position = 900
         self.var.info["END"] = "950"
         self.var.fix_gene_IDs()
         self.assertEqual(self.var.gene, "TEST2")
         
-        # check that when we do not have any known genes, the gene names are 
+        # check that when we do not have any known genes, the gene names are
         # unaltered
         self.var.gene = "TEST,TEST2"
         self.var.known_genes = None
@@ -138,7 +138,7 @@ class TestVariantCnvPy(unittest.TestCase):
         self.assertEqual(self.var.gene, "A")
         
         # check that when HGNC and HGNC_ALL are undefined, we can still include
-        # CNVs overlapping genes through NUMBERGENES > 0. 
+        # CNVs overlapping genes through NUMBERGENES > 0.
         del self.var.info["HGNC"]
         
         # first test for NUMBERGENES = 0
@@ -187,5 +187,3 @@ class TestVariantCnvPy(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

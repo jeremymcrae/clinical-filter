@@ -2,8 +2,8 @@
 """
 
 import unittest
-from clinicalfilter.variant_cnv import CNV
-from clinicalfilter.variant_cnv_exome_filter import ExomeCNV
+from clinicalfilter.variant.cnv import CNV
+from clinicalfilter.variant.cnv_exome_filter import ExomeCNV
 
 
 class TestExomeCnvPy(unittest.TestCase):
@@ -143,5 +143,3 @@ class TestExomeCnvPy(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

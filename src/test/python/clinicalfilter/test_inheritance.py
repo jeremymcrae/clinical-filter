@@ -5,13 +5,10 @@ import unittest
 import sys
 
 from clinicalfilter.ped import Family
-from clinicalfilter.ped import Person
-from clinicalfilter.variant import Variant
-from clinicalfilter.variant_snv import SNV
-from clinicalfilter.variant_cnv import CNV
+from clinicalfilter.variant.snv import SNV
+from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.inheritance import Autosomal
 from clinicalfilter.inheritance import Allosomal
-from clinicalfilter.variant_info import VariantInfo
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
 IS_PYTHON2 = sys.version_info[0] == 2
@@ -163,7 +160,7 @@ class TestInheritancePy(unittest.TestCase):
         self.inh.trio.mother = None
         self.inh.set_trio_genotypes(var)
         
-        # the child should match the vars genotypes, but the parent's 
+        # the child should match the vars genotypes, but the parent's
         # genotypes should be None
         self.assertEqual(self.inh.child, var.child)
         self.assertIsNone(self.inh.mom)
@@ -255,7 +252,7 @@ class TestInheritancePy(unittest.TestCase):
         var2 = self.create_variant("F", chrom="1", position="16000000")
         var3 = self.create_variant("F", chrom="1", position="17000000")
         
-        # set the inheritance type, the compound het type ("compound_het" 
+        # set the inheritance type, the compound het type ("compound_het"
         # for autosomal variants, and start autosomal inheritance)
         inh = "Biallelic"
         compound = "compound_het"
@@ -332,7 +329,7 @@ class TestInheritancePy(unittest.TestCase):
         elif IS_PYTHON2:
             self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
         
-        # check that without parents, all variants are included, even if they 
+        # check that without parents, all variants are included, even if they
         # wouldn't pass normally
         self.inh.trio.mother = None
         self.inh.trio.father = None
@@ -351,7 +348,7 @@ class TestInheritancePy(unittest.TestCase):
         var1 = self.create_variant("F", chrom="X", position="15000000")
         var2 = self.create_variant("F", chrom="X", position="16000000")
         
-        # set the inheritance type, the compound het type ("hemizygous" 
+        # set the inheritance type, the compound het type ("hemizygous"
         # for allosomal variants, and start allosomal inheritance)
         inh = "Hemizygous"
         compound = "hemizygous"
@@ -386,4 +383,3 @@ class TestInheritancePy(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

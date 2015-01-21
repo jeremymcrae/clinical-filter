@@ -1,11 +1,11 @@
 """ class for holding copy number information for a single individual
 """
 
-from clinicalfilter.variant_info import VariantInfo
-from clinicalfilter.variant import Variant
-from clinicalfilter.variant_cnv_acgh_filter import ACGH_CNV
-from clinicalfilter.variant_cnv_exome_filter import ExomeCNV
-from clinicalfilter.variant_cnv_breakdancer_filter import BreakdancerCNV
+from clinicalfilter.variant.info import VariantInfo
+from clinicalfilter.variant.variant import Variant
+from clinicalfilter.variant.cnv_acgh_filter import ACGH_CNV
+from clinicalfilter.variant.cnv_exome_filter import ExomeCNV
+from clinicalfilter.variant.cnv_breakdancer_filter import BreakdancerCNV
 
 class CNV(Variant, VariantInfo):
     """  class to take CNV data for an individual, and
@@ -25,7 +25,7 @@ class CNV(Variant, VariantInfo):
         """
         
         # make sure the inheritance type ("autosomal", "XChrMale" etc) is
-        # set correctly for allosomal CNVs, since they may lie across both 
+        # set correctly for allosomal CNVs, since they may lie across both
         # allosomal and pseudoautosomal regions.
         if self.get_chrom() in ["chrX", "ChrX", "X", "chrY", "ChrY", "Y"]:
             cnv_start = self.get_position()
@@ -39,7 +39,7 @@ class CNV(Variant, VariantInfo):
             # restore the CNVs initial position
             self.position = cnv_start
             
-            # if the start and end positions have different inheritance types, 
+            # if the start and end positions have different inheritance types,
             # swap ourselves over to the allosomal inheritance type
             if cnv_start_inh != cnv_end_inh:
                 # currently we are using the end inh type, so we only need to
@@ -76,7 +76,7 @@ class CNV(Variant, VariantInfo):
         
         Sometimes the gene annotation for a CNV is incorrect - VEP annotated
         that the CNV overlaps a gene when other tools show there is not overlap.
-        We correct for these by checking against a set of known genes 
+        We correct for these by checking against a set of known genes
         (currently the DDG2P set).
         """
         
@@ -114,7 +114,7 @@ class CNV(Variant, VariantInfo):
             self.gene = None
             if int(self.info["NUMBERGENES"]) > 0:
                 self.gene = "."
-        # make sure we have gene and consequence keys in the info dict, for 
+        # make sure we have gene and consequence keys in the info dict, for
         # the filter to work with
         elif "HGNC" not in self.info:
             self.gene = None
@@ -159,7 +159,7 @@ class CNV(Variant, VariantInfo):
             # currently return false for all exome-only CNVs, undergoing testing
             filt = ExomeCNV(self)
             # passes = filt.filter_cnv(track_variant)
-            passes = False 
+            passes = False
         elif "CNSOLIDATE" in self.info:
             filt = ACGH_CNV(self)
             passes = filt.filter_cnv(track_variant)

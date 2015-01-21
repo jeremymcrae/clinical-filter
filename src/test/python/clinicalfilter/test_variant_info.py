@@ -3,7 +3,7 @@
 
 import unittest
 
-from clinicalfilter.variant_snv import SNV
+from clinicalfilter.variant.snv import SNV
 
 class TestVariantInfoPy(unittest.TestCase):
     """
@@ -124,5 +124,3 @@ class TestVariantInfoPy(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

@@ -2,7 +2,7 @@
 get genotype data for a single variant from all the family members.
 """
 
-from clinicalfilter.variant_cnv import CNV
+from clinicalfilter.variant.cnv import CNV
 
 class TrioGenotypes(object):
     """ a class to hold genotypes for the members of a trio
@@ -179,6 +179,3 @@ class TrioGenotypes(object):
                 return False
 
         return True
-
-
-

@@ -2,8 +2,8 @@
 """
 
 import unittest
-from clinicalfilter.variant_snv import SNV
-from clinicalfilter.variant_cnv import CNV
+from clinicalfilter.variant.snv import SNV
+from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 from clinicalfilter.post_inheritance_filter import PostInheritanceFilter
 
@@ -108,7 +108,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         # self.post_filter.variants = variants
         # self.assertEqual(self.post_filter.filter_variants(), variants)
         
-        # check that CNVs on three different chroms get filtered out 
+        # check that CNVs on three different chroms get filtered out
         variants.append((self.create_var("3", snv=False), "single_variant", "Biallelic"))
         self.post_filter.variants = variants
         self.assertEqual(self.post_filter.filter_variants(), [])
@@ -174,7 +174,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         variants = [(snv_2, "single_variant", "Biallelic")]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
-        # var with multiple inheritance modes should drop the non-biallelic 
+        # var with multiple inheritance modes should drop the non-biallelic
         # mode if the var has a high maf (leaving the Biallelic mode)
         variants = [(snv_2, "single_variant", "Monoallelic,Biallelic")]
         expected = [(snv_2, "single_variant", "Biallelic")]
@@ -235,7 +235,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         self.assertEqual(self.post_filter.filter_polyphen(variants), [])
         
         # check if we have three compound_hets in the same gene, and one is
-        # polyphen not benign, then all compound hets in the gene still pass, 
+        # polyphen not benign, then all compound hets in the gene still pass,
         # even if two of them have polyphen benign
         snv_2.child.info["PolyPhen"] = "benign(0.01)"
         snv_3.child.info["PolyPhen"] = "probably_damaging(0.99)"
@@ -277,7 +277,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         snv_2.child.info["PolyPhen"] = "probably_damaging(0.99)"
         self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
         
-        # check that, if there are more than two compound hets to check in the 
+        # check that, if there are more than two compound hets to check in the
         # gene, we need two passing variants in order to pass
         snv_2.child.info["PolyPhen"] = "benign(0.01)"
         variants = [(snv_1, "compound_het", "Biallelic"), \
@@ -287,7 +287,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # check that if we are checking a benign variant, and there are more
         # than two compound hets to check in the gene, if we have more than
-        # two non-benign variants would prevent a match, then the function 
+        # two non-benign variants would prevent a match, then the function
         # returns false
         snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)"
         variants = [(snv_1, "compound_het", "Biallelic"), \
@@ -307,4 +307,3 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
             (snv_2, "single_variant", "Biallelic")]
         self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
         
-

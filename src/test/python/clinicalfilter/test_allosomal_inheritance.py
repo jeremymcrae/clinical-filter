@@ -4,12 +4,9 @@
 
 import unittest
 from clinicalfilter.ped import Family
-from clinicalfilter.ped import Person
-from clinicalfilter.variant import Variant
-from clinicalfilter.variant_cnv import CNV
-from clinicalfilter.variant_snv import SNV
+from clinicalfilter.variant.cnv import CNV
+from clinicalfilter.variant.snv import SNV
 from clinicalfilter.inheritance import Allosomal
-from clinicalfilter.variant_info import VariantInfo
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
 
@@ -209,7 +206,7 @@ class TestAllosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.check_heterozygous("X-linked dominant"), "single_variant")
         self.assertEqual(self.inh.log_string, "x chrom transmitted from aff, other parent non-carrier or aff")
         
-        # check that when the other parent is also non-ref, the variant is no 
+        # check that when the other parent is also non-ref, the variant is no
         # longer captured, unless the parent is affected
         self.set_trio_genos(var, "112")
         self.assertEqual(self.inh.check_heterozygous("X-linked dominant"), "nothing")
@@ -240,7 +237,7 @@ class TestAllosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.check_heterozygous("X-linked dominant"), "single_variant")
         self.assertEqual(self.inh.log_string, "x chrom transmitted from aff, other parent non-carrier or aff")
         
-        # check that when the other parent is also non-ref, the variant is no 
+        # check that when the other parent is also non-ref, the variant is no
         # longer captured, unless the parent is affected
         self.set_trio_genos(var, "112")
         self.assertEqual(self.inh.check_heterozygous("X-linked dominant"), "nothing")
@@ -366,5 +363,3 @@ class TestAllosomalPy(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

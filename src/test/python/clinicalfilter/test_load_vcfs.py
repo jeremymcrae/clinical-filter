@@ -12,12 +12,12 @@ import tempfile
 import random
 import hashlib
 
-from clinicalfilter.variant_snv import SNV
-from clinicalfilter.variant_cnv import CNV
+from clinicalfilter.variant.snv import SNV
+from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 from clinicalfilter.match_cnvs import MatchCNVs
 from clinicalfilter.load_vcfs import LoadVCFs
-from clinicalfilter.ped import Family, Person
+from clinicalfilter.ped import Family
 
 IS_PYTHON2 = sys.version_info[0] == 2
 IS_PYTHON3 = sys.version_info[0] == 3
@@ -145,7 +145,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         vcf = self.make_minimal_vcf()
         
         # make sure we drop the header, and only the header from the file
-        # check this by reading the file, and making sure the first line 
+        # check this by reading the file, and making sure the first line
         # is the line we expect from the VCF
         path = self.write_temp_vcf("temp.vcf", vcf)
         handler = open(path, "r")
@@ -219,7 +219,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         (checksum, basename, date) = self.vcf_loader.get_vcf_provenance(path)
         self.assertEqual(checksum, gzipped_hash)
         
-        # check that when a fileDate isn't available in the VCf, we can pick 
+        # check that when a fileDate isn't available in the VCf, we can pick
         # the date from the path
         vcf.pop(1)
         path = self.write_temp_vcf("temp.file_process.2014-02-20.vcf", vcf)
@@ -285,12 +285,12 @@ class TestLoadVCFsPy(unittest.TestCase):
         test_var = CNV(*line[:6])
         test_var.add_info(line[7])
         
-        # in this function we look for overlap in CNVs. Set up a child CNV 
+        # in this function we look for overlap in CNVs. Set up a child CNV
         # that the parents CNV must match.
         self.vcf_loader.cnv_matcher = MatchCNVs([test_var])
         self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender))
         
-        # check that a parental CNV without any overlap to any childs CNVs, 
+        # check that a parental CNV without any overlap to any childs CNVs,
         # fails to pass
         line = ["1", "300", ".", "T", "<DEL>", "1000", "PASS", "END=400", "GT", "0/1"]
         gender = "M"
@@ -357,6 +357,3 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         
         
-
-
-

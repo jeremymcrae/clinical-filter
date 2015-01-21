@@ -1,12 +1,12 @@
 """ class for holding single nucleotide variant data for a single individual
 """
 
-from clinicalfilter.variant_info import VariantInfo
-from clinicalfilter.variant import Variant
+from clinicalfilter.variant.info import VariantInfo
+from clinicalfilter.variant.variant import Variant
 
 class SNV(Variant, VariantInfo):
-    """ a class to take a SNV genotype for an individual, and be able to perform 
-    simple functions, like reporting whether it is heterozygous, homozygous, or 
+    """ a class to take a SNV genotype for an individual, and be able to perform
+    simple functions, like reporting whether it is heterozygous, homozygous, or
     neither, depending on whether the variant is on the X chromosome, and if so,
     whether the individual is male or female.
     """
@@ -71,7 +71,7 @@ class SNV(Variant, VariantInfo):
         # might have both alleles as non-reference, but different from each
         # other. The cases where this occurs all occur for indels, and appear to
         # be poorly called variants, where it is likely that one of the alleles
-        # is actually for the reference. 
+        # is actually for the reference.
         if allele_1 != allele_2:
             return 1
         elif allele_1 == "0" and allele_2 == "0":
@@ -211,7 +211,7 @@ class SNV(Variant, VariantInfo):
         
         Returns:
             tuple of (True/False for whether the variant passes the filters, and
-                string for the last checked filter) 
+                string for the last checked filter)
         """
         
         # exclude variants without functional consequences
@@ -236,5 +236,3 @@ class SNV(Variant, VariantInfo):
                 return (False, "FILTER")
         
         return (True, "passed all")
-
-

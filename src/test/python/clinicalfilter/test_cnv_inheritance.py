@@ -3,11 +3,8 @@
 
 import unittest
 from clinicalfilter.ped import Family
-from clinicalfilter.ped import Person
-from clinicalfilter.variant import Variant
-from clinicalfilter.variant_cnv import CNV
+from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.inheritance import CNVInheritance
-from clinicalfilter.variant_info import VariantInfo
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
 
@@ -260,7 +257,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         gene = "TEST"
         
-        # check that non-supported inheritance modes fail, even if they 
+        # check that non-supported inheritance modes fail, even if they
         # otherwise would
         inh = "Mosaic"
         self.inh.variant.child.info["CNS"] = "1"
@@ -287,7 +284,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.known_genes = None
         self.assertFalse(self.inh.passes_ddg2p_filter())
         
-        # check if the var passes when the inheritance mechanism, copy number 
+        # check if the var passes when the inheritance mechanism, copy number
         # and chromosome are appropriate for the DDG2P gene
         self.inh.known_genes = gene_inh
         self.assertTrue(self.inh.passes_ddg2p_filter())
@@ -383,17 +380,17 @@ class TestCNVInheritancePy(unittest.TestCase):
         # check that if there aren't any overlapping regions, we return False
         self.assertFalse(self.inh.check_cnv_region_overlap(syndrome_regions))
         
-        # check that when the region matches, but the chrom does not, we still 
+        # check that when the region matches, but the chrom does not, we still
         # return False
         syndrome_regions[("2", "1000", "2000")] = "1"
         self.assertFalse(self.inh.check_cnv_region_overlap(syndrome_regions))
         
-        # check that when the region and chrom overlap, but the copy number 
+        # check that when the region and chrom overlap, but the copy number
         # does not, we still return False
         syndrome_regions[("1", "1000", "2000")] = "2"
         self.assertFalse(self.inh.check_cnv_region_overlap(syndrome_regions))
         
-        # check that if the chrom, range and copy number overlap, and the 
+        # check that if the chrom, range and copy number overlap, and the
         # overlap region is sufficient, we return True
         syndrome_regions[("1", "1000", "2000")] = "1"
         self.assertTrue(self.inh.check_cnv_region_overlap(syndrome_regions))
@@ -407,7 +404,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         start_b = 1000
         end_b = 2000
         
-        # check that CNV and syndrome region with 100% overlap, forwards and 
+        # check that CNV and syndrome region with 100% overlap, forwards and
         # backwards, pass
         self.assertTrue(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
         
@@ -508,4 +505,3 @@ class TestCNVInheritancePy(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
