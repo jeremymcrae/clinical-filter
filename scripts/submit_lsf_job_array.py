@@ -228,13 +228,13 @@ def run_cleanup(hash_string):
         "tail", "-q", "-n", "+2", output_name + "*", \
         ">>", "clinical_reporting.txt"]
     submit_bsub_job(command, job_id=merge_id, dependent_id=hash_string, \
-        logfile=temp_name + "bjob_output.var_merge.txt")
+        logfile="tmp_ped.{0}*bjob_output.var_merge.txt".format(hash_string))
     
     # merge the log files after the array finishes
     log_merge_id = "merge2_{0}".format(hash_string)
-    command = ["cat", temp_name + "*.log", ">", "clinical_reporting.log"]
+    command = ["cat", "tmp_ped.{0}*.log".format(hash_string), ">", "clinical_reporting.log"]
     submit_bsub_job(command, job_id=log_merge_id, dependent_id=hash_string, \
-        logfile=temp_name + "bjob_output.log_merge.txt")
+        logfile="tmp_ped.{0}*bjob_output.log_merge.txt".format(hash_string))
     
     # remove the temporary files
     command = ["rm", "tmp_ped.{0}*".format(hash_string)]
