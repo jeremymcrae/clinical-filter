@@ -30,7 +30,7 @@ def get_options():
     
     parser = argparse.ArgumentParser(description="Submit trio analysis to an \
         LSF cluster.")
-    parser.add_argument("--ped", dest="ped_path", default=None, \
+    parser.add_argument("--ped", dest="ped_path", default=PED_PATH, \
         help="path of the ped file (default=construct from DDD datasets)")
     parser.add_argument("--log", dest="loglevel", \
         help="level of logging to use (default=all)")
@@ -84,7 +84,7 @@ def split_pedigree_file(tempname, ped_path, number_of_jobs):
             file_counter += 1
             family_counter = 1
         if family_counter == 1:
-            output_file = open("{0}{1}.txt".format(tempname, file_counter), "w")
+            output_file = open("{0}.{1}.txt".format(tempname, file_counter), "w")
         output_file.writelines(lines)
         
     return file_counter
@@ -255,7 +255,7 @@ def main():
     temp_name = "tmp_ped.{0}".format(hash_string)
     
     tidy_directory_before_start()
-    trio_counter = split_pedigree_file(temp_name, PED_PATH, opts.n_jobs)
+    trio_counter = split_pedigree_file(temp_name, opts.ped_path, opts.n_jobs)
     run_array(hash_string, trio_counter, temp_name, opts.ddg2p_path, opts.all_genes, log_options)
     run_cleanup(hash_string)
 
