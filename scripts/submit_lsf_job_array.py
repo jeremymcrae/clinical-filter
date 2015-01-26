@@ -223,7 +223,7 @@ def run_cleanup(hash_string):
     
     # merge the array output after the array finishes
     merge_id = "merge1_{0}".format(hash_string)
-    command = ["head", "-n", "1", output_name + "1.txt", \
+    command = ["head", "-n", "1", output_name + ".1.txt", \
         ">", "clinical_reporting.txt", ";", \
         "tail", "-q", "-n", "+2", output_name + "*", \
         ">>", "clinical_reporting.txt"]
