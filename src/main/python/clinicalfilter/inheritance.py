@@ -1,5 +1,5 @@
-""" A class for checking whether the genotypes of a trio for a variant or 
-variants in a gene fit an inheritance model specific to the gene and 
+""" A class for checking whether the genotypes of a trio for a variant or
+variants in a gene fit an inheritance model specific to the gene and
 chromosome that the variant/s are in.
 """
 
@@ -13,14 +13,14 @@ class Inheritance(object):
     def __init__(self, variants, trio, known_genes, gene_inheritance=None, cnv_regions=None):
         """ intialise the class with the variants and trio information
         
-        We have an affected child, with two parents who may or may not be 
-        affected. We want a model where either some alleles are transmitted to 
-        the child, which might contribute to mendelian inheritance of a 
-        disorder, or the child has a de novo mutation that might contribute to 
+        We have an affected child, with two parents who may or may not be
+        affected. We want a model where either some alleles are transmitted to
+        the child, which might contribute to mendelian inheritance of a
+        disorder, or the child has a de novo mutation that might contribute to
         the child's disorder.
         
         For some genes we know whether the gene is monoallelic, or biallelic, or
-        other possibilities. This informs whether genotypes for a trio could be 
+        other possibilities. This informs whether genotypes for a trio could be
         causal.
         
         Args:
@@ -51,7 +51,7 @@ class Inheritance(object):
                 "Hemizygous", "Imprinted", "Mitochondrial", "Monoallelic", \
                 "Mosaic", "Uncertain", "X-linked dominant", \
                 "X-linked over-dominance"])
-        else:  
+        else:
             self.gene_inheritance = set(gene_inheritance)
         
         # if a gene has an inheritance mode of "Both", make sure we will process
@@ -92,13 +92,13 @@ class Inheritance(object):
         return possibilities
     
     def check_inheritance_mode_matches_gene_mode(self):
-        """ make sure that the mode of inheritance for the gene makes sense 
-        for the mode of inheritance for the chromosome - there's no point 
-        looking through hemizygous genes on an autosomal chromosome, or 
+        """ make sure that the mode of inheritance for the gene makes sense
+        for the mode of inheritance for the chromosome - there's no point
+        looking through hemizygous genes on an autosomal chromosome, or
         biallelic genes on an X chromosome.
         """
         
-        # at this point make sure we only deal with genes that have at least 
+        # at this point make sure we only deal with genes that have at least
         # one correct modes of inheritance for the given chromosome type
         return len(self.inheritance_modes & self.gene_inheritance) > 0
     
@@ -141,9 +141,9 @@ class Inheritance(object):
             inheritance: inheritance mode to check ("Monoallelic", "Biallelic")
         
         Returns:
-            code for whether to add the variant to the list of flagged variants 
-            ("single_variant"), to check if the variant could act in concert as 
-            a compound het ("compound_het"), or whether to ignore the variant 
+            code for whether to add the variant to the list of flagged variants
+            ("single_variant"), to check if the variant could act in concert as
+            a compound het ("compound_het"), or whether to ignore the variant
             ("nothing").
         """
         
@@ -166,7 +166,7 @@ class Inheritance(object):
         self.log_string = "not hom alt nor het: " + str(self.child) + " with \
             inheritance" + self.chrom_inheritance
                            
-        return "nothing"    
+        return "nothing"
     
     def check_if_any_variant_is_cnv(self):
         """ checks if any of the variants in a gene are CNVs
@@ -197,7 +197,7 @@ class Inheritance(object):
                 
                 # some CNVs get lumped with NA "." gene values, which mean when
                 # we get two CNVs under "." gene IDs, these automatically come
-                # through as compound hets, even though they might be on 
+                # through as compound hets, even though they might be on
                 # different chroms
                 if first[0].get_gene() == ".":
                     continue
@@ -273,7 +273,7 @@ class Autosomal(Inheritance):
             report = "compound_het"
         
         if self.mom.is_hom_ref() and self.dad.is_hom_ref():
-            self.log_string = "de novo"
+            self.log_string = "de novo as {0}".format(report)
             return report
         # elif self.is_lof and not self.father_affected and not \
         #         self.mother_affected and inheritance == "Monoallelic" and \
@@ -350,7 +350,7 @@ class Allosomal(Inheritance):
         self.inheritance_modes = set(["X-linked dominant", "Hemizygous", \
             "Monoallelic"])
         
-        # on the X chrom, treat monoallelic and X-linked dominant modes of 
+        # on the X chrom, treat monoallelic and X-linked dominant modes of
         # inheritance the same
         if "Monoallelic" in self.gene_inheritance:
             self.gene_inheritance.add("X-linked dominant")
@@ -465,7 +465,7 @@ class CNVInheritance(object):
     def __init__(self, variant, trio, known_genes, cnv_regions):
         """ intialise the class
         
-        Args: 
+        Args:
             variant: CNV to check for inheritance
             trio: family trio object
             known_genes: dictionary of known genes, currently the DDG2P set
@@ -487,7 +487,7 @@ class CNVInheritance(object):
         if not self.trio.has_parents():
             self.check_variant_without_parents()
         
-        # check that the inheritance status is consistent with the parental 
+        # check that the inheritance status is consistent with the parental
         # affected status
         inh = self.variant.child.format["INHERITANCE"]
         if not self.inheritance_matches_parental_affected_status(inh):
@@ -515,54 +515,54 @@ class CNVInheritance(object):
     def check_compound_inheritance(self):
         """ checks if a CNV could contribute to a compound het
         
-        Compound CNVs can occur with CNVs with copy number of 1 or 3, and if in 
-        a DDG2P gene, the disorder relating to the gene must be inherited in a 
-        biallelic or hemizygous mode. For non-compound filtering, CNVs are 
-        checked to see if their inheritance state (paternal, maternal) matches 
-        the parents affected status (maternally affected requires. In contrast, 
-        compound CNVs do not require inheritance = affected status, as the 
-        compound variant is typically incomplete in the parents, and therefore 
+        Compound CNVs can occur with CNVs with copy number of 1 or 3, and if in
+        a DDG2P gene, the disorder relating to the gene must be inherited in a
+        biallelic or hemizygous mode. For non-compound filtering, CNVs are
+        checked to see if their inheritance state (paternal, maternal) matches
+        the parents affected status (maternally affected requires. In contrast,
+        compound CNVs do not require inheritance = affected status, as the
+        compound variant is typically incomplete in the parents, and therefore
         is not expected to alter their affected status.
         
-        Candidates for compound CNVs undergo similar filtering to single CNVs. 
-          - CNVs covering a DDG2P gene are included if the DDG2P gene is 
-            biallelic or hemizygous. In comparison to the single variant 
-            filtering, compound biallelic CNVs can have copy number 1 or 3, 
-            rather than requiring a copy number of 0. If the DDG2P gene is 
-            hemizygous, the CNV has to be on chr X, in a female proband, and 
-            with a copy number status of 1 (since CN = 3 is captured as single 
+        Candidates for compound CNVs undergo similar filtering to single CNVs.
+          - CNVs covering a DDG2P gene are included if the DDG2P gene is
+            biallelic or hemizygous. In comparison to the single variant
+            filtering, compound biallelic CNVs can have copy number 1 or 3,
+            rather than requiring a copy number of 0. If the DDG2P gene is
+            hemizygous, the CNV has to be on chr X, in a female proband, and
+            with a copy number status of 1 (since CN = 3 is captured as single
             variant).
           - CNVs not in DDG2P genes are included if they span > 500000 bp.
         
-        Candidate compound CNVs are checked against all of the genes that they 
-        span, so that if they overlap another candidate compound variant (CNV 
+        Candidate compound CNVs are checked against all of the genes that they
+        span, so that if they overlap another candidate compound variant (CNV
         or SNV), the variants are included in the clinical filtering output.
         
-        Note that CNVs might change the aparent state of SNVs within their 
-        boundaries, so that a deletion might alter a heterozygous SNV to a 
+        Note that CNVs might change the aparent state of SNVs within their
+        boundaries, so that a deletion might alter a heterozygous SNV to a
         homozygous alternate allele genotype. We make some checks of hom alt
         SNVs to see if their gene includes a CNV variant.
         """
         
         # return True
         
-        # we don't want CNVs that don't have copy number of 1 or 3, since 
+        # we don't want CNVs that don't have copy number of 1 or 3, since
         # copy number = 1 or 3 are the only ones that could operate as compound
         # hets (other copy numbers such as 0 are implicitly dominant)
         if self.variant.child.info["CNS"] not in {"1", "3"}:
             return False
         
-        # for compound hets, we don't have to worry about checking whether the 
+        # for compound hets, we don't have to worry about checking whether the
         # inheritance ststaus is consistent with the parental affected status
         # and in fact, most compound hets would not have affected parents
         if self.passes_nonddg2p_filter():
             return True
         
-        # now check the DDG2P genes. We only want CNVs in genes with Biallelic 
+        # now check the DDG2P genes. We only want CNVs in genes with Biallelic
         # (copy number = 1 or 3) or Hemizygous (copy number = 1) inheritance.
         # TODO: I might be including some CNVs erroneously here, since if a SNV
         # is on a biallelic gene, but the CNV spans multiple genes, if any of
-        # those genes involves a disorder inherited in a biallelic mode, then 
+        # those genes involves a disorder inherited in a biallelic mode, then
         # the CNV will be passed through for compound het checking.
         genes = self.variant.child.get_genes()
         for gene in genes:
@@ -580,7 +580,7 @@ class CNVInheritance(object):
         """ check for CNVs, without relying upon any parental genotypes
         """
         
-        # make sure the variant has an inheritance state of "unknown" for 
+        # make sure the variant has an inheritance state of "unknown" for
         # the passes_non_ddg2p_filter()
         self.variant.child.format["INHERITANCE"] = "unknown"
         
@@ -604,7 +604,7 @@ class CNVInheritance(object):
             inh: inheritace status of a CNV, eg maternal, deNovo etc
             
         Returns:
-            True/False for whether the inheritance is consistent with the 
+            True/False for whether the inheritance is consistent with the
                parental affected statuses
         """
         
@@ -629,7 +629,7 @@ class CNVInheritance(object):
         geno = self.variant.child.genotype
         
         # CNVs not in known genes are check for their length. Longer CNVs are
-        # more likely to be disruptively causal, and non-artifacts. The length 
+        # more likely to be disruptively causal, and non-artifacts. The length
         # required depends on whether the CNV was inherited, and whether the
         # CNV is a deletion, or duplication
         min_len = 1000000
@@ -707,11 +707,11 @@ class CNVInheritance(object):
             if self.variant.child.is_female():
                 copy_number = {"3"}
         else:
-            # exclude other inheritance modes (Mosaic etc) with impossible 
+            # exclude other inheritance modes (Mosaic etc) with impossible
             # criteria
             copy_number = {"XXXX"}
          
-        return (chrom =="all" or 
+        return (chrom =="all" or
             (chrom == "X" and self.variant.get_chrom() == "X")) and \
             self.variant.child.info["CNS"] in copy_number and \
             len(self.known_genes[gene]["inh"][inh] & cnv_mech) > 0
@@ -792,4 +792,3 @@ class CNVInheritance(object):
         # determine whether there is sufficient overlap
         return forward > 0.01 and reverse > 0.01
         
-

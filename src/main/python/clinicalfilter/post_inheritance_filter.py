@@ -3,14 +3,14 @@
 Most variants can be excluded on the basis of their individual characteristics
 (minor allele frequency, quality scores etc), but some variants need to be
 assessed after the standard filters
-    we fail CNVs where an individual has CNVs that pass the filters on three or 
+    we fail CNVs where an individual has CNVs that pass the filters on three or
         more chromosomes (so we can only filter these out once we have found the
         CNVs that pass the filters).
     We fail CNVs with minor allele frequencies greater than 0.1%, EXCEPT for
-        biallelic variants, they have a 1% threshold. We can only filter these 
-        out once we have found variants that pass the different inheritance 
+        biallelic variants, they have a 1% threshold. We can only filter these
+        out once we have found variants that pass the different inheritance
         models - then we can check if they are biallelelic or not.
-    We fail SNVs with polyphen=benign, even if a compound pair of the SNV is 
+    We fail SNVs with polyphen=benign, even if a compound pair of the SNV is
         polyphen=benign, we require both SNVs to be polyphen=not benign
 """
 
@@ -104,7 +104,7 @@ class PostInheritanceFilter(object):
             
             if inh == "Biallelic":
                 passed_vars.append((var, check, inh))
-            # variants with multiple inheritance types should be left as 
+            # variants with multiple inheritance types should be left as
             # Biallelic if the other inheritance type fails the MAF threshold
             elif "Biallelic" in inh and max_maf >= 0.001:
                 passed_vars.append((var, check, "Biallelic"))
@@ -121,8 +121,8 @@ class PostInheritanceFilter(object):
     def filter_polyphen(self, variants):
         """ filter variants based on polyphen predictions
         
-        filter out compound hets where both have benign predictions from 
-        polyphen, but retain compound hets where only one is polyphen benign. 
+        filter out compound hets where both have benign predictions from
+        polyphen, but retain compound hets where only one is polyphen benign.
         Also filter out single variants where polyphen predicts benign.
         
         Args:
@@ -194,13 +194,8 @@ class PostInheritanceFilter(object):
             elif not alt_var.child.info["PolyPhen"].startswith("benign"):
                 not_benign.append(alt_var)
         
-        # if we have more than two non-benign variants with different genotypes, 
+        # if we have more than two non-benign variants with different genotypes,
         # then we don't want to exclude these variants
         genotypes = set([ x.get_trio_genotype() for x in not_benign ])
         
         return len(genotypes) <= 1
-        
-        
-        
-        
-
