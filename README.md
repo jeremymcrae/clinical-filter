@@ -3,10 +3,10 @@
 Find variants in affected children that might contribute to their disorder. We
 load VCF files (either named on the command line, or listed in a PED file) for
 members of a family, filter for rare, functionally disruptive variants, and
-assess whether each variant might affect the child's disorder. We take into 
+assess whether each variant might affect the child's disorder. We take into
 account the parents genotypes (if available) and whether the parents are also
 affected with a (the?) disorder. For variants in known disease causative genes
-we check whether the inheritance patterns matches one expected for the  
+we check whether the inheritance patterns matches one expected for the
 inheritance models of the gene.
 
 Standard usage:
@@ -48,7 +48,7 @@ Other options are:
  * `--syndrome-regions SYNDROMES_PATH` # path to file listing DECIPHER regions
  * `--known-genes KNOWN_GENES_PATH` # to specify the DDG2P database file
  * `--known-genes-date 2014-01-01` # to specify the version of the known genes file
- * `--alternate-ids ALTERNATE_IDS_PATH` # path to file for mapping individuals 
+ * `--alternate-ids ALTERNATE_IDS_PATH` # path to file for mapping individuals
    between IDs used in the PED file, to alternate study IDs.
  * `--output OUTPUT_PATH` # to specify that you want tab-separated output
    written to the given path

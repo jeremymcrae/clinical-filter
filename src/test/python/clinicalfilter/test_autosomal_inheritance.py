@@ -155,17 +155,17 @@ class TestAutosomalPy(unittest.TestCase):
         self.inh.set_trio_genotypes(var)
         # check for monoallelic inheritance
         self.assertEqual(self.inh.check_heterozygous("Monoallelic"), "single_variant")
-        self.assertEqual(self.inh.log_string, "de novo")
+        self.assertEqual(self.inh.log_string, "de novo as single_variant")
         
         # check for biallelic inheritance
         self.assertEqual(self.inh.check_heterozygous("Biallelic"), "compound_het")
-        self.assertEqual(self.inh.log_string, "de novo")
+        self.assertEqual(self.inh.log_string, "de novo as compound_het")
         
         
         for geno in ["101", "102", "110", "112", "122"]:
             self.set_trio_genos(var, geno)
             self.inh.check_heterozygous("Monoallelic")
-            self.assertNotEqual(self.inh.log_string, "de novo")
+            self.assertNotEqual(self.inh.log_string, "de novo as single_variant")
         
     def test_check_heterozygous_affected_mother(self):
         """ test that check_heterozygous() works correctly for affected mothers
