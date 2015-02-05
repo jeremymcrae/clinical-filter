@@ -18,6 +18,7 @@ python clinical_filter.py \
   --known-genes-date 2014-01-01 \ # optional
   --alternate-ids alternate_ids.txt \ # optional
   --output output_name.txt \ # optional
+  --gender M \ #M|F
   -export-vcf vcf_filename_or_directory # optional
 ```
 
@@ -36,6 +37,7 @@ python clinical_filter.py \
   --child CHILD_VCF_PATH \
   --mother MOTHER_VCF_PATH \
   --father FATHER_VCF_PATH \
+  --gender M \ #M|F
   --mom-aff MOM_AFFECTED_STATUS (1=unaffected or 2=affected) \
   --dad-aff DAD_AFFECTED_STATUS (1=unaffected or 2=affected)
 ```
