@@ -23,8 +23,9 @@ def get_options():
     parser = argparse.ArgumentParser()
     parser.add_argument('--log', dest='loglevel', default="debug", \
         help='level of logging to use, choose from: debug, info, warning, error or critical')
-    parser.add_argument('--all-genes', dest='all_genes', default=False, \
-        action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
+    parser.add_argument('--all-genes', default=False, action="store_true", \
+        help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
+    parser.add_argument("--njobs", type=int, help="Number of compute jobs to use.")
     
     args = parser.parse_args()
     
@@ -76,11 +77,16 @@ def main():
     if options.all_genes:
         all_genes_option = ["--all-genes"]
     
+    njobs_option = []
+    if options.njobs is not None:
+        njobs_option = ["--njobs", str(options.njobs)]
+    
     tidy_directory_before_start()
     new_ped = load_ped(PED_PATH)
     
     # now set up the command for analysing the given pedigree file
-    filter_command = ["python", submit_script, "--ped", new_ped] + logging_option + all_genes_option
+    filter_command = ["python", submit_script, "--ped", new_ped] + \
+        logging_option + all_genes_option + njobs_option
     
     subprocess.call(filter_command)
 

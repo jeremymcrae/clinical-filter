@@ -142,8 +142,8 @@ main <- function() {
     diagnoses = read.xls(DIAGNOSES_PATH, sheet="Exome variants reviewed", stringsAsFactors=FALSE)
     diagnoses = subset(diagnoses, select=c("proband", "chrom", "position", "DECISION"))
     
-    initial_path = file.path(HOME, "clinical_reporting.2014-12-10.txt")
-    current_path = file.path(HOME, "clinical_reporting.2015-01-21.txt")
+    initial_path = file.path(HOME, "clinical_reporting.2015-02-18.txt")
+    current_path = file.path(HOME, "clinical_reporting.2015-02-18.without_parents.txt")
     
     initial = read.table(initial_path, sep="\t", stringsAsFactors=FALSE, header=TRUE)
     current = read.table(current_path, sep="\t", stringsAsFactors=FALSE, header=TRUE)
