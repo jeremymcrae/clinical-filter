@@ -140,7 +140,8 @@ class PostInheritanceFilter(object):
             # check if the variant on it's own would pass
             if "PolyPhen" not in var.child.info or \
                     not var.child.info["PolyPhen"].startswith("benign") or \
-                    var.get_trio_genotype() == var.get_de_novo_genotype():
+                    var.get_trio_genotype() == var.get_de_novo_genotype() or \
+                    var.get_trio_genotype()[1:] == ("NA", "NA"):
                 passes = True
             
             # check all of the other variants to see if any are in the same
@@ -179,7 +180,7 @@ class PostInheritanceFilter(object):
             if "compound_het" not in alt_check:
                 continue
             compound_vars.append(alt_var)
-            
+        
         if len(compound_vars) == 0:
             return False
         
@@ -195,7 +196,11 @@ class PostInheritanceFilter(object):
                 not_benign.append(alt_var)
         
         # if we have more than two non-benign variants with different genotypes,
-        # then we don't want to exclude these variants
+        # then we don't want to exclude these variants. Unless we lack parents
+        # since those will have the same trio genotypes by virtue of having
+        # "NA" values for the parental genotypes.
         genotypes = set([ x.get_trio_genotype() for x in not_benign ])
+        if var.get_trio_genotype()[1:] == ("NA", "NA"):
+            genotypes = [ x.get_trio_genotype() for x in not_benign ]
         
         return len(genotypes) <= 1
