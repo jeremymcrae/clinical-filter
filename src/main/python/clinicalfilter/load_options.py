@@ -4,8 +4,8 @@
 import argparse
 import sys
 
-from clinicalfilter.load_files import open_filters, open_tags, \
-    open_known_genes, create_person_ID_mapper, open_cnv_regions
+from clinicalfilter.load_files import open_known_genes, \
+    create_person_ID_mapper, open_cnv_regions
 from clinicalfilter import ped
 
 
@@ -79,8 +79,8 @@ class LoadOptions(object):
         """loads all the config files for the script (eg filters, gene IDs)
         """
         
-        # if we have named a gene file, then load a dictionary of genes, and 
-        # add them to the filters, so we can screen variants for being in genes 
+        # if we have named a gene file, then load a dictionary of genes, and
+        # add them to the filters, so we can screen variants for being in genes
         # known to be involved with disorders
         self.known_genes = None
         self.excluded_genes = None
@@ -112,4 +112,3 @@ class LoadOptions(object):
             self.families = {family.family_id: family}
         else:
             self.families = ped.load_families(self.options.ped)
-
