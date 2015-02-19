@@ -192,6 +192,8 @@ class PostInheritanceFilter(object):
                 not_benign.append(alt_var)
             elif alt_var.get_trio_genotype() == alt_var.get_de_novo_genotype():
                 not_benign.append(alt_var)
+            elif alt_var.get_trio_genotype()[1:] == ("NA", "NA"):
+                not_benign.append(alt_var)
             elif not alt_var.child.info["PolyPhen"].startswith("benign"):
                 not_benign.append(alt_var)
         
