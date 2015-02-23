@@ -116,21 +116,13 @@ class ClinicalFilter(LoadOptions):
         # organise the variants into entries for each gene
         genes_dict = {}
         for var in variants:
-            # cnvs can span mulitple genes, so we need to check each gene
-            # separately, and then collapse duplicates later
-            if var.is_cnv():
-                for gene in var.child.get_genes():
-                    if gene not in genes_dict:
-                        genes_dict[gene] = []
-                    # add the variant to the gene entry
-                    genes_dict[gene].append(var)
-                continue
-            # make sure that gene is in genes_dict
-            if var.get_gene() not in genes_dict:
-                genes_dict[var.get_gene()] = []
-            
-            # add the variant to the gene entry
-            genes_dict[var.get_gene()].append(var)
+            # variants (particularly CNVs) can span multiple genes, so we need
+            # to check each gene separately, and then collapse duplicates later
+            for gene in var.child.get_genes():
+                if gene not in genes_dict:
+                    genes_dict[gene] = []
+                # add the variant to the gene entry
+                genes_dict[gene].append(var)
         
         return genes_dict
         
@@ -151,6 +143,9 @@ class ClinicalFilter(LoadOptions):
         gene_inh = None
         if self.known_genes is not None and gene in self.known_genes:
             gene_inh = self.known_genes[gene]["inh"]
+        
+        if self.known_genes is not None and gene not in self.known_genes:
+            return []
         
         # ignore intergenic variants
         if gene is None:
