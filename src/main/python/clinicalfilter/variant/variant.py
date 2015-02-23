@@ -47,7 +47,7 @@ class Variant(object):
         if gender in self.male_codes:
             self.gender = "male"
         elif gender in self.female_codes:
-            self.gender = "female" 
+            self.gender = "female"
         else:
             raise ValueError("unknown gender code")
         
@@ -126,11 +126,11 @@ class Variant(object):
     def set_inheritance_type(self):
         """ sets the chromosome type (eg autosomal, or X chromosome type).
         
-        provides the chromosome type for a chromosome (eg Autosomal, or 
-        X-chrom male etc). This only does simple string matching. The 
-        chromosome string is either the chromosome number, or in the case of 
-        the sex-chromosomes, the chromosome character. This doesn't allow for 
-        chromosomes to be specified as "chr1", and sex chromosomes have to be 
+        provides the chromosome type for a chromosome (eg Autosomal, or
+        X-chrom male etc). This only does simple string matching. The
+        chromosome string is either the chromosome number, or in the case of
+        the sex-chromosomes, the chromosome character. This doesn't allow for
+        chromosomes to be specified as "chr1", and sex chromosomes have to be
         specified as "X" or "Y", not "23" or "24".
         """
         
@@ -181,5 +181,3 @@ class Variant(object):
         """
         
         return self.genotype
-    
-

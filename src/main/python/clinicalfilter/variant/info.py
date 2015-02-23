@@ -6,7 +6,7 @@ class VariantInfo(object):
     """
     
     # Here are the VEP consequences, ranked in severity from the most severe to
-    # the least severe as defined at: 
+    # the least severe as defined at:
     # http://www.ensembl.org/info/genome/variation/predicted_data.html
     severity = {"transcript_ablation": 0, "splice_donor_variant": 1, \
         "splice_acceptor_variant": 2, "stop_gained": 3, "frameshift_variant": 4, \
@@ -98,8 +98,8 @@ class VariantInfo(object):
         if "HGNC" in self.info:
             self.gene = self.info["HGNC"]
         # If we are not using a set of known genes, we still want to check
-        # variants that haven't been annotated with a HGNC, since some of these 
-        # have a functional VEP annotation, presumably due to difficulties in 
+        # variants that haven't been annotated with a HGNC, since some of these
+        # have a functional VEP annotation, presumably due to difficulties in
         # identifying an HGNC symbol. We don't need to worry about this when
         # using a set of known genes, since we check whether variants lie within
         # the known genes chromosomal ranges.
@@ -150,6 +150,22 @@ class VariantInfo(object):
         
         return overlapping
     
+    def get_genes(self):
+        """ split a gene string into list of gene names
+        
+        Returns:
+            list of gene IDs
+        """
+        
+        if self.gene == None:
+            genes = []
+        elif "," in self.gene:
+            genes = self.gene.split(",")
+        else:
+            genes = [self.gene]
+        
+        return genes
+    
     def set_consequence(self):
         """ makes sure a consequence field is available in the info dict
         """
@@ -162,7 +178,7 @@ class VariantInfo(object):
         if "," in self.alt_allele:
             (cq, hgnc, enst) = self.correct_multiple_alt(cq)
             
-            if "HGNC" in self.info:   
+            if "HGNC" in self.info:
                 self.info["HGNC"] = hgnc
                 self.info["ENST"] = enst
         
@@ -171,9 +187,9 @@ class VariantInfo(object):
     def correct_multiple_alt(self, cq):
         """ gets correct consequence, HGNC and ensembl IDs for multiple alt vars
         
-        Some variants have multiple alts, so we need to select the alt with 
-        the most severe consequence. However, in at least one version of the 
-        VCFs, one of the alts could have zero depth, which I believe resulted 
+        Some variants have multiple alts, so we need to select the alt with
+        the most severe consequence. However, in at least one version of the
+        VCFs, one of the alts could have zero depth, which I believe resulted
         from the population based multi-sample calling. We need to drop the
         consequences recorded for zero-depth alternate alleles before finding
         the most severe.
@@ -212,7 +228,7 @@ class VariantInfo(object):
         
         cq = self.get_most_severe_consequence(cq)
         
-        if "HGNC" in self.info:   
+        if "HGNC" in self.info:
             hgnc = ",".join(sorted(set(hgnc)))
             enst = ",".join(sorted(set(enst)))
         
@@ -253,7 +269,7 @@ class VariantInfo(object):
         """ extracts the allele frequency float from a VCF string
         
         The allele frequency for a population can be encoded in several ways,
-        either as a single float (eg "0.01"), or as a missing value (eg "."), 
+        either as a single float (eg "0.01"), or as a missing value (eg "."),
         or there can be a list of allele frequencies for the different alternate
         alleles for the variant (eg "0.01,0.05,0.06"), or list containing floats
         and missing values. We need to return the allele frequency as a float,
@@ -261,7 +277,7 @@ class VariantInfo(object):
         float.
         
         Args:
-            values: string for allele frequency eg "0.01" or ".", or 
+            values: string for allele frequency eg "0.01" or ".", or
                 "0.01,.,0.06". Sometimes we might even get values passed in as
                 a float, or a None type.
         
@@ -286,9 +302,9 @@ class VariantInfo(object):
     def is_number(self, value):
         """ determines whether a value represents a number.
         
-        Sometimes the MAF reported for a variant is ".", or even ".,.", which 
+        Sometimes the MAF reported for a variant is ".", or even ".,.", which
         are not numbers and are in fact NA values, but would cause the variant
-        not to pass the MAF filter. instead check if the value can be 
+        not to pass the MAF filter. instead check if the value can be
         converted to a float.
         
         Args:
@@ -324,7 +340,7 @@ class VariantInfo(object):
         """
         
         max_freq = None
-        # check all the populations with MAF values recorded for the variant 
+        # check all the populations with MAF values recorded for the variant
         # (typically the 1000 Genomes populations (AFR_AF, EUR_AF etc), any
         # internal population (e.g. DDD_AF), and a MAX_AF field)
         for key in set(self.populations) & set(self.info):

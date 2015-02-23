@@ -121,22 +121,6 @@ class CNV(Variant, VariantInfo):
         else:
             self.gene = self.info["HGNC"]
     
-    def get_genes(self):
-        """ split a gene string into list of gene names
-        
-        Returns:
-            list of gene IDs
-        """
-        
-        if self.gene == None:
-            genes = []
-        elif "," in self.gene:
-            genes = self.gene.split(",")
-        else:
-            genes = [self.gene]
-        
-        return genes
-    
     def passes_filters(self):
         """Checks whether a VCF variant passes user defined criteria.
         
