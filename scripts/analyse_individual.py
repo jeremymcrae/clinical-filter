@@ -23,6 +23,7 @@ known_genes = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2015-
 ped_file = os.path.join(datafreeze, "family_relationships.txt")
 alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.txt")
 syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
+LAST_BASE_PATH = "/nfs/users/nfs_j/jm33/apps/recessiveStats/data-raw/last_base_sites.json"
 
 def get_options():
     """ gets the options from the command line
@@ -115,8 +116,8 @@ def main():
         "--alternate-ids", alternate_ids, \
         "--output", random_filename + ".output.txt", \
         "--export-vcf", os.getcwd(), \
-        "--syndrome-regions", syndrome_regions_filename, \
-        "--pp-dnm-threshold", "0"] + logging_option
+        "--syndrome-regions", syndrome_regions_filename,
+        "--lof-sites", LAST_BASE_PATH] + logging_option
     
     if not options.all_genes:
         filter_command += ["--known-genes", known_genes]

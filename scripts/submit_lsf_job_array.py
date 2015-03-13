@@ -23,6 +23,7 @@ KNOWN_GENES_PATH = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/
 ALT_IDS_PATH = os.path.join(DATAFREEZE, "person_sanger_decipher.txt")
 PED_PATH = os.path.join(DATAFREEZE, "family_relationships.txt")
 SYNDROMES_PATH = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
+LAST_BASE_PATH = "/nfs/users/nfs_j/jm33/apps/recessiveStats/data-raw/last_base_sites.json"
     
 def get_options():
     """ gets the options from the command line
@@ -54,6 +55,8 @@ def get_options():
         exist. We'll currently exclude the singletons with parents, as \
         filtering of their genetic variants would provide an abundance of \
         variants that would later be clarified with parental genotypes.")
+    parser.add_argument("--tweak-lof", dest="tweak_lof", default=False, \
+        action="store_true", help="whether to use the last base of exon rule.")
     
     args = parser.parse_args()
     
@@ -262,7 +265,7 @@ def submit_bsub_job(command, job_id=None, dependent_id=None, memory=None, requeu
     command = " ".join(preamble + command)
     subprocess.call(command, shell=True)
 
-def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, log_options):
+def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, tweak_lof, log_options):
     """ runs clinical filtering, split across multiple compute jobs
     
     Args:
@@ -292,6 +295,9 @@ def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, log_options
     # would be False and variants would be assessed in every gene.
     if not all_genes:
         command += ["--known-genes", genes_path]
+    
+    if tweak_lof:
+        command += ["--lof-sites", LAST_BASE_PATH]
     
     submit_bsub_job(command, job_id=job_id, logfile=bjob_output_name + ".%I.txt")
 
@@ -338,8 +344,8 @@ def main():
     temp_name = "tmp_ped.{0}".format(hash_string)
     
     tidy_directory_before_start()
-    trio_counter = split_pedigree_file(temp_name, opts.ped_path, opts.n_jobs, opts.without_parents, opts.use_singletons_with_parents)
-    run_array(hash_string, trio_counter, temp_name, opts.ddg2p_path, opts.all_genes, log_options)
+    run_array(hash_string, trio_counter, temp_name, opts.ddg2p_path, \
+        opts.all_genes, opts.tweak_lof, log_options)
     run_cleanup(hash_string)
 
 

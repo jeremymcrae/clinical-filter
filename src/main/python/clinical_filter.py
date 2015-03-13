@@ -51,7 +51,7 @@ class ClinicalFilter(LoadOptions):
         """
         
         self.vcf_loader = LoadVCFs(len(self.families), self.known_genes, \
-            self.debug_chrom, self.debug_pos)
+            self.debug_chrom, self.debug_pos, self.last_base)
         
         # load the trio paths into the current path setup
         for family_ID in sorted(self.families):

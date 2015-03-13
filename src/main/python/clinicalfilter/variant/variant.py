@@ -113,6 +113,10 @@ class Variant(object):
     
     def add_vcf_line(self, vcf_line):
         self.vcf_line = vcf_line
+        
+        if self.changed_consequence:
+            self.vcf_line[7] = self.vcf_line[7].replace("missense_variant", "splice_donor_variant")
+            self.vcf_line[7] = self.vcf_line[7].replace("synonymous_variant", "splice_donor_variant")
     
     def get_vcf_line(self):
         return self.vcf_line

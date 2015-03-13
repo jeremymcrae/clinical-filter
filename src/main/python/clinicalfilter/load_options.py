@@ -3,6 +3,7 @@
 
 import argparse
 import sys
+import json
 
 from clinicalfilter.load_files import open_known_genes, \
     create_person_ID_mapper, open_cnv_regions
@@ -36,6 +37,7 @@ def get_options():
     parser.add_argument("--log", dest="loglevel", default="debug", help="Level of logging to use, choose from: debug, info, warning, error or critical.")
     parser.add_argument("--debug-chrom", dest="debug_chrom", help="chromosome of variant for which to debug the filtering behaviour.")
     parser.add_argument("--debug-pos", dest="debug_pos", help="position of variant for which to debug the filtering behaviour.")
+    parser.add_argument("--lof-sites", help="path to file of sites at the last base of exons that are potentially LoF sites.")
     
     # New argument added by PJ to allow DNM_PP filtering to be disabled.
     parser.add_argument("--pp-dnm-threshold", dest="pp_filter", type=float, default=0.9, help="Set PP_DNM threshold for filtering (defaults to >=0.9)")
@@ -96,6 +98,15 @@ class LoadOptions(object):
         self.cnv_regions = None
         if self.options.regions is not None:
             self.cnv_regions = open_cnv_regions(self.options.regions)
+        
+        # open a set of sites at the last bnase of an exon which can potentially
+        # alter the consequence to a LoF consequence
+        self.last_base = set([])
+        if self.options.lof_sites is not None:
+            with open(self.options.lof_sites) as handle:
+                self.last_base = json.load(handle)
+                self.last_base = [(x[0], int(x[1])) for x in self.last_base]
+                self.last_base = set(self.last_base)
     
     def load_trio_paths(self):
         """sets the paths to the VCF files for a trio, or multiple trios.
