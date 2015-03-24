@@ -1,4 +1,4 @@
-### Clinical filtering for trios
+## Clinical filtering for trios
 
 Find variants in affected children that might contribute to their disorder. We
 load VCF files (either named on the command line, or listed in a PED file) for
@@ -9,7 +9,37 @@ affected with a (the?) disorder. For variants in known disease causative genes
 we check whether the inheritance patterns matches one expected for the
 inheritance models of the gene.
 
-Standard usage:
+### VCF requirements
+Gene symbols are expected as either `HGNC` (single gene) or `HGNC_ALL`
+("&"-seperated multiple genes) entries in the INFO field. Consequence strings
+come from VEP, and are expected in the `CQ` entry in the INFO. De novo mutations
+need a `PP_DNM` (posterior probability of de novo mutation, estimated by
+denovogear) entry in the FORMAT. By default, we screen for de novos with
+PP_DNM > 0.9.
+
+We only check rare variants by excluding variants where any reference population
+has a minor allele frequency (MAF) >= 0.01. The MAF for the reference
+populations are included in the INFO field, if the MAF is available for that
+population. Currently the populations that are checked are:
+* [continental 1000 Genomes populations](http://www.1000genomes.org/about)
+* [DDD unaffected parents population](http://www.ddduk.org/)
+* [UK10K population](http://www.uk10k.org/)
+
+The reference population tags are hard-coded as a class variable in
+`../clinicalfilter/variant/info.py`. The tags for these populations in the VCF
+are:
+- AFR_AF
+- AMR_AF
+- ASN_AF
+- DDD_AF
+- EAS_AF
+- ESP_AF
+- EUR_AF
+- MAX_AF
+- SAS_AF
+- UK10K_cohort_AF
+
+### Usage
 ```sh
 python clinical_filter.py \
   --ped temp_name.ped \
