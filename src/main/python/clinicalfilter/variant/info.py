@@ -97,6 +97,10 @@ class VariantInfo(object):
         # grab the HGNC symbol from the INFO
         if "HGNC" in self.info:
             self.gene = self.info["HGNC"]
+        # some genes lack an HGNC entry, but do have an HGNC_ALL entry. The
+        # HGNC_ALL entry is a "&"-separated list of Vega symbols. Actually
+        elif self.gene is None and "HGNC_ALL" in self.info:
+            self.gene = self.info["HGNC_ALL"].replace("&", ",")
         # If we are not using a set of known genes, we still want to check
         # variants that haven't been annotated with a HGNC, since some of these
         # have a functional VEP annotation, presumably due to difficulties in
@@ -114,13 +118,13 @@ class VariantInfo(object):
         if self.known_genes is None:
             return
         
-        overlapping = self.get_overlapping_known_genes()
-        
-        previous = []
+        # if we already have set a gene, then don't try to override the
+        # existing symbols
         if self.gene is not None:
-            previous = self.gene.split(",")
+            return
         
-        self.gene = ",".join(sorted(set(overlapping + previous)))
+        overlapping = self.get_overlapping_known_genes()
+        self.gene = ",".join(sorted(set(overlapping)))
     
     def get_overlapping_known_genes(self):
         """ finds the names of known genes that a variant overlaps

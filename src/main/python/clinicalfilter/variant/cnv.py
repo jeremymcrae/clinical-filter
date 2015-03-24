@@ -107,19 +107,16 @@ class CNV(Variant, VariantInfo):
         
         # sometimes the variant lacks an HGNC field, but does have a HGNC_ALL
         # entry.
-        
         if "HGNC_ALL" in self.info:
             self.gene = self.info["HGNC_ALL"]
         elif "HGNC" not in self.info and "NUMBERGENES" in self.info:
             self.gene = None
             if int(self.info["NUMBERGENES"]) > 0:
                 self.gene = "."
-        # make sure we have gene and consequence keys in the info dict, for
-        # the filter to work with
-        elif "HGNC" not in self.info:
-            self.gene = None
-        else:
+        elif "HGNC" in self.info:
             self.gene = self.info["HGNC"]
+        else:
+            self.gene = None
     
     def passes_filters(self):
         """Checks whether a VCF variant passes user defined criteria.
