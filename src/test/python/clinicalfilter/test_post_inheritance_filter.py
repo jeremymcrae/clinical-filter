@@ -306,4 +306,33 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         variants = [(snv_1, "compound_het", "Biallelic"), \
             (snv_2, "single_variant", "Biallelic")]
         self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
+    
+    def test_filter_exac_hemizygous(self):
+        """ check that filter_exac_hemizygous() works correctly
+        """
         
+        # construct a variant that will pass
+        var = self.create_var("1", snv=True, geno=["0/1", "0/1", "0/1"])
+        variants = [(var, "single_variant", "Biallelic")]
+        
+        # we should get back the same list of variants, if none of them have a
+        # male chrX
+        self.assertEqual(self.post_filter.filter_exac_hemizygous(variants), variants)
+        
+        # now construct a male chrX variant, which contains a non-zero AC_Hemi
+        # annotation. This should fail the filter
+        var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
+        var.child.info["AC_Hemi"] = 1
+        variants = [(var, "single_variant", "Biallelic")]
+        self.assertEqual(self.post_filter.filter_exac_hemizygous(variants), [])
+        
+        # if the AC_Hemi count is zero, this should pass the filter
+        var.child.info["AC_Hemi"] = 0
+        variants = [(var, "single_variant", "Biallelic")]
+        self.assertEqual(self.post_filter.filter_exac_hemizygous(variants), variants)
+        
+        # checkthat chrX females with non-zero AC_Hemi counts are not excluded
+        var.inheritance_type = "XChrFemale"
+        var.child.info["AC_Hemi"] = 1
+        variants = [(var, "single_variant", "Biallelic")]
+        self.assertEqual(self.post_filter.filter_exac_hemizygous(variants), variants)

@@ -43,6 +43,8 @@ class PostInheritanceFilter(object):
         
         self.variants = self.filter_polyphen(self.variants)
         
+        self.filter_exac_hemizygous(self.variants)
+        
         return self.variants
     
     def count_cnv_chroms(self, variants):
@@ -206,3 +208,38 @@ class PostInheritanceFilter(object):
             genotypes = [ x.get_trio_genotype() for x in not_benign ]
         
         return len(genotypes) <= 1
+    
+    def filter_exac_hemizygous(self, variants):
+        """ drop inherited chrX male variants with ExAC hemizygous frequencies >0
+        
+        Args:
+            variants: list of (variant, check, inheritance) tuples
+        
+        Returns:
+            returns list of tuples without variants where the variant is on
+            chrX, in a male, inherited, and has a non-zero ExAC hemizygous
+            frequency.
+        """
+        
+        passed_vars = []
+        
+        for (var, check, inh) in variants:
+            passes = True
+            
+            # we only apply this filter to variants on chrX in males. Autosomal
+            # and female chrX variants should pass through unfiltered.
+            if var.inheritance_type == "XChrMale" and \
+                "AC_Hemi" in var.child.info and int(var.child.info["AC_Hemi"]) > 0:
+                    passes = False
+            
+            # we don't filter out de novo variants based on the ExAC hemizygous
+            # count. We only apply this filter to inherited variants.
+            if var.get_trio_genotype() == var.get_de_novo_genotype():
+                passes = True
+            elif var.get_trio_genotype()[1:] == ("NA", "NA"):
+                passes = True
+            
+            if passes:
+                passed_vars.append((var, check, inh))
+        
+        return passed_vars
