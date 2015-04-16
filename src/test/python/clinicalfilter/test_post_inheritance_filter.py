@@ -336,3 +336,10 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         var.child.info["AC_Hemi"] = 1
         variants = [(var, "single_variant", "Biallelic")]
         self.assertEqual(self.post_filter.filter_exac_hemizygous(variants), variants)
+        
+        # now construct a de novo male chrX variant, which contains a non-zero
+        # AC_Hemi annotation. Since this is not inherited, it should pass.
+        var = self.create_var("X", snv=True, geno=["1/1", "0/0", "0/0"])
+        var.child.info["AC_Hemi"] = 1
+        variants = [(var, "single_variant", "Biallelic")]
+        self.assertEqual(self.post_filter.filter_exac_hemizygous(variants), variants)
