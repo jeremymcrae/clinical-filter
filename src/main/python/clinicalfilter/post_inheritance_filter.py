@@ -231,6 +231,9 @@ class PostInheritanceFilter(object):
             if var.inheritance_type == "XChrMale" and \
                 "AC_Hemi" in var.child.info and int(var.child.info["AC_Hemi"]) > 0:
                     passes = False
+                    logging.debug(str(var) + " dropped from ExAC hemizygous count")
+                    if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
+                        print(str(var) + " ddropped from ExAC hemizygous count")
             
             # we don't filter out de novo variants based on the ExAC hemizygous
             # count. We only apply this filter to inherited variants.
