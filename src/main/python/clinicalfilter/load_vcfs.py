@@ -173,7 +173,6 @@ class LoadVCFs(object):
         
         # Complete the variant setup, now that the variant has passed the
         # filtering. If we do this earlier, it slows all the unneeded variants.
-        var.set_gene_from_known_gene_overlap()
         var.add_format(line[8], line[9])
         var.add_vcf_line(line)
         var.set_gender(gender)

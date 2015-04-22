@@ -109,50 +109,6 @@ class VariantInfo(object):
         # the known genes chromosomal ranges.
         elif self.gene is None and self.known_genes is None:
             self.gene = "{0}:{1}".format(self.chrom, self.position)
-        
-    def set_gene_from_known_gene_overlap(self):
-        """ sets the gene according to overlap with the positions of known genes
-        """
-        
-        # don't change anything if we don't have a set of known genes
-        if self.known_genes is None:
-            return
-        
-        # if we already have set a gene, then don't try to override the
-        # existing symbols
-        if self.gene is not None:
-            return
-        
-        overlapping = self.get_overlapping_known_genes()
-        self.gene = ",".join(sorted(set(overlapping)))
-    
-    def get_overlapping_known_genes(self):
-        """ finds the names of known genes that a variant overlaps
-        """
-        
-        (start, end) = self.get_range()
-        
-        if self.known_genes is None:
-            raise ValueError("we don't have a set of known genes to look through")
-        
-        current_chrom = self.get_chrom()
-        current_pos = self.get_position()
-        
-        overlapping = []
-        for gene in self.known_genes:
-            if self.known_genes[gene]["chrom"] != current_chrom:
-                continue
-            
-            if self.excluded_genes is not None and "HGNC" in self.info and self.info["HGNC"] in self.excluded_genes:
-                continue
-            
-            gene_start = self.known_genes[gene]["start"]
-            gene_end = self.known_genes[gene]["end"]
-            
-            if start <= gene_end and end >= gene_start:
-                overlapping.append(gene)
-        
-        return overlapping
     
     def get_genes(self):
         """ split a gene string into list of gene names
