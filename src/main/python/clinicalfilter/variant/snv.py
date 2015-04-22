@@ -225,7 +225,7 @@ class SNV(Variant, VariantInfo):
         
         # exclude variants outside genes known to be involved in genetic
         # disorders, unless there isn't any such set of genes available
-        if self.known_genes is not None and len(self.get_overlapping_known_genes()) == 0:
+        if self.known_genes is not None and len(set(self.get_genes()) & set(self.known_genes)) == 0:
             return (False, "HGNC")
         
         # exclude variants without PASS values, except where the fail reason is

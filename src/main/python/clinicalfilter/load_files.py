@@ -80,7 +80,6 @@ def open_known_genes(path="DDGP-reportable.txt"):
     # only include genes with sufficient DDG2P status
     allowed = set(["Confirmed DD Gene", "Probable DD gene", "Both DD and IF"])
     
-    excluded_genes = set([])
     known_genes = {}
     with io.open(path, "r", encoding="latin_1") as handle:
         # get the positions of the columns in the list of header labels
@@ -96,7 +95,6 @@ def open_known_genes(path="DDGP-reportable.txt"):
             
             # ignore genes with insufficient evidence
             if status not in allowed:
-                excluded_genes.add(gene)
                 continue
             
             if gene not in known_genes:
@@ -110,7 +108,7 @@ def open_known_genes(path="DDGP-reportable.txt"):
     if len(known_genes) == 0:
         raise ValueError("No genes found in the file, check the line endings")
     
-    return known_genes, excluded_genes
+    return known_genes
 
 def create_person_ID_mapper(path):
     """creates a dictionary of IDs to map between different ID systems.
