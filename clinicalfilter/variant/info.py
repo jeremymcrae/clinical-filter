@@ -55,6 +55,8 @@ class Info(object):
         "inframe_insertion", "inframe_deletion", "missense_variant", \
         "transcript_amplification", "protein_altering_variant"])
     
+    synonymous_consequences = set(["synonymous_variant"])
+    
     # create static variables (set before creating any class instances)
     known_genes = None
     last_base = set([])
@@ -457,6 +459,12 @@ class Info(object):
                 cq.append('missense_variant')
         
         return len(set(cq) & self.missense_consequences) > 0
+    
+    def is_synonymous(self):
+        """ checks if a variant has a missense-styled consequence
+        """
+        
+        return self.consequence in self.synonymous_consequences
     
     def get_allele_frequency(self, values):
         """ extracts the allele frequency float from a VCF string

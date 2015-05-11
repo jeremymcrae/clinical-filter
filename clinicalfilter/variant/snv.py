@@ -232,7 +232,7 @@ class SNV(Variant):
         """
         
         # exclude variants without functional consequences
-        if not self.is_lof() and not self.is_missense():
+        if not self.is_synonymous():
             return (False, "consequence")
         
         # exclude variants with high minor allele frequencies in any population
