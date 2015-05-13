@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/jeremymcrae/clinical-filter.svg?branch=master)]
+(https://travis-ci.org/jeremymcrae/clinical-filter)
+
 ## Clinical filtering for trios
 
 Find variants in affected children that might contribute to their disorder. We
