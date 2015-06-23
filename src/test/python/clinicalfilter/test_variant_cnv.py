@@ -94,33 +94,33 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.known_genes = {"TEST": {"start": 1000, "end": 2000, "chrom": "5"}}
         
         # make a CNV that will overlap with the known gene set
-        self.var.gene = "TEST"
+        self.var.gene = ["TEST"]
         self.var.position = 1000
         self.var.info["END"] = "1500"
         
         # check that fixing gene names does not alter anything for a CNV in a
         # single known gene
         self.var.fix_gene_IDs()
-        self.assertEqual(self.var.gene, "TEST")
+        self.assertEqual(self.var.gene, ["TEST"])
         
         # check that fixing gene names does not alter names not in the gene dict
-        self.var.gene = "TEST,TEST2"
+        self.var.gene = ["TEST", "TEST2"]
         self.var.fix_gene_IDs()
-        self.assertEqual(self.var.gene, "TEST,TEST2")
+        self.assertEqual(self.var.gene, ["TEST", "TEST2"])
         
         # check that fixing gene names drop name of genes where the name is in
         # the known genes dict, and the CNV and gene do not overlap
         self.var.position = 900
         self.var.info["END"] = "950"
         self.var.fix_gene_IDs()
-        self.assertEqual(self.var.gene, "TEST2")
+        self.assertEqual(self.var.gene, ["TEST2"])
         
         # check that when we do not have any known genes, the gene names are
         # unaltered
-        self.var.gene = "TEST,TEST2"
+        self.var.gene = ["TEST", "TEST2"]
         self.var.known_genes = None
         self.var.fix_gene_IDs()
-        self.assertEqual(self.var.gene, "TEST,TEST2")
+        self.assertEqual(self.var.gene, ["TEST", "TEST2"])
     
     def test_set_gene_from_info_cnv(self):
         """ test that set_add_gene_from_info() works correctly
@@ -130,12 +130,12 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.info["HGNC"] = "A"
         self.var.info["HGNC_ALL"] = "B"
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.gene, "B")
+        self.assertEqual(self.var.gene, ["B"])
         
         # check that HGNC is used in the absence of HGNC_ALL
         del self.var.info["HGNC_ALL"]
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.gene, "A")
+        self.assertEqual(self.var.gene, ["A"])
         
         # check that when HGNC and HGNC_ALL are undefined, we can still include
         # CNVs overlapping genes through NUMBERGENES > 0.
@@ -149,7 +149,7 @@ class TestVariantCnvPy(unittest.TestCase):
         # and then make sure we are correct for NUMBERGENES > 0
         self.var.info["NUMBERGENES"] = 1
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.gene, ".")
+        self.assertEqual(self.var.gene, ["."])
         
         # finally check for no HGNC, HGNC_ALL, or NUMBERGENES
         del self.var.info["NUMBERGENES"]
@@ -163,17 +163,14 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.gene = None
         self.assertEqual(self.var.get_genes(), [])
         
-        self.var.gene = "TEST"
+        self.var.gene = ["TEST"]
         self.assertEqual(self.var.get_genes(), ["TEST"])
         
-        self.var.gene = "TEST1,TEST2"
+        self.var.gene = ["TEST1", "TEST2"]
         self.assertEqual(self.var.get_genes(), ["TEST1", "TEST2"])
         
-        self.var.gene = "."
+        self.var.gene = ["."]
         self.assertEqual(self.var.get_genes(), ["."])
-        
-        self.var.gene = ","
-        self.assertEqual(self.var.get_genes(), ["", ""])
     
     def test_fails_y_chrom_female(self):
         """ test that passes_filters() works correctly for female Y chrom CNVs

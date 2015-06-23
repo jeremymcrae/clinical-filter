@@ -20,7 +20,7 @@ class TrioGenotypes(object):
         self.chrom = self.child.get_chrom()
         self.position = self.child.get_position()
         self.inheritance_type = self.child.inheritance_type
-        self.gene = self.child.gene
+        self.genes = self.child.get_genes()
         
         self.debug_chrom = debug_chrom
         self.debug_pos = debug_pos
@@ -96,8 +96,8 @@ class TrioGenotypes(object):
     def get_chrom(self):
         return self.chrom
 
-    def get_gene(self):
-        return self.gene
+    def get_genes(self):
+        return self.genes
 
     def get_position(self):
         return self.position

@@ -290,12 +290,12 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.assertTrue(self.inh.passes_ddg2p_filter())
         
         # check that we only pass genes with exact matches from DDG2P
-        self.inh.variant.child.gene = "TEST1"
+        self.inh.variant.child.gene = ["TEST1"]
         self.assertFalse(self.inh.passes_ddg2p_filter())
         
         # check if the variant passes if the confirmed type is "Both DD and IF",
         # even if the variant wouldn't otherwise pass
-        self.inh.variant.child.gene = "TEST"
+        self.inh.variant.child.gene = ["TEST"]
         self.inh.known_genes[gene]["status"] = {"Both DD and IF"}
         self.inh.known_genes[gene]["inh"][inh] = {"Loss of function"}
         self.assertTrue(self.inh.passes_ddg2p_filter())
@@ -311,7 +311,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         # now check that if the CNV lies across any gene that passes, we pass
         # the variant
-        self.inh.variant.child.gene = "TEST,TEST2"
+        self.inh.variant.child.gene = ["TEST", "TEST2"]
         self.assertTrue(self.inh.passes_ddg2p_filter())
         
     

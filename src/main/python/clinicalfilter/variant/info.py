@@ -94,13 +94,16 @@ class VariantInfo(object):
         """
         
         self.gene = None
-        # grab the HGNC symbol from the INFO
+        # grab the HGNC symbol from the INFO. This could be a pipe-separated
+        # list of symbols for different genes, or it could be a comma-separated
+        # list of symbols for different alleles, or a combination of the two.
         if "HGNC" in self.info:
-            self.gene = self.info["HGNC"]
+            self.gene = self.info["HGNC"].split("|")
+            self.gene = [x if x != "" else None for x in self.gene]
         # some genes lack an HGNC entry, but do have an HGNC_ALL entry. The
-        # HGNC_ALL entry is a "&"-separated list of Vega symbols. Actually
+        # HGNC_ALL entry is a "&"-separated list of Vega symbols.
         elif self.gene is None and "HGNC_ALL" in self.info:
-            self.gene = self.info["HGNC_ALL"].replace("&", ",")
+            self.gene = self.info["HGNC_ALL"].split("&")
         # If we are not using a set of known genes, we still want to check
         # variants that haven't been annotated with a HGNC, since some of these
         # have a functional VEP annotation, presumably due to difficulties in
@@ -117,12 +120,9 @@ class VariantInfo(object):
             list of gene IDs
         """
         
-        if self.gene == None:
+        genes = self.gene
+        if self.gene is None:
             genes = []
-        elif "," in self.gene:
-            genes = self.gene.split(",")
-        else:
-            genes = [self.gene]
         
         return genes
     
@@ -134,6 +134,9 @@ class VariantInfo(object):
             self.info["CQ"] = None
         
         cq = self.info["CQ"]
+        
+        if cq is not None:
+            cq = cq.split("|")
         
         if "," in self.alt_allele:
             (cq, hgnc, enst) = self.correct_multiple_alt(cq)
@@ -159,20 +162,32 @@ class VariantInfo(object):
         symbols as there are alt alleles.
         
         Args:
-            cq: string of VEP annotated comma-separated consequences
+            cq: list of VEP annotated consequences
         
         Returns:
-            tuple of (consequence, HGNC symbol, and ensembl transcript ID)
+            tuple of ([consequence], [HGNC symbol], and [ensembl transcript ID])
+            lists
         """
         
-        # get the consequence string
+        # we join the consequence list (which has been split by gene), so that
+        # splitting by allele can take priority
+        cq = "|".join(cq)
+        
+        # get the consequence string, then split the entries for each allele by
+        # gene
         cq = cq.split(",")
+        cq = [x.split("|") for x in cq]
         
         enst = None
         hgnc = None
         if "HGNC" in self.info:
-            enst = self.info["ENST"].split(",")
+            # split the allelic entries by gene
             hgnc = self.info["HGNC"].split(",")
+            hgnc = [x.split("|") for x in hgnc]
+        
+        if "ENST" in self.info:
+            enst = self.info["ENST"].split(",")
+            enst = [x.split("|") for x in enst]
         
         # drop the consequence for zero-depth alleles
         if "AC" in self.info:
@@ -184,13 +199,15 @@ class VariantInfo(object):
             
             if "HGNC" in self.info:
                 hgnc[:] = [ item for i,item in enumerate(hgnc) if present[i] ]
+            if "ENST" in self.info:
                 enst[:] = [ item for i,item in enumerate(enst) if present[i] ]
-        
+    
         cq = self.get_most_severe_consequence(cq)
         
         if "HGNC" in self.info:
-            hgnc = ",".join(sorted(set(hgnc)))
-            enst = ",".join(sorted(set(enst)))
+            hgnc = "|".join(hgnc[0])
+        if "ENST" in self.info:
+            enst = "|".join(enst[0])
         
         return (cq, hgnc, enst)
     
@@ -203,6 +220,14 @@ class VariantInfo(object):
         Returns:
             the most severe consequence string
         """
+        
+        if type(consequences[0]) is list:
+            new_list = []
+            for i in range(len(consequences[0])):
+                temp = [ x[i] for x in consequences ]
+                new_list.append(self.get_most_severe_consequence(temp))
+            
+            return new_list
         
         most_severe = ""
         most_severe_score = 1000
@@ -217,13 +242,19 @@ class VariantInfo(object):
         """ checks if a variant has a loss-of-function consequence
         """
         
-        return self.consequence in self.lof_consequences
+        if self.consequence is None:
+            return False
+        
+        return len(set(self.consequence) & self.lof_consequences) > 0
     
     def is_missense(self):
         """ checks if a variant has a missense-styled consequence
         """
         
-        return self.consequence in self.missense_consequences
+        if self.consequence is None:
+            return False
+        
+        return len(set(self.consequence) & self.missense_consequences) > 0
     
     def get_allele_frequency(self, values):
         """ extracts the allele frequency float from a VCF string

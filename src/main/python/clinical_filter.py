@@ -118,7 +118,7 @@ class ClinicalFilter(LoadOptions):
         for var in variants:
             # variants (particularly CNVs) can span multiple genes, so we need
             # to check each gene separately, and then collapse duplicates later
-            for gene in var.child.get_genes():
+            for gene in var.get_genes():
                 if gene not in genes_dict:
                     genes_dict[gene] = []
                 # add the variant to the gene entry

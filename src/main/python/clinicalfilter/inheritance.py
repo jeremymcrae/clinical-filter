@@ -199,7 +199,7 @@ class Inheritance(object):
                 # we get two CNVs under "." gene IDs, these automatically come
                 # through as compound hets, even though they might be on
                 # different chroms
-                if first[0].get_gene() == ".":
+                if first[0].get_genes() == ".":
                     continue
                 
                 # include CNVs in compound hets

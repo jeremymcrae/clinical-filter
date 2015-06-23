@@ -4,3 +4,6 @@ python:
   - "2.7"
 script:
  - "make test"
+ - export PYTHONPATH="src/main/python:src/test/python:${PYTHONPATH}"; python -m coverage run --source=./src/main/python -m unittest discover ./src/test/python/clinicalfilter
+after_success:
+ - coveralls

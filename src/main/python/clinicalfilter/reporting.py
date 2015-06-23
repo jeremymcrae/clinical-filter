@@ -124,9 +124,11 @@ class Report(object):
             max_maf = "NA"
         max_maf = str(max_maf)
         
+        genes = [x if x is not None else "." for x in var.get_genes()]
+        
         output_line = [self.family.child.get_id(), alternate_ID, \
             self.family.child.get_gender(), var.get_chrom(), \
-            str(var.get_position()), var.get_gene(), var.child.get_mutation_id(), \
+            str(var.get_position()), ",".join(genes), var.child.get_mutation_id(), \
             transcript, consequence, alleles, max_maf, candidate[2], \
             trio_genotype, mom_aff, dad_aff, candidate[1]]
         
@@ -158,7 +160,7 @@ class Report(object):
             self.output.write(output_line)
         
         # leave a gap between individuals, as per previous reporting system
-        if len(variants) > 0: 
+        if len(variants) > 0:
             self.output.write("\n")
     
     def _get_provenance(self, provenance, member):
@@ -182,7 +184,7 @@ class Report(object):
     def _get_vcf_export_path(self):
         """ get the path for writing a VCF file
         
-        Since we optionally define a folder, or path for exporting, we need to 
+        Since we optionally define a folder, or path for exporting, we need to
         figure out the path to export a VCF file to.
         
         Returns:
@@ -231,7 +233,7 @@ class Report(object):
         filter_list = ["single_variant", "compound_het"]
         header.append("##ClinicalFilterHistory={0}\n".format(",".join(filter_list)))
         
-        if self.known_genes_date is not None: 
+        if self.known_genes_date is not None:
             header.append("##ClinicalFilterKnownGenesDate={0}\n".format(self.known_genes_date))
         
         # add details of the input VCF files used for filtering
@@ -251,7 +253,7 @@ class Report(object):
             var: TrioGenotypes object
         
         Returns:
-            string for how the variant is inherited eg biparental, deNovo, 
+            string for how the variant is inherited eg biparental, deNovo,
             paternal or maternal
         """
         

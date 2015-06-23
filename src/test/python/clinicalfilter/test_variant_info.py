@@ -44,7 +44,7 @@ class TestVariantInfoPy(unittest.TestCase):
         # check for when a HGNC key exists
         self.var.info["HGNC"] = "A"
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.gene, "A")
+        self.assertEqual(self.var.gene, ["A"])
         
         # check for when a HGNC key doesn't exist
         del self.var.info["HGNC"]
@@ -56,11 +56,11 @@ class TestVariantInfoPy(unittest.TestCase):
         """
         
         # check that known LOF consensequence return True
-        self.var.consequence = "stop_gained"
+        self.var.consequence = ["stop_gained"]
         self.assertTrue(self.var.is_lof())
         
         # check that known non-LOF consensequence returns False
-        self.var.consequence = "missense_variant"
+        self.var.consequence = ["missense_variant"]
         self.assertFalse(self.var.is_lof())
         
         # check that null values return False

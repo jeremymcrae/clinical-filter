@@ -177,7 +177,7 @@ class PostInheritanceFilter(object):
         compound_vars = []
         for (alt_var, alt_check, alt_inh) in variants:
             # ignore if we are looking at another gene
-            if var.child.gene != alt_var.child.gene:
+            if len(set(var.child.get_genes()) & set(alt_var.child.get_genes())) == 0:
                 continue
             if "compound_het" not in alt_check:
                 continue
