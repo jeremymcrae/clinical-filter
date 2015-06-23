@@ -2,6 +2,8 @@ language: python
 python:
   - "3.3"
   - "2.7"
+install:
+ - pip install coveralls
 script:
  - "make test"
  - export PYTHONPATH="src/main/python:src/test/python:${PYTHONPATH}"; python -m coverage run --source=./src/main/python -m unittest discover ./src/test/python/clinicalfilter
