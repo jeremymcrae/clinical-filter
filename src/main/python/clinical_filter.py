@@ -154,6 +154,12 @@ class ClinicalFilter(LoadOptions):
                     print(var, "lacks HGNC/gene symbol")
             return []
         
+        # Now that we are examining a single gene, check that the consequences
+        # for the gene are in the required functional categories.
+        variants = [ var for var in variants if var.child.is_lof(gene) or var.child.is_missense(gene) ]
+        if variants == []:
+            return []
+        
         logging.debug(self.family.child.get_id() + " " + gene + " " + \
             str(variants) + " " + str(gene_inh))
         chrom_inheritance = variants[0].get_inheritance_type()

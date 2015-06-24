@@ -146,6 +146,33 @@ class VariantInfo(object):
                 self.info["ENST"] = enst
         
         self.consequence = cq
+    
+    def get_per_gene_consequence(self, hgnc_symbol):
+        """ find the VEP consequences for a HGNC symbol.
+        
+        Some variants have consequences annotated for mutlple genes (because
+        the variant lies in multiple genes). We occasionally want to know what
+        the consequences are for a specific gene. It's possible that a variant
+        might have two symbols of "", in which case we return the consequences
+        for both instances of this symbol.
+        
+        Args:
+            hgnc_symbol: HGNC symbol for which we wish to check VEP consequence.
+        
+        Returns:
+            List of VEP consequences for the variant. If hgnc_symbol is None,
+            then we return all the consequences listed for the variant.
+            Otherwise we find the consequences listed for the gene symbol.
+        """
+        
+        if hgnc_symbol is None:
+            return self.consequence
+        
+        # find the positions of the genes that match the curent HGNC symbol.
+        # There could be multiple matches if the symbol is "".
+        pos = [ i for i, item in enumerate(self.get_genes()) if item == hgnc_symbol ]
+        
+        return [ self.consequence[n] for n in pos ]
         
     def correct_multiple_alt(self, cq):
         """ gets correct consequence, HGNC and ensembl IDs for multiple alt vars
@@ -238,23 +265,35 @@ class VariantInfo(object):
         
         return most_severe
        
-    def is_lof(self):
+    def is_lof(self, hgnc_symbol=None):
         """ checks if a variant has a loss-of-function consequence
+        
+        Args:
+            hgnc_symbol: HGNC symbol for which we wish to check VEP consequence.
+                By default we check all the consequences listed for the variant.
         """
         
         if self.consequence is None:
             return False
         
-        return len(set(self.consequence) & self.lof_consequences) > 0
+        cq = self.get_per_gene_consequence(hgnc_symbol)
+        
+        return len(set(cq) & self.lof_consequences) > 0
     
-    def is_missense(self):
+    def is_missense(self, hgnc_symbol=None):
         """ checks if a variant has a missense-styled consequence
+        
+        Args:
+            hgnc_symbol: HGNC symbol for which we wish to check VEP consequence.
+                By default we check all the consequences listed for the variant.
         """
         
         if self.consequence is None:
             return False
         
-        return len(set(self.consequence) & self.missense_consequences) > 0
+        cq = self.get_per_gene_consequence(hgnc_symbol)
+        
+        return len(set(cq) & self.missense_consequences) > 0
     
     def get_allele_frequency(self, values):
         """ extracts the allele frequency float from a VCF string
