@@ -66,7 +66,60 @@ class TestVariantInfoPy(unittest.TestCase):
         # check that null values return False
         self.var.consequence = None
         self.assertFalse(self.var.is_lof())
+        
+        # check when the variant overlaps multiple genes (so has multiple
+        # gene symbols and consequences).
+        self.var.consequence = ["stop_gained", "missense_variant"]
+        self.var.gene = ["ATRX", "TTN"]
+        self.assertTrue(self.var.is_lof())
+        self.assertTrue(self.var.is_lof("ATRX"))
+        self.assertFalse(self.var.is_lof("TTN"))
     
+    def test_get_most_severe_consequence(self):
+        """ test that get_most_severe_consequence works correctly
+        """
+        
+        # check for the most simple list
+        cq = ["missense_variant", "splice_acceptor_variant"]
+        self.assertEqual(self.var.get_most_severe_consequence(cq), \
+            "splice_acceptor_variant")
+        
+        # check for a single-entry list
+        cq = ["missense_variant"]
+        self.assertEqual(self.var.get_most_severe_consequence(cq), "missense_variant")
+        
+        # check for lists of lists per allele
+        cq_per_allele = [["synonymous_variant", "splice_donor_variant"], \
+            ["missense_variant", "regulatory_region_variant"]]
+        self.assertEqual(self.var.get_most_severe_consequence(cq_per_allele), \
+            ["missense_variant", "splice_donor_variant"])
+    
+    def test_get_per_gene_consequence(self):
+        """ test that get_per_gene_consequence works correctly
+        """
+        
+        self.var.gene = ["ATRX"]
+        self.var.consequence = ["missense_variant"]
+        
+        self.assertEqual(self.var.get_per_gene_consequence(None), ["missense_variant"])
+        self.assertEqual(self.var.get_per_gene_consequence("ATRX"), ["missense_variant"])
+        self.assertEqual(self.var.get_per_gene_consequence("TEST"), [])
+        
+        # check a variant with consequences in multiple genes, that we only
+        # pull out the consequencesquences for a single gene
+        self.var.gene = ["ATRX", "TTN"]
+        self.var.consequence = ["missense_variant", "synonymous_variant"]
+        self.assertEqual(self.var.get_per_gene_consequence("ATRX"), ["missense_variant"])
+        self.assertEqual(self.var.get_per_gene_consequence("TTN"), ["synonymous_variant"])
+        
+        # check a symbol where two symbols are blank (ie no HGNC symbol, which
+        # indicates the other genes have VEGA, ENGSG, or ENSR symbols)
+        self.var.gene = ["", "ATRX", ""]
+        self.var.consequence = ["splice_acceptor_variant", "missense_variant", \
+            "synonymous_variant"]
+        self.assertEqual(self.var.get_per_gene_consequence(""), \
+            ["splice_acceptor_variant", "synonymous_variant"])
+        
     def test_get_allele_frequency(self):
         """ tests that number conversion works as expected
         """

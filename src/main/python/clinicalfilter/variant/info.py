@@ -242,17 +242,21 @@ class VariantInfo(object):
         """ get the most severe consequence from a list of vep consequence terms
         
         Args:
-            consequences: list of VEP consequence strings
+            consequences: list of VEP consequence strings, or list of lists
         
         Returns:
             the most severe consequence string
         """
         
+        # If we have passed in a list of lists, such as for multiple alleles,
+        # then we consolidate all of the consequences into per gene lists
+        # (rather than per allele lists), and check for the most severe
+        # consequence within each geen list.
         if type(consequences[0]) is list:
             new_list = []
             for i in range(len(consequences[0])):
-                temp = [ x[i] for x in consequences ]
-                new_list.append(self.get_most_severe_consequence(temp))
+                per_gene = [ x[i] for x in consequences ]
+                new_list.append(self.get_most_severe_consequence(per_gene))
             
             return new_list
         
