@@ -169,7 +169,10 @@ class ClinicalFilter(LoadOptions):
         elif chrom_inheritance in ["XChrMale", "XChrFemale", "YChrMale"]:
             finder = Allosomal(variants, self.family, self.known_genes, gene_inh, self.cnv_regions)
         
-        return finder.get_candidate_variants()
+        variants = finder.get_candidate_variants()
+        variants = [ (x[0], x[1], x[2], [gene]) for x in variants ]
+        
+        return variants
     
     def exclude_duplicates(self, variants):
         """ rejig variants included under multiple inheritance mechanisms
@@ -190,6 +193,7 @@ class ClinicalFilter(LoadOptions):
             else:
                 result = variant[1]
                 inh = variant[2]
+                hgnc_symbol = variant[3]
                 
                 # append the check type and inheritance type to the first
                 # instance of the variant
@@ -197,6 +201,8 @@ class ClinicalFilter(LoadOptions):
                     unique_vars[key][1] += "," + result
                 if inh not in unique_vars[key][2]:
                     unique_vars[key][2] += "," +  inh
+                if hgnc_symbol not in unique_vars[key][3]:
+                    unique_vars[key][3] += hgnc_symbol
         
         unique_vars = [tuple(unique_vars[x]) for x in unique_vars]
         

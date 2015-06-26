@@ -224,6 +224,7 @@ class Report(object):
         # define the flags that we add to the info and format fields
         header.append('##INFO=<ID=ClinicalFilterType,Number=.,Type=String,Description="The type of clinical filter that passed this variant.">\n')
         header.append('##INFO=<ID=ClinicalFilterGeneInheritance,Number=.,Type=String,Description="The inheritance mode (Monoallelic, Biallelic etc) under which the variant was found.">\n')
+        header.append('##INFO=<ID=ClinicalFilterReportableHGNC,Number=.,Type=String,Description="The HGNC symbol which the variant was identified as being reportable for.">\n')
         header.append('##FORMAT=<ID=INHERITANCE_GENOTYPE,Number=.,Type=String,Description="The 012 coded genotypes for a trio (child, mother, father).">\n')
         header.append('##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="The inheritance of the variant in the trio (biparental, paternal, maternal, deNovo).">\n')
         
@@ -294,7 +295,8 @@ class Report(object):
             
             filter_type = ";ClinicalFilterType=" + candidate[1]
             gene_inheritance = ";ClinicalFilterGeneInheritance=" + candidate[2]
-            vcf_line[7] += gene_inheritance + filter_type
+            reportable_gene = ";ClinicalFilterReportableHGNC={0}".format(",".join(candidate[3]))
+            vcf_line[7] += gene_inheritance + filter_type + reportable_gene
             
             parental_inheritance = self._get_parental_inheritance(var)
             

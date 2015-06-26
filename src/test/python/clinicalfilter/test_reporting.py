@@ -227,7 +227,7 @@ class TestReportPy(unittest.TestCase):
         # check that a list of one variant produces the correct VCF output. Note
         # that we haven't checked against CNVs, which can change the
         # INHERITANCE_GENOTYPE flag, nor have we tested a larger list of variants
-        var = (self.variants[0], "single_variant", "Monoallelic")
+        var = (self.variants[0], "single_variant", "Monoallelic", "TEST")
         self.assertEqual(self.report._get_vcf_lines([var], header, provenance), vcf_lines + line)
     
     def test__get_output_line(self):

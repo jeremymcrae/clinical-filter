@@ -59,7 +59,7 @@ class PostInheritanceFilter(object):
         
         # count the flagged CNVs
         cnv_chroms = set([])
-        for (var, check, inh) in variants:
+        for (var, check, inh, hgnc) in variants:
             if var.is_cnv():
                 cnv_chroms.add(var.get_chrom())
         
@@ -77,9 +77,9 @@ class PostInheritanceFilter(object):
         
         # remove CNVs from the list of flagged variants
         passed_vars = []
-        for (var, check, inh) in variants:
+        for (var, check, inh, hgnc) in variants:
             if not var.is_cnv():
-                passed_vars.append((var, check, inh))
+                passed_vars.append((var, check, inh, hgnc))
             else:
                 logging.debug(str(var) + " dropped from excess CNVs in proband")
                 if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
@@ -98,21 +98,21 @@ class PostInheritanceFilter(object):
         """
         
         passed_vars = []
-        for (var, check, inh) in variants:
+        for (var, check, inh, hgnc) in variants:
             # populations = var.child.tags["MAX_MAF"]
             max_maf = var.child.find_max_allele_frequency()
             if max_maf is None: # set maf=NA to 0 to reduce later checks
                 max_maf = 0
             
             if inh == "Biallelic":
-                passed_vars.append((var, check, inh))
+                passed_vars.append((var, check, inh, hgnc))
             # variants with multiple inheritance types should be left as
             # Biallelic if the other inheritance type fails the MAF threshold
             elif "Biallelic" in inh and max_maf >= 0.001:
-                passed_vars.append((var, check, "Biallelic"))
+                passed_vars.append((var, check, "Biallelic", hgnc))
             else:
                 if max_maf <= 0.001:
-                    passed_vars.append((var, check, inh))
+                    passed_vars.append((var, check, inh, hgnc))
                 else:
                     logging.debug(str(var) + " dropped from low MAF in non-biallelic variant")
                     if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
@@ -136,22 +136,31 @@ class PostInheritanceFilter(object):
         
         passed_vars = []
         
-        for (var, check, inh) in variants:
+        print(variants)
+        
+        for (var, check, inh, hgnc) in variants:
             passes = False
             
             # check if the variant on it's own would pass
             if "PolyPhen" not in var.child.info or \
-                    not var.child.info["PolyPhen"].startswith("benign") or \
+                    not "benign" in var.child.info["PolyPhen"] or \
                     var.get_trio_genotype() == var.get_de_novo_genotype() or \
                     var.get_trio_genotype()[1:] == ("NA", "NA"):
                 passes = True
             
             # check all of the other variants to see if any are in the same
             # gene, compound_het, and polyphen benign
-            benign_match = self.has_compound_match(var, variants)
+            benign_matches = [ self.has_compound_match(var, x, variants) for x in hgnc ]
+            
+            # exclude HGNC symbols where partner variants are polyphen benign
+            hgnc = [ hgnc[x] for x in range(len(hgnc)) if not(benign_matches[x]) ]
+            
+            # check if any of the genes for the partner variants have damaging
+            # consequences
+            benign_match = not(any([ not x for x in benign_matches ]))
             
             if passes and not benign_match:
-                passed_vars.append((var, check, inh))
+                passed_vars.append((var, check, inh, hgnc))
             else:
                 logging.debug(str(var) + " dropped from polyphen prediction")
                 if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
@@ -159,7 +168,7 @@ class PostInheritanceFilter(object):
         
         return passed_vars
     
-    def has_compound_match(self, var, variants):
+    def has_compound_match(self, var, hgnc, variants):
         """ for a compound var, find if its partner is also polyphen benign
         
         Check all of the other variants to see if any are in the same
@@ -167,6 +176,7 @@ class PostInheritanceFilter(object):
         
         Args:
             var: TrioGenotypes object
+            hgnc: HGNC symbol that we need to match for the partner variant
             variants: list of (variant, check, inheritance) tuples
         
         Returns:
@@ -175,9 +185,9 @@ class PostInheritanceFilter(object):
         
         # get a list of the variants in the gene
         compound_vars = []
-        for (alt_var, alt_check, alt_inh) in variants:
+        for (alt_var, alt_check, alt_inh, alt_hgnc) in variants:
             # ignore if we are looking at another gene
-            if len(set(var.child.get_genes()) & set(alt_var.child.get_genes())) == 0:
+            if hgnc not in alt_hgnc:
                 continue
             if "compound_het" not in alt_check:
                 continue
@@ -196,8 +206,17 @@ class PostInheritanceFilter(object):
                 not_benign.append(alt_var)
             elif alt_var.get_trio_genotype()[1:] == ("NA", "NA"):
                 not_benign.append(alt_var)
-            elif not alt_var.child.info["PolyPhen"].startswith("benign"):
-                not_benign.append(alt_var)
+            else:
+                # find the HGNC symbol positions in the partner variant that
+                # match the HGNC symbol
+                alt_genes = alt_var.get_genes()
+                pos = [ x for x in range(len(alt_genes)) if alt_genes[x] == hgnc ]
+                
+                # get the polyphen predicitons for the matching gene positions
+                polyphen = [ alt_var.child.info["PolyPhen"].split("|")[n] for n in pos ]
+                
+                if not any("benign" in x for x in polyphen):
+                    not_benign.append(alt_var)
         
         # if we have more than two non-benign variants with different genotypes,
         # then we don't want to exclude these variants. Unless we lack parents
@@ -223,7 +242,7 @@ class PostInheritanceFilter(object):
         
         passed_vars = []
         
-        for (var, check, inh) in variants:
+        for (var, check, inh, hgnc) in variants:
             passes = True
             
             # we only apply this filter to variants on chrX in males. Autosomal
@@ -243,6 +262,6 @@ class PostInheritanceFilter(object):
                 passes = True
             
             if passes:
-                passed_vars.append((var, check, inh))
+                passed_vars.append((var, check, inh, hgnc))
         
         return passed_vars
