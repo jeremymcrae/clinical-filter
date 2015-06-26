@@ -136,8 +136,6 @@ class PostInheritanceFilter(object):
         
         passed_vars = []
         
-        print(variants)
-        
         for (var, check, inh, hgnc) in variants:
             passes = False
             
