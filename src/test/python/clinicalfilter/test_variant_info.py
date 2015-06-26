@@ -50,6 +50,16 @@ class TestVariantInfoPy(unittest.TestCase):
         del self.var.info["HGNC"]
         self.var.set_gene_from_info()
         self.assertIsNone(self.var.gene)
+        
+        # check for multiple gene symbols
+        self.var.info["HGNC"] = "A|B|C"
+        self.var.set_gene_from_info()
+        self.assertEqual(self.var.gene, ["A", "B", "C"])
+        
+        # check for multiple gene symbols
+        self.var.info["HGNC"] = "||C"
+        self.var.set_gene_from_info()
+        self.assertEqual(self.var.gene, [None, None, "C"])
     
     def test_is_lof(self):
         """ test that is_lof() works correctly
@@ -112,13 +122,19 @@ class TestVariantInfoPy(unittest.TestCase):
         self.assertEqual(self.var.get_per_gene_consequence("ATRX"), ["missense_variant"])
         self.assertEqual(self.var.get_per_gene_consequence("TTN"), ["synonymous_variant"])
         
-        # check a symbol where two symbols are blank (ie no HGNC symbol, which
-        # indicates the other genes have VEGA, ENGSG, or ENSR symbols)
-        self.var.gene = ["", "ATRX", ""]
+        # check a symbol where two symbols match
+        self.var.gene = ["TEMP", "ATRX", "TEMP"]
         self.var.consequence = ["splice_acceptor_variant", "missense_variant", \
             "synonymous_variant"]
-        self.assertEqual(self.var.get_per_gene_consequence(""), \
+        self.assertEqual(self.var.get_per_gene_consequence("TEMP"), \
             ["splice_acceptor_variant", "synonymous_variant"])
+        
+        # check a symbol with some None gene symbols
+        self.var.gene = [None, "ATRX", None]
+        self.var.consequence = ["splice_acceptor_variant", "missense_variant", \
+            "synonymous_variant"]
+        self.assertEqual(self.var.get_per_gene_consequence("ATRX"), \
+            ["missense_variant"])
         
     def test_get_allele_frequency(self):
         """ tests that number conversion works as expected
