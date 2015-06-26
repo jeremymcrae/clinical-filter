@@ -132,6 +132,7 @@ class TestReportPy(unittest.TestCase):
            "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n",
            '##INFO=<ID=ClinicalFilterType,Number=.,Type=String,Description="The type of clinical filter that passed this variant.">\n',
            '##INFO=<ID=ClinicalFilterGeneInheritance,Number=.,Type=String,Description="The inheritance mode (Monoallelic, Biallelic etc) under which the variant was found.">\n',
+           '##INFO=<ID=ClinicalFilterReportableHGNC,Number=.,Type=String,Description="The HGNC symbol which the variant was identified as being reportable for.">\n',
            '##FORMAT=<ID=INHERITANCE_GENOTYPE,Number=.,Type=String,Description="The 012 coded genotypes for a trio (child, mother, father).">\n',
            '##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="The inheritance of the variant in the trio (biparental, paternal, maternal, deNovo).">\n',
            "##ClinicalFilterRunDate={0}\n".format(datetime.date.today()),
@@ -202,6 +203,7 @@ class TestReportPy(unittest.TestCase):
            "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n",
            '##INFO=<ID=ClinicalFilterType,Number=.,Type=String,Description="The type of clinical filter that passed this variant.">\n',
            '##INFO=<ID=ClinicalFilterGeneInheritance,Number=.,Type=String,Description="The inheritance mode (Monoallelic, Biallelic etc) under which the variant was found.">\n',
+           '##INFO=<ID=ClinicalFilterReportableHGNC,Number=.,Type=String,Description="The HGNC symbol which the variant was identified as being reportable for.">\n',
            '##FORMAT=<ID=INHERITANCE_GENOTYPE,Number=.,Type=String,Description="The 012 coded genotypes for a trio (child, mother, father).">\n',
            '##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="The inheritance of the variant in the trio (biparental, paternal, maternal, deNovo).">\n',
            "##ClinicalFilterRunDate={0}\n".format(datetime.date.today()),
@@ -222,19 +224,19 @@ class TestReportPy(unittest.TestCase):
            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\sample_id\n"]
         
         # define what the default variant vcf line will become
-        line = ["X\t15000000\t.\tA\tG\t50\tPASS\tHGNC=TEST;CQ=missense_variant;random_tag;EUR_AF=0.0005;ClinicalFilterGeneInheritance=Monoallelic;ClinicalFilterType=single_variant\tGT:DP:INHERITANCE:INHERITANCE_GENOTYPE\t0/1:50:deNovo:1,0,0\n"]
+        line = ["X\t15000000\t.\tA\tG\t50\tPASS\tHGNC=TEST;CQ=missense_variant;random_tag;EUR_AF=0.0005;ClinicalFilterGeneInheritance=Monoallelic;ClinicalFilterType=single_variant;ClinicalFilterReportableHGNC=TEST\tGT:DP:INHERITANCE:INHERITANCE_GENOTYPE\t0/1:50:deNovo:1,0,0\n"]
         
         # check that a list of one variant produces the correct VCF output. Note
         # that we haven't checked against CNVs, which can change the
         # INHERITANCE_GENOTYPE flag, nor have we tested a larger list of variants
-        var = (self.variants[0], "single_variant", "Monoallelic", "TEST")
+        var = (self.variants[0], "single_variant", "Monoallelic", ["TEST"])
         self.assertEqual(self.report._get_vcf_lines([var], header, provenance), vcf_lines + line)
     
     def test__get_output_line(self):
         """ check that _get_output_line() works correctly
         """
         
-        var = (self.variants[0], "single_variant", "Monoallelic")
+        var = (self.variants[0], "single_variant", "Monoallelic", ["TEST"])
         dad_aff = "0"
         mom_aff = "1"
         alt_id = "test_id"

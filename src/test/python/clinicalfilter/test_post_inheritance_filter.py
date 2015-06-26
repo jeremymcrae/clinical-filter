@@ -19,8 +19,8 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         snv = self.create_var("1", True)
         cnv = self.create_var("1", False)
         
-        variants.append((snv, "single_variant", "Monoallelic"))
-        variants.append((cnv, "single_variant", "Monoallelic"))
+        variants.append((snv, "single_variant", "Monoallelic", ["ATRX"]))
+        variants.append((cnv, "single_variant", "Monoallelic", ["ATRX"]))
         
         self.post_filter = PostInheritanceFilter(variants)
         
@@ -101,15 +101,15 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         the called functions are themselves tested elsewhere
         """
         
-        variants = [(self.create_var("1", snv=False), "single_variant", "Biallelic")]
-        variants.append((self.create_var("2", snv=False), "single_variant", "Biallelic"))
+        variants = [(self.create_var("1", snv=False), "single_variant", "Biallelic", ["ATRX"])]
+        variants.append((self.create_var("2", snv=False), "single_variant", "Biallelic", ["ATRX"]))
         
         # check that if we have CNVs on two chroms pass the filter
         # self.post_filter.variants = variants
         # self.assertEqual(self.post_filter.filter_variants(), variants)
         
         # check that CNVs on three different chroms get filtered out
-        variants.append((self.create_var("3", snv=False), "single_variant", "Biallelic"))
+        variants.append((self.create_var("3", snv=False), "single_variant", "Biallelic", ["ATRX"]))
         self.post_filter.variants = variants
         self.assertEqual(self.post_filter.filter_variants(), [])
     
@@ -125,14 +125,14 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         chrom_2_cnv_1 = self.create_var("2", snv=False)
         chrom_2_cnv_2 = self.create_var("2", snv=False)
         chrom_2_cnv_3 = self.create_var("2", snv=False)
-        variants.append((chrom_2_cnv_1, "single_variant", "Biallelic"))
-        variants.append((chrom_2_cnv_2, "single_variant", "Biallelic"))
-        variants.append((chrom_2_cnv_3, "single_variant", "Biallelic"))
+        variants.append((chrom_2_cnv_1, "single_variant", "Biallelic", ["ATRX"]))
+        variants.append((chrom_2_cnv_2, "single_variant", "Biallelic", ["ATRX"]))
+        variants.append((chrom_2_cnv_3, "single_variant", "Biallelic", ["ATRX"]))
         self.assertEqual(self.post_filter.count_cnv_chroms(variants), 2)
         
         # and a CNV on a third chrom makes three
         chrom_3_cnv = self.create_var("3", snv=False)
-        variants.append((chrom_3_cnv, "single_variant", "Biallelic"))
+        variants.append((chrom_3_cnv, "single_variant", "Biallelic", ["ATRX"]))
         self.assertEqual(self.post_filter.count_cnv_chroms(variants), 3)
     
     def test_remove_cnvs(self):
@@ -159,35 +159,35 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         snv_2.child.info["AFR_AF"] = 0.002
         
         # low maf Biallelic var returns the same
-        variants = [(snv_1, "single_variant", "Biallelic")]
+        variants = [(snv_1, "single_variant", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
         # low maf non-biallelic var returns the same
-        variants = [(snv_1, "single_variant", "Monoallelic")]
+        variants = [(snv_1, "single_variant", "Monoallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
         # high maf Biallelic var returns the same
-        variants = [(snv_2, "single_variant", "Monoallelic")]
+        variants = [(snv_2, "single_variant", "Monoallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), [])
         
         # high maf non-Biallelic is filtered out
-        variants = [(snv_2, "single_variant", "Biallelic")]
+        variants = [(snv_2, "single_variant", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
         # var with multiple inheritance modes should drop the non-biallelic
         # mode if the var has a high maf (leaving the Biallelic mode)
-        variants = [(snv_2, "single_variant", "Monoallelic,Biallelic")]
-        expected = [(snv_2, "single_variant", "Biallelic")]
+        variants = [(snv_2, "single_variant", "Monoallelic,Biallelic", ["ATRX"])]
+        expected = [(snv_2, "single_variant", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), expected)
         
         # var with multiple inheritance modes should keep the non-biallelic
         # mode if the var has a low maf
-        variants = [(snv_1, "single_variant", "Monoallelic,Biallelic")]
+        variants = [(snv_1, "single_variant", "Monoallelic,Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
         # check a de novo (lacking any MAF values)
         del snv_1.child.info["AFR_AF"]
-        variants = [(snv_1, "single_variant", "Monoallelic")]
+        variants = [(snv_1, "single_variant", "Monoallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
     def test_filter_polyphen(self):
@@ -201,8 +201,8 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         snv_2.position = 2000
         snv_3.position = 3000
         
-        variants = [(snv_1, "single_variant", "Biallelic"), \
-            (snv_2, "single_variant", "Biallelic")]
+        variants = [(snv_1, "single_variant", "Biallelic", ["ATRX"]), \
+            (snv_2, "single_variant", "Biallelic", ["ATRX"])]
         
         # check that two vars without polyphen predictions pass
         self.assertEqual(self.post_filter.filter_polyphen(variants), variants)
@@ -211,8 +211,8 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         # fail to pass the filter
         snv_1.child.info["PolyPhen"] = "benign(0.01)"
         snv_2.child.info["PolyPhen"] = "benign(0.01)"
-        variants = [(snv_1, "compound_het", "Biallelic"), \
-            (snv_2, "compound_het", "Biallelic")]
+        variants = [(snv_1, "compound_het", "Biallelic", ["ATRX"]), \
+            (snv_2, "compound_het", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_polyphen(variants), [])
         
         # check that if one var is not benign, both compound hets fail to pass
@@ -231,7 +231,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # check that single vars with polyphen benign fail
         snv_1.child.info["PolyPhen"] = "benign"
-        variants = [(snv_1, "single_variant", "Biallelic")]
+        variants = [(snv_1, "single_variant", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_polyphen(variants), [])
         
         # check if we have three compound_hets in the same gene, and one is
@@ -239,16 +239,16 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         # even if two of them have polyphen benign
         snv_2.child.info["PolyPhen"] = "benign(0.01)"
         snv_3.child.info["PolyPhen"] = "probably_damaging(0.99)"
-        variants = [(snv_1, "compound_het", "Biallelic"), \
-            (snv_2, "compound_het", "Biallelic"), \
-            (snv_3, "compound_het", "Biallelic")]
+        variants = [(snv_1, "compound_het", "Biallelic", ["ATRX"]), \
+            (snv_2, "compound_het", "Biallelic", ["ATRX"]), \
+            (snv_3, "compound_het", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_polyphen(variants), [])
         
         # check if we have three compound_hets in the same gene, and two are
         # polyphen not benign, then only the two not benign compound hets pass
         snv_2.child.info["PolyPhen"] = "probably_damaging(0.99)"
-        passing_vars = [(snv_2, "compound_het", "Biallelic"), \
-            (snv_3, "compound_het", "Biallelic")]
+        passing_vars = [(snv_2, "compound_het", "Biallelic", ["ATRX"]), \
+            (snv_3, "compound_het", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_polyphen(variants), passing_vars)
     
     def test_has_compound_match(self):
@@ -262,50 +262,50 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         snv_2.position = 2000
         snv_3.position = 3000
         
-        variants = [(snv_1, "compound_het", "Biallelic"), \
-            (snv_2, "compound_het", "Biallelic")]
+        variants = [(snv_1, "compound_het", "Biallelic", ["ATRX"]), \
+            (snv_2, "compound_het", "Biallelic", ["ATRX"])]
         
         # check that two vars without polyphen annotations return false
-        self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
+        self.assertFalse(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
         
         # check that two vars with polyphen benign return true
         snv_1.child.info["PolyPhen"] = "benign(0.01)"
         snv_2.child.info["PolyPhen"] = "benign(0.01)"
-        self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
+        self.assertTrue(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
         
         # check that having one var not polyphen benign returns True
         snv_2.child.info["PolyPhen"] = "probably_damaging(0.99)"
-        self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
+        self.assertTrue(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
         
         # check that, if there are more than two compound hets to check in the
         # gene, we need two passing variants in order to pass
         snv_2.child.info["PolyPhen"] = "benign(0.01)"
-        variants = [(snv_1, "compound_het", "Biallelic"), \
-            (snv_2, "compound_het", "Biallelic"),
-            (snv_3, "compound_het", "Biallelic")]
-        self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
+        variants = [(snv_1, "compound_het", "Biallelic", ["ATRX"]), \
+            (snv_2, "compound_het", "Biallelic", ["ATRX"]),
+            (snv_3, "compound_het", "Biallelic", ["ATRX"])]
+        self.assertTrue(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
         
         # check that if we are checking a benign variant, and there are more
         # than two compound hets to check in the gene, if we have more than
         # two non-benign variants would prevent a match, then the function
         # returns false
         snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)"
-        variants = [(snv_1, "compound_het", "Biallelic"), \
-            (snv_2, "compound_het", "Biallelic"),
-            (snv_3, "compound_het", "Biallelic")]
-        self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
+        variants = [(snv_1, "compound_het", "Biallelic", ["ATRX"]), \
+            (snv_2, "compound_het", "Biallelic", ["ATRX"]),
+            (snv_3, "compound_het", "Biallelic", ["ATRX"])]
+        self.assertFalse(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
         
         # check that we exclude benign de novos
         snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)"
         snv_3.child.info["PolyPhen"] = "benign(0.01)"
-        variants = [(snv_1, "compound_het", "Biallelic"), \
-            (snv_3, "compound_het", "Biallelic")]
-        self.assertFalse(self.post_filter.has_compound_match(snv_1, variants))
+        variants = [(snv_1, "compound_het", "Biallelic", ["ATRX"]), \
+            (snv_3, "compound_het", "Biallelic", ["ATRX"])]
+        self.assertFalse(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
         
         # check that single variants in the same gene still return True
-        variants = [(snv_1, "compound_het", "Biallelic"), \
-            (snv_2, "single_variant", "Biallelic")]
-        self.assertTrue(self.post_filter.has_compound_match(snv_1, variants))
+        variants = [(snv_1, "compound_het", "Biallelic", ["ATRX"]), \
+            (snv_2, "single_variant", "Biallelic", ["ATRX"])]
+        self.assertTrue(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
     
     def test_filter_exac_hemizygous(self):
         """ check that filter_exac_hemizygous() works correctly
@@ -313,7 +313,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # construct a variant that will pass
         var = self.create_var("1", snv=True, geno=["0/1", "0/1", "0/1"])
-        variants = [(var, "single_variant", "Biallelic")]
+        variants = [(var, "single_variant", "Biallelic", ["ATRX"])]
         
         # we should get back the same list of variants, if none of them have a
         # male chrX
@@ -323,23 +323,23 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         # annotation. This should fail the filter
         var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
         var.child.info["AC_Hemi"] = 1
-        variants = [(var, "single_variant", "Biallelic")]
+        variants = [(var, "single_variant", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac_hemizygous(variants), [])
         
         # if the AC_Hemi count is zero, this should pass the filter
         var.child.info["AC_Hemi"] = 0
-        variants = [(var, "single_variant", "Biallelic")]
+        variants = [(var, "single_variant", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac_hemizygous(variants), variants)
         
         # checkthat chrX females with non-zero AC_Hemi counts are not excluded
         var.inheritance_type = "XChrFemale"
         var.child.info["AC_Hemi"] = 1
-        variants = [(var, "single_variant", "Biallelic")]
+        variants = [(var, "single_variant", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac_hemizygous(variants), variants)
         
         # now construct a de novo male chrX variant, which contains a non-zero
         # AC_Hemi annotation. Since this is not inherited, it should pass.
         var = self.create_var("X", snv=True, geno=["1/1", "0/0", "0/0"])
         var.child.info["AC_Hemi"] = 1
-        variants = [(var, "single_variant", "Biallelic")]
+        variants = [(var, "single_variant", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac_hemizygous(variants), variants)
