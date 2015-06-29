@@ -144,6 +144,7 @@ class VariantInfo(object):
             if "HGNC" in self.info:
                 self.info["HGNC"] = hgnc
                 self.info["ENST"] = enst
+                self.set_gene_from_info()
         
         self.consequence = cq
     

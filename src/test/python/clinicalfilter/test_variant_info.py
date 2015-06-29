@@ -85,6 +85,44 @@ class TestVariantInfoPy(unittest.TestCase):
         self.assertTrue(self.var.is_lof("ATRX"))
         self.assertFalse(self.var.is_lof("TTN"))
     
+    def test_correct_multiple_alt(self):
+        """ test that correct_multiple_alt works correctly
+        """
+        
+        # define the number of alleles and consequences for multiple alleles
+        self.var.info["AC"] = "1,1"
+        cq = ["missense_variant,splice_acceptor_variant"]
+        
+        # check with alts that fall in one gene
+        self.var.info["HGNC"] = "ATRX,ATRX"
+        self.assertEqual(self.var.correct_multiple_alt(cq),
+            (['splice_acceptor_variant'], 'ATRX', None))
+        
+        # check with alts that fall in multiple genes
+        cq = ["missense_variant|regulatory_region_variant,stop_gained|splice_acceptor_variant"]
+        self.var.info["HGNC"] = "ATRX|TTN,ATRX|TTN"
+        self.assertEqual(self.var.correct_multiple_alt(cq),
+            (['stop_gained', 'splice_acceptor_variant'], 'ATRX|TTN', None))
+        
+        # check a cq that has already been split by "|" (ie by gene)
+        cq = ["missense_variant", "regulatory_region_variant,stop_gained",
+            "splice_acceptor_variant"]
+        self.assertEqual(self.var.correct_multiple_alt(cq),
+            (['stop_gained', 'splice_acceptor_variant'], 'ATRX|TTN', None))
+        
+        # check that if the proband has a zero count for an allele, then we
+        # disregard the consequences and HGNC symbols for that allele
+        self.var.info["AC"] = "1,0"
+        self.assertEqual(self.var.correct_multiple_alt(cq),
+            (['missense_variant', 'regulatory_region_variant'], 'ATRX|TTN', None))
+        
+        # revert the allele counts, but drop the HGNC symbol, and make sure the
+        # HGNC symbol returned is None
+        self.var.info["AC"] = "1,1"
+        del self.var.info["HGNC"]
+        self.assertEqual(self.var.correct_multiple_alt(cq),
+            (['stop_gained', 'splice_acceptor_variant'], None, None))
+    
     def test_get_most_severe_consequence(self):
         """ test that get_most_severe_consequence works correctly
         """
