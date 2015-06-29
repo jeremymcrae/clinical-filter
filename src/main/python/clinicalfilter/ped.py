@@ -38,12 +38,12 @@ class Person(object):
     def is_affected(self):
         """returns true or false for affected, rather than the string value
         """
-        # change how the affected status is encoded. Current DDD ped files 
-        # encode "1" for unaffected, and "2" for affected. Change this to 
+        # change how the affected status is encoded. Current DDD ped files
+        # encode "1" for unaffected, and "2" for affected. Change this to
         # True/False values, and catch any unknown affected statuses.
         if self.affected_status not in set(["1", "2"]):
             raise ValueError("unknown status: " + self.affected_status + ", \
-                should be 1: unaffected, 2: affected") 
+                should be 1: unaffected, 2: affected")
         
         return self.affected_status == "2"
     
@@ -95,6 +95,19 @@ class Person(object):
             raise ValueError(self.person_id + " is listed as gender " + \
                 self.get_gender() + ", which differs from the sex expected " + \
                 "as a parent)")
+    
+    def __gt__(self, other):
+        """ implement greater than check, for sorting children in a Family
+        """
+        
+        return self.get_id() > other.get_id()
+    
+    def __hash__(self):
+        """ get a unique hash for the object from the sample strings
+        """
+        
+        return hash(tuple([self.get_id(), self.get_path(),
+            self.get_affected_status(), self.get_gender()]))
 
 class Family(object):
     """creates a family, with VCF paths, IDs, and affected statuses
@@ -167,14 +180,28 @@ class Family(object):
                 self.children[child_position].set_analysed()
         
         self.set_child()
-
     
+    def __eq__(self, other):
+        """ check for equality between two Family objects
+        """
+    
+        return hash(self) == hash(other)
+    
+    def __hash__(self):
+        """ construct a unique hash, based on the hashes for the family members
+        """
+        
+        parts = tuple([self.family_id, hash(self.mother), hash(self.father)] + \
+            [hash(x) for x in sorted(self.children)])
+        
+        return hash(parts)
+
 def load_ped_file(path):
     """Loads a PED file containing details for multiple trios.
     
     The PED file is in LINKAGE PED format, with the first six columns
-    specfifying the indivudual and how they are related to toher individuals. In 
-    contrast to other PED files, the genotypes are specified as a path to a VCF 
+    specfifying the indivudual and how they are related to toher individuals. In
+    contrast to other PED files, the genotypes are specified as a path to a VCF
     file for the individual.
     
     Args:
@@ -224,6 +251,8 @@ def load_ped_file(path):
         if maternal_id != 0:
             mothers[individual_id] = maternal_id
     
+    ped.close()
+    
     return mothers, fathers, children, affected, sex, vcfs
 
 def load_families(path):
@@ -255,7 +284,7 @@ def load_families(path):
         trio.add_child(child_id, vcfs[child_id], affected[child_id], sex[child_id])
         trio.set_child()
         
-        # add parents, but allow for children without parents listed in the ped 
+        # add parents, but allow for children without parents listed in the ped
         # file
         if father in vcfs and father in affected:
             trio.add_father(father, vcfs[father], affected[father], sex[father])
@@ -265,4 +294,3 @@ def load_families(path):
         families[family_id] = trio
     
     return families
-

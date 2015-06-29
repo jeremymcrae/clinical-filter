@@ -3,7 +3,6 @@
 
 import unittest
 import gzip
-import zlib
 import os
 import sys
 import io
