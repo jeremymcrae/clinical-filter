@@ -130,13 +130,9 @@ class VariantInfo(object):
         """ makes sure a consequence field is available in the info dict
         """
         
-        if "CQ" not in self.info:
-            self.info["CQ"] = None
-        
-        cq = self.info["CQ"]
-        
-        if cq is not None:
-            cq = cq.split("|")
+        cq = None
+        if "CQ" in self.info:
+            cq = self.info["CQ"].split("|")
         
         if "," in self.alt_allele:
             (cq, hgnc, enst) = self.correct_multiple_alt(cq)
@@ -172,6 +168,14 @@ class VariantInfo(object):
         # find the positions of the genes that match the curent HGNC symbol.
         # There could be multiple matches if the symbol is "".
         pos = [ i for i, item in enumerate(self.get_genes()) if item == hgnc_symbol ]
+        
+        # At one point, the VCFs lacked per gene consequences, but could have
+        # multiple gene symbols (if they lacked a HGNC field but did have a
+        # HGNC_ALL field). These variants will have multiple genes, but only one
+        # consequence. Return the consequence as is, in order to retain the
+        # same output for those VCFs.
+        if len(self.get_genes()) > 1 and len(self.consequence) == 1:
+            return self.consequence
         
         return [ self.consequence[n] for n in pos ]
         

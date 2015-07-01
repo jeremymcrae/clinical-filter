@@ -174,6 +174,19 @@ class TestVariantInfoPy(unittest.TestCase):
         self.assertEqual(self.var.get_per_gene_consequence("ATRX"), \
             ["missense_variant"])
         
+        # check that the earlier VCFs with single consequences but multiple
+        # symbols from HGNC_ALL give the same consequence for all genes.
+        info = "HGNC_ALL=ATRX&TTN;CQ=missense_variant;random_tag"
+        del self.var.info["HGNC"]
+        self.var.gene = None
+        self.var.add_info(info)
+        
+        self.assertEqual(self.var.get_per_gene_consequence("ATRX"), \
+            ["missense_variant"])
+        self.assertEqual(self.var.consequence, ["missense_variant"])
+        self.assertEqual(self.var.get_per_gene_consequence("TTN"), \
+            ["missense_variant"])
+        
     def test_get_allele_frequency(self):
         """ tests that number conversion works as expected
         """
