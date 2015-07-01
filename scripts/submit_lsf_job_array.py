@@ -41,12 +41,15 @@ def get_options():
     parser.add_argument("--all-genes", dest="all_genes", default=False, \
         action="store_true", help="Option to assess variants in all genes. \
         If unused, restricts variants to DDG2P genes.")
+    parser.add_argument("--without-parents", default=False,
+        action="store_true", help="whether to remove the parents and analyse \
+        probands only")
     
     args = parser.parse_args()
     
     return args
 
-def split_pedigree_file(tempname, ped_path, number_of_jobs):
+def split_pedigree_file(tempname, ped_path, number_of_jobs, exclude_parents):
     """ split the ped file into multiple smaller ped files
     
     Args:
@@ -55,22 +58,33 @@ def split_pedigree_file(tempname, ped_path, number_of_jobs):
         number_of_jobs: how many computational jobs to split the families over.
             Note that due to how the families are striuctured (siblings etc), we
             might get more files than this
+        exclude_parents: true/false for whether to exclude parents from the run.
     
     Returns:
         The number of files that the cohort has been split across (which will
         now be the number of jobs to run).
     """
     
-    ped = open(ped_path, "r")
-    ped.readline() # drop the header line
-    
     # create a dictionary of lines by family ID
     families = {}
-    for line in ped:
-        family_ID = line[0:20].split("\t")[0]
-        if family_ID not in families:
-            families[family_ID] = []
-        families[family_ID].append(line)
+    with open(ped_path, "r") as ped:
+        for line in ped:
+            split_line = line.split("\t")
+            family_ID = split_line[0]
+            
+            # ignore header lines
+            if line.startswith("family_id"):
+                continue
+            
+            # if we want to exclude the parents, don't include lines with "0" for
+            # the parental ID, these are parental lines.
+            if exclude_parents and split_line[2] == "0":
+                continue
+            
+            if family_ID not in families:
+                families[family_ID] = []
+            
+            families[family_ID].append(line)
     
     # figure out how many families to include per file, in order to make the correct number of jobs
     max_trios_in_ped_file = float(len(families))/float(number_of_jobs)
@@ -255,7 +269,7 @@ def main():
     temp_name = "tmp_ped.{0}".format(hash_string)
     
     tidy_directory_before_start()
-    trio_counter = split_pedigree_file(temp_name, opts.ped_path, opts.n_jobs)
+    trio_counter = split_pedigree_file(temp_name, opts.ped_path, opts.n_jobs, opts.without_parents)
     run_array(hash_string, trio_counter, temp_name, opts.ddg2p_path, opts.all_genes, log_options)
     run_cleanup(hash_string)
 
