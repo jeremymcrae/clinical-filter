@@ -183,7 +183,6 @@ class TestVariantInfoPy(unittest.TestCase):
         
         self.assertEqual(self.var.get_per_gene_consequence("ATRX"), \
             ["missense_variant"])
-        self.assertEqual(self.var.consequence, ["missense_variant"])
         self.assertEqual(self.var.get_per_gene_consequence("TTN"), \
             ["missense_variant"])
         
