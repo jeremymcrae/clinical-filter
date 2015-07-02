@@ -124,7 +124,7 @@ class Report(object):
             max_maf = "NA"
         max_maf = str(max_maf)
         
-        genes = [x if x is not None else "." for x in var.get_genes()]
+        genes = [x for x in candidate[3]]
         
         output_line = [self.family.child.get_id(), alternate_ID, \
             self.family.child.get_gender(), var.get_chrom(), \
