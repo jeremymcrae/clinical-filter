@@ -230,9 +230,8 @@ class SNV(Variant, VariantInfo):
         
         # exclude variants without PASS values, except where the fail reason is
         # low_VQSLOD and the variant has been detected by denovogear
-        if self.filter not in ["PASS", "."]:
-            if self.filter != "LOW_VQSLOD" or \
-                    ("DENOVO-SNP" not in self.info and "DENOVO-INDEL" not in self.info):
+        if self.filter not in ["PASS", ".", "LOW_VQSLOD"]:
+            if ("DENOVO-SNP" not in self.info and "DENOVO-INDEL" not in self.info):
                 return (False, "FILTER")
         
         return (True, "passed all")

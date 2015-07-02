@@ -257,9 +257,9 @@ class TestVariantSnvPy(unittest.TestCase):
         self.var.filter = "FAIL"
         self.assertFalse(self.var.passes_filters())
         
-        # check that low VQSLOD on its own will fail the variant
-        self.var.filter = "low_VQSLOD"
-        self.assertFalse(self.var.passes_filters())
+        # check that low VQSLOD on its own will pass the variant
+        self.var.filter = "LOW_VQSLOD"
+        self.assertTrue(self.var.passes_filters())
         
         # check that low VQSLOD in a de novo will still pass
         self.var.filter = "LOW_VQSLOD"
