@@ -40,6 +40,14 @@ class ACGH_CNV(object):
             passes = False
             if track_variant:
                 print("failed no exons", self.cnv.info["NUMBEREXONS"])
+        elif self.fails_frequency():
+            passes = False
+            if track_variant:
+                print("failed frequency", self.cnv.info["INTERNALFREQUENCY"])
+        elif self.fails_cifer_inh():
+            passes = False
+            if track_variant:
+                print("failed CIFER inheritance", self.cnv.format["CIFER_INHERITANCE"])
         
         return passes
     
@@ -48,7 +56,7 @@ class ACGH_CNV(object):
         """
         
         try:
-            return abs(float(self.cnv.info["MEANLR2"])/float(self.cnv.info["MADL2R"])) < 15
+            return abs(float(self.cnv.info["MEANLR2"])/float(self.cnv.info["MADL2R"])) < 0
         except ZeroDivisionError:
             return True
         
@@ -86,3 +94,28 @@ class ACGH_CNV(object):
         """
         
         return float(self.cnv.info["NUMBEREXONS"]) < 1
+    
+    def fails_frequency(self):
+        """ checks that the CNV has a low population frequency.
+        
+        If the CNV has been observed in the unaffected controls (aka unaffected
+        parents), then we can determine the population frequency, which must be
+        sufficiently rare to pass.
+        
+        If the population frequency field is absent, assume the frequency is 0.
+        """
+        
+        try:
+            return int(self.cnv.info["INTERNALFREQUENCY"] > 0.01)
+        except KeyError:
+            # If the field isn't available, assume the frequency is 0.
+            return False
+    
+    def fails_cifer_inh(self):
+        """ check that the CIFER inheritance classification isn't false_positive
+        """
+        
+        print(self.cnv.format["CIFER_INHERITANCE"])
+        
+        return self.cnv.format["CIFER_INHERITANCE"] == "false_positive"
+        

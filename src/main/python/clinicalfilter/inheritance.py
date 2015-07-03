@@ -148,12 +148,10 @@ class Inheritance(object):
         """
         
         if variant.is_cnv():
-            self.log_string = "skipping CNVs for now"
-            return "nothing"
-            # cnv_checker = CNVInheritance(variant, self.trio, self.known_genes, self.cnv_regions)
-            # check = cnv_checker.check_single_inheritance()
-            # self.log_string = cnv_checker.log_string
-            # return check
+            cnv_checker = CNVInheritance(variant, self.trio, self.known_genes, self.cnv_regions)
+            check = cnv_checker.check_single_inheritance()
+            self.log_string = cnv_checker.log_string
+            return check
         
         if not self.trio.has_parents():
             return self.check_variant_without_parents(inheritance)
@@ -443,7 +441,7 @@ class CNVInheritance(object):
         
         # check that the inheritance status is consistent with the parental
         # affected status
-        inh = self.variant.child.format["INHERITANCE"]
+        inh = [self.variant.child.format["INHERITANCE"], self.variant.child.format["CIFER_INHERITANCE"]]
         if not self.inheritance_matches_parental_affected_status(inh):
             if self.check_compound_inheritance():
                 self.log_string = "possible compound het CNV"
@@ -498,8 +496,6 @@ class CNVInheritance(object):
         SNVs to see if their gene includes a CNV variant.
         """
         
-        # return True
-        
         # we don't want CNVs that don't have copy number of 1 or 3, since
         # copy number = 1 or 3 are the only ones that could operate as compound
         # hets (other copy numbers such as 0 are implicitly dominant)
@@ -552,25 +548,42 @@ class CNVInheritance(object):
         return "nothing"
     
     def inheritance_matches_parental_affected_status(self, inh):
-        """ check that the inheritance matches the parental affected status
+        """ check that the inheritance matches the parental affected status.
+        
+        If the variant has been inherited from the mother (ie maternally), we
+        expect the mother to also be affected. For some variants we don't know
+        whether how the variant was transmitted (due to uncertainties in
+        classifying the transmission). In this case, we assume the inheritance
+        state would be correct for the parental affected states.
         
         Args:
-            inh: inheritace status of a CNV, eg maternal, deNovo etc
+            inh: list of inheritance statuses of a CNV. We have two inheritance
+                classifications, from VICAR (classified from parental likelihoods
+                from array CGH data) and CIFER (classified from exome based read
+                depths in populations). This gives lists such as:
+                [maternal, maternal_inh], [not_inherited, deNovo] etc
             
         Returns:
             True/False for whether the inheritance is consistent with the
                parental affected statuses
         """
         
-        # if the inheritance status indiates that the CNV was inherited, check
-        # that the pertinent parents actually are affected.
-        if inh not in ["paternal", "maternal", "biparental", "inheritedDuo"]:
-            return True
+        # figure out whether the inheritance classifications indicate whether
+        # the variant is paternally, maternally, or biparentally inherited
+        paternal = any(["paternal" in x for x in inh])
+        maternal = any(["maternal" in x for x in inh])
+        biparental = any([y in x for x in inh for y in ["biparental", "inheritedDuo"]])
         
-        elif (inh == "paternal" and self.trio.father.is_affected()) or \
-            (inh == "maternal" and self.trio.mother.is_affected()) or \
-            ((inh == "biparental" or inh == "inheritedDuo") and \
-            (self.trio.father.is_affected() or self.trio.mother.is_affected())):
+        if not (paternal or maternal or biparental):
+            # if the variant isn't inherited (or the inheritance isn't known),
+            # then the parental affected statuses are irrelevant.
+            return True
+        elif (paternal and self.trio.father.is_affected()) or \
+              (maternal and self.trio.mother.is_affected()) or \
+              ((biparental or inh == "inheritedDuo") and \
+              (self.trio.father.is_affected() or self.trio.mother.is_affected())):
+            # if the inheritance status indiates that the CNV was inherited,
+            # the pertinent parents need to be also affected.
             return True
         
         return False
