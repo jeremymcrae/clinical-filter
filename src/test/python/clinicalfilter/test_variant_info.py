@@ -27,7 +27,6 @@ class TestVariantInfoPy(unittest.TestCase):
         
         self.default_info = "HGNC=ATRX;CQ=missense_variant;random_tag"
         
-        
         # here are the default filtering criteria, as loaded into python
         known_genes = {"ATRX": {"inheritance": {"Hemizygous": \
             {"Loss of function"}}, "start": "10000000", "chrom": "1", \
@@ -56,10 +55,26 @@ class TestVariantInfoPy(unittest.TestCase):
         self.var.set_gene_from_info()
         self.assertEqual(self.var.gene, ["A", "B", "C"])
         
-        # check for multiple gene symbols
-        self.var.info["HGNC"] = "||C"
+        # check for multiple gene symbols, when some are missing
+        self.var.info["HGNC"] = "|.|C"
         self.var.set_gene_from_info()
         self.assertEqual(self.var.gene, [None, None, "C"])
+        
+        # check for multiple gene symbols, when some missing symbols have
+        # alternates in other symbol fields.
+        self.var.info["HGNC"] = ".|.|C"
+        self.var.info["SYMBOL"] = "Z|.|C"
+        self.var.set_gene_from_info()
+        self.assertEqual(self.var.gene, ["Z", None, "C"])
+        
+        # Check that including alternate symbols has the correct precendence
+        # order. Note that doing this properly would require checking all of the
+        # possible order combinations.
+        self.var.info["HGNC"] = ".|.|C"
+        self.var.info["SYMBOL"] = "Z|.|C"
+        self.var.info["ENSG"] = "A|.|C"
+        self.var.set_gene_from_info()
+        self.assertEqual(self.var.gene, ["Z", None, "C"])
     
     def test_is_lof(self):
         """ test that is_lof() works correctly
@@ -95,33 +110,38 @@ class TestVariantInfoPy(unittest.TestCase):
         
         # check with alts that fall in one gene
         self.var.info["HGNC"] = "ATRX,ATRX"
+        self.var.set_gene_from_info()
         self.assertEqual(self.var.correct_multiple_alt(cq),
-            (['splice_acceptor_variant'], 'ATRX', None))
+            (['splice_acceptor_variant'], ['ATRX'], None))
         
         # check with alts that fall in multiple genes
         cq = ["missense_variant|regulatory_region_variant,stop_gained|splice_acceptor_variant"]
         self.var.info["HGNC"] = "ATRX|TTN,ATRX|TTN"
+        self.var.set_gene_from_info()
         self.assertEqual(self.var.correct_multiple_alt(cq),
-            (['stop_gained', 'splice_acceptor_variant'], 'ATRX|TTN', None))
+            (['stop_gained', 'splice_acceptor_variant'], ['ATRX', 'TTN'], None))
         
         # check a cq that has already been split by "|" (ie by gene)
         cq = ["missense_variant", "regulatory_region_variant,stop_gained",
             "splice_acceptor_variant"]
+        self.var.set_gene_from_info()
         self.assertEqual(self.var.correct_multiple_alt(cq),
-            (['stop_gained', 'splice_acceptor_variant'], 'ATRX|TTN', None))
+            (['stop_gained', 'splice_acceptor_variant'], ['ATRX', 'TTN'], None))
         
         # check that if the proband has a zero count for an allele, then we
         # disregard the consequences and HGNC symbols for that allele
         self.var.info["AC"] = "1,0"
+        self.var.set_gene_from_info()
         self.assertEqual(self.var.correct_multiple_alt(cq),
-            (['missense_variant', 'regulatory_region_variant'], 'ATRX|TTN', None))
+            (['missense_variant', 'regulatory_region_variant'], ['ATRX', 'TTN'], None))
         
         # revert the allele counts, but drop the HGNC symbol, and make sure the
         # HGNC symbol returned is None
         self.var.info["AC"] = "1,1"
         del self.var.info["HGNC"]
+        self.var.set_gene_from_info()
         self.assertEqual(self.var.correct_multiple_alt(cq),
-            (['stop_gained', 'splice_acceptor_variant'], None, None))
+            (['stop_gained', 'splice_acceptor_variant'], [], None))
     
     def test_get_most_severe_consequence(self):
         """ test that get_most_severe_consequence works correctly

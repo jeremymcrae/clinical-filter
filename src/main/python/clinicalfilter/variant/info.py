@@ -65,8 +65,8 @@ class VariantInfo(object):
                 key, value = item, True
             self.info[key] = value
         
-        self.set_consequence()
         self.set_gene_from_info()
+        self.set_consequence()
     
     def has_info(self):
         """ checks if the INFO field has been parsed and added to the object
@@ -94,12 +94,16 @@ class VariantInfo(object):
         """
         
         self.gene = None
-        # grab the HGNC symbol from the INFO. This could be a pipe-separated
-        # list of symbols for different genes, or it could be a comma-separated
-        # list of symbols for different alleles, or a combination of the two.
+        
         if "HGNC" in self.info:
-            self.gene = self.info["HGNC"].split("|")
-            self.gene = [x if x != "" else None for x in self.gene]
+            self.gene = []
+            for pos in range(len(self.info["HGNC"].split(","))):
+                self.gene.append(self.get_genes_for_allele(pos))
+            
+            # pull out the gene list for single allele variants
+            if len(self.gene) == 1:
+                self.gene = self.gene[0]
+        
         # some genes lack an HGNC entry, but do have an HGNC_ALL entry. The
         # HGNC_ALL entry is a "&"-separated list of Vega symbols.
         elif self.gene is None and "HGNC_ALL" in self.info:
@@ -108,10 +112,61 @@ class VariantInfo(object):
         # variants that haven't been annotated with a HGNC, since some of these
         # have a functional VEP annotation, presumably due to difficulties in
         # identifying an HGNC symbol. We don't need to worry about this when
-        # using a set of known genes, since we check whether variants lie within
-        # the known genes chromosomal ranges.
+        # using a set of known genes, since those should all have HGNC symbols.
         elif self.gene is None and self.known_genes is None:
             self.gene = "{0}:{1}".format(self.chrom, self.position)
+    
+    def get_genes_for_allele(self, position):
+        """ gets list of gene symbols for an allele, prioritising HGNC symbols.
+        
+        We have a variety of gene symbol sources for a variant. The INFO field
+        can contain HGNC, SYMBOL, ENSG, ENST, ENSP and ENSR. HGNC is HGNC gene
+        symbol, SYMBOL is VEGA-derived gene symbol, ENSG is Ensembl gene ID,
+        ENST is Ensembl transcript ID, ENSP is Ensembl protein ID, and ENSR is
+        Ensembl regulatory ID.
+        
+        In order for variants to check for compound heterozygotes, we match
+        variants by gene symbols. Ideally each variant would have a list of HGNC
+        symbols that it occurs in, but this is not the case. Many variants have
+        HGNC entries such as ".|GENE1|GENE2|.", where the "." indicates no
+        symbol available. We fill in the missing symbols by successively looking
+        through the SYMBOL field (from VEGA-derived symbols), then the ENSG IDs
+        and so on. Some entries will always lack a value, such as for variants
+        in transcription factor binding sites, where no symbol will ever be
+        available for the entry.
+        
+        Args:
+            position: integer position for the allele to be examined within a
+                comma-separated list.
+        
+        Returns:
+            list of gene symbols, filled in from the HGNC, SYMBOL, ENSG fields
+            where available.
+        """
+        
+        # set the list of fields to check, in order of their priority.
+        fields = ["HGNC", "SYMBOL", "ENSG", "ENST", "ENSP", "ENSR"]
+        fields = [ x for x in fields if x in self.info ]
+        
+        genes = None
+        for field in fields:
+            symbols = self.info[field].split(",")[position].split("|")
+            if genes is None:
+                genes = symbols
+            
+            # find which positions of the gene list are missing a symbol
+            blanks = [ x for x,item in enumerate(genes) if item in ["", "."] ]
+            
+            # for the missing symbol positions, if the current list of symbols
+            # contains a value, swap that value into the gene list.
+            for x in blanks:
+                if symbols[x] != "":
+                    genes[x] = symbols[x]
+        
+        if genes is not None:
+            genes = [ x if x not in ["", "."] else None for x in genes ]
+        
+        return genes
     
     def get_genes(self):
         """ split a gene string into list of gene names
@@ -135,12 +190,10 @@ class VariantInfo(object):
             cq = self.info["CQ"].split("|")
         
         if "," in self.alt_allele:
-            (cq, hgnc, enst) = self.correct_multiple_alt(cq)
+            (cq, self.gene, enst) = self.correct_multiple_alt(cq)
             
-            if "HGNC" in self.info:
-                self.info["HGNC"] = hgnc
+            if "ENST" in self.info:
                 self.info["ENST"] = enst
-                self.set_gene_from_info()
         
         self.consequence = cq
     
@@ -210,17 +263,6 @@ class VariantInfo(object):
         cq = cq.split(",")
         cq = [x.split("|") for x in cq]
         
-        enst = None
-        hgnc = None
-        if "HGNC" in self.info:
-            # split the allelic entries by gene
-            hgnc = self.info["HGNC"].split(",")
-            hgnc = [x.split("|") for x in hgnc]
-        
-        if "ENST" in self.info:
-            enst = self.info["ENST"].split(",")
-            enst = [x.split("|") for x in enst]
-        
         # drop the consequence for zero-depth alleles
         if "AC" in self.info:
             # check if alleles are present in the individual
@@ -228,17 +270,17 @@ class VariantInfo(object):
             
             # exclude the consequences for alleles with zero alleles
             cq[:] = [ item for i,item in enumerate(cq) if present[i] ]
-            
-            if "HGNC" in self.info:
-                hgnc[:] = [ item for i,item in enumerate(hgnc) if present[i] ]
-            if "ENST" in self.info:
-                enst[:] = [ item for i,item in enumerate(enst) if present[i] ]
     
         cq = self.get_most_severe_consequence(cq)
         
-        if "HGNC" in self.info:
-            hgnc = "|".join(hgnc[0])
+        hgnc = self.get_genes()
+        if len(hgnc) > 0:
+            hgnc = hgnc[0]
+        
+        enst = None
         if "ENST" in self.info:
+            enst = self.info["ENST"].split(",")
+            enst = [x.split("|") for x in enst]
             enst = "|".join(enst[0])
         
         return (cq, hgnc, enst)
