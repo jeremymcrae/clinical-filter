@@ -130,7 +130,7 @@ class CNV(Variant, VariantInfo):
             return False
         
         # we rely on the CALLSOURCE field to inform us what the CNV has been
-        # called by.
+        # called by. Raise an error if this is not present.
         assert "CALLSOURCE" in self.info
         
         track_variant = False

@@ -43,7 +43,7 @@ class ACGH_CNV(object):
         elif self.fails_frequency():
             passes = False
             if track_variant:
-                print("failed frequency", self.cnv.info["INTERNALFREQUENCY"])
+                print("failed frequency", self.cnv.info["ACGH_RC_FREQ50"])
         elif self.fails_cifer_inh():
             passes = False
             if track_variant:
@@ -52,7 +52,10 @@ class ACGH_CNV(object):
         return passes
     
     def fails_mad_ratio(self):
-        """ checks if the MAD ratio is too low
+        """ checks if the MAD ratio is too low.
+        
+        Note that this filter has been lowered, so that it will no longer
+        exclude any variants. This function could probably be removed.
         """
         
         try:
@@ -106,7 +109,7 @@ class ACGH_CNV(object):
         """
         
         try:
-            return int(self.cnv.info["INTERNALFREQUENCY"] > 0.01)
+            return int(self.cnv.info["ACGH_RC_FREQ50"] > 0.01)
         except KeyError:
             # If the field isn't available, assume the frequency is 0.
             return False
@@ -114,8 +117,6 @@ class ACGH_CNV(object):
     def fails_cifer_inh(self):
         """ check that the CIFER inheritance classification isn't false_positive
         """
-        
-        print(self.cnv.format["CIFER_INHERITANCE"])
         
         return self.cnv.format["CIFER_INHERITANCE"] == "false_positive"
         
