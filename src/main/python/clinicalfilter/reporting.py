@@ -124,7 +124,7 @@ class Report(object):
             max_maf = "NA"
         max_maf = str(max_maf)
         
-        genes = [x for x in candidate[3]]
+        genes = list(set(candidate[3]))
         
         output_line = [self.family.child.get_id(), alternate_ID, \
             self.family.child.get_gender(), var.get_chrom(), \
@@ -295,7 +295,7 @@ class Report(object):
             
             filter_type = ";ClinicalFilterType=" + candidate[1]
             gene_inheritance = ";ClinicalFilterGeneInheritance=" + candidate[2]
-            reportable_gene = ";ClinicalFilterReportableHGNC={0}".format(",".join(candidate[3]))
+            reportable_gene = ";ClinicalFilterReportableHGNC={0}".format(",".join(list(set(candidate[3]))))
             vcf_line[7] += gene_inheritance + filter_type + reportable_gene
             
             parental_inheritance = self._get_parental_inheritance(var)
