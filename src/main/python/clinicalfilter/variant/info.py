@@ -10,20 +10,21 @@ class VariantInfo(object):
     # http://www.ensembl.org/info/genome/variation/predicted_data.html
     severity = {"transcript_ablation": 0, "splice_donor_variant": 1, \
         "splice_acceptor_variant": 2, "stop_gained": 3, "frameshift_variant": 4, \
-        "stop_lost": 5, "initiator_codon_variant": 6, "inframe_insertion": 7, \
-        "inframe_deletion": 8, "missense_variant": 9, \
-        "transcript_amplification": 10, "splice_region_variant": 11, \
-        "incomplete_terminal_codon_variant": 12, "synonymous_variant": 13, \
-        "stop_retained_variant": 14, "coding_sequence_variant": 15, \
-        "mature_miRNA_variant": 16, "5_prime_UTR_variant": 17, \
-        "3_prime_UTR_variant": 18, "intron_variant": 19, \
-        "NMD_transcript_variant": 20, "non_coding_exon_variant": 21, \
-        "nc_transcript_variant": 22, "upstream_gene_variant": 23, \
-        "downstream_gene_variant": 24, "TFBS_ablation": 25, \
-        "TFBS_amplification": 26, "TF_binding_site_variant": 27, \
-        "regulatory_region_variant": 28, "regulatory_region_ablation": 29, \
-        "regulatory_region_amplification": 30, "feature_elongation": 31, \
-        "feature_truncation": 32, "intergenic_variant": 33}
+        "stop_lost": 5, "start_lost": 6, "initiator_codon_variant": 7, \
+        "inframe_insertion": 8, "inframe_deletion": 9, "missense_variant": 10, \
+        "protein_altering_variant": 11, "transcript_amplification": 12, \
+        "splice_region_variant": 13, "incomplete_terminal_codon_variant": 14, \
+        "synonymous_variant": 15, "stop_retained_variant": 16, \
+        "coding_sequence_variant": 17, "mature_miRNA_variant": 18, \
+        "5_prime_UTR_variant": 19, "3_prime_UTR_variant": 20, \
+        "intron_variant": 21, "NMD_transcript_variant": 22, \
+        "non_coding_exon_variant": 23, "non_coding_transcript_exon_variant": 24, \
+        "nc_transcript_variant": 25, "upstream_gene_variant": 26, \
+        "downstream_gene_variant": 27, "TFBS_ablation": 28, \
+        "TFBS_amplification": 29, "TF_binding_site_variant": 30,
+        "regulatory_region_variant": 31, "regulatory_region_ablation": 32,
+        "regulatory_region_amplification": 33, "feature_elongation": 34,
+        "feature_truncation": 35, "intergenic_variant": 36}
     
     # define the set of loss-of-function consequences
     lof_consequences = set(["transcript_ablation", "splice_donor_variant", \
@@ -33,7 +34,7 @@ class VariantInfo(object):
     # define the set of missense (or non loss-of-function) consequences
     missense_consequences = set(["stop_lost", "initiator_codon_variant", \
         "inframe_insertion", "inframe_deletion", "missense_variant", \
-        "transcript_amplification"])
+        "transcript_amplification", "start_lost", "protein_altering_variant"])
     
     # define the populations who have minor allele frequencies in the INFO
     populations = set(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF", \
