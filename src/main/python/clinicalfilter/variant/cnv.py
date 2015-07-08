@@ -5,7 +5,6 @@ from clinicalfilter.variant.info import VariantInfo
 from clinicalfilter.variant.variant import Variant
 from clinicalfilter.variant.cnv_acgh_filter import ACGH_CNV
 from clinicalfilter.variant.cnv_exome_filter import ExomeCNV
-from clinicalfilter.variant.cnv_breakdancer_filter import BreakdancerCNV
 
 class CNV(Variant, VariantInfo):
     """  class to take CNV data for an individual, and
@@ -130,22 +129,23 @@ class CNV(Variant, VariantInfo):
         except ValueError:
             return False
         
+        # we rely on the CALLSOURCE field to inform us what the CNV has been
+        # called by. Raise an error if this is not present.
+        assert "CALLSOURCE" in self.info
+        
         track_variant = False
         if self.get_chrom() == self.debug_chrom and self.get_position() == self.debug_pos:
             track_variant = True
         
         passes = True
-        if "CONVEX" in self.info and "CNSOLIDATE" not in self.info:
+        if "aCGH" in self.info["CALLSOURCE"]:
+            filt = ACGH_CNV(self)
+            passes = filt.filter_cnv(track_variant)
+        elif "EXOME" in self.info["CALLSOURCE"]:
             # currently return false for all exome-only CNVs, undergoing testing
             filt = ExomeCNV(self)
             # passes = filt.filter_cnv(track_variant)
             passes = False
-        elif "CNSOLIDATE" in self.info:
-            filt = ACGH_CNV(self)
-            passes = filt.filter_cnv(track_variant)
-        elif "BREAKDANCER" in self.info:
-            filt = BreakdancerCNV(self)
-            passes = filt.filter_cnv(track_variant)
         else:
             if track_variant:
                 print("CNV is not an aCGH or exome CNV")

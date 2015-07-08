@@ -33,7 +33,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         self.inh = CNVInheritance(self.variant, self.trio, self.known_genes, syndrome_regions)
     
-    def create_cnv(self, gender, inh, chrom, pos):
+    def create_cnv(self, gender, inh, cifer, chrom, pos):
         """ create a default variant
         """
         
@@ -46,8 +46,8 @@ class TestCNVInheritancePy(unittest.TestCase):
         var = CNV(chrom, pos, snp_id, ref, alt, filt)
         
         info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000"
-        format_keys = "INHERITANCE:DP"
-        sample_values = inh + ":50"
+        format_keys = "CIFER:INHERITANCE:DP"
+        sample_values = cifer + ":" + inh + ":50"
         
         var.add_info(info)
         var.add_format(format_keys, sample_values)
@@ -61,9 +61,9 @@ class TestCNVInheritancePy(unittest.TestCase):
         """
         
         # generate a test variant
-        child_var = self.create_cnv(child_gender, "unknown", chrom, position)
-        mom_var = self.create_cnv("F", "unknown", chrom, position)
-        dad_var = self.create_cnv("M", "unknown", chrom, position)
+        child_var = self.create_cnv(child_gender, "unknown", "uncertain", chrom, position)
+        mom_var = self.create_cnv("F", "unknown", "uncertain", chrom, position)
+        dad_var = self.create_cnv("M", "unknown", "uncertain", chrom, position)
         
         var = TrioGenotypes(child_var)
         var.add_mother_variant(mom_var)
@@ -89,7 +89,21 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         # check that paternally inherited CNVs that have affected fathers pass
         self.inh.trio.father.affected_status = "2"
-        inh = "paternal"
+        inh = ["paternal"]
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(inh))
+        
+        # check for a CIFER derived annotation
+        inh = ["paternal_inh"]
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(inh))
+        
+        # check for a list of the VICAR and CIFER inheritance annotations
+        inh = ["paternal", "paternal_inh"]
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(inh))
+        
+        # check when one annotation says inherited, but the other doesn't.
+        # Having one parentally inherited annotation is sufficient to classify
+        # the CNV as inherited.
+        inh = ["uknown", "paternal_inh"]
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(inh))
         
         # check that paternally inherited CNVs without an affected father fail
@@ -97,12 +111,12 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.assertFalse(self.inh.inheritance_matches_parental_affected_status(inh))
         
         # check that maternally inherited CNVs without an affected mother fail
-        inh = "maternal"
+        inh = ["maternal"]
         self.inh.trio.father.affected_status = "1"
         self.assertFalse(self.inh.inheritance_matches_parental_affected_status(inh))
         
         # check that biparentally inherited CNVs pass if either parent is affected
-        inh = "biparental"
+        inh = ["biparental"]
         self.assertFalse(self.inh.inheritance_matches_parental_affected_status(inh))
         self.inh.trio.father.affected_status = "2"
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(inh))
@@ -111,7 +125,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(inh))
         
         # check that biparentally inherited CNVs pass if either parent is affected
-        inh = "inheritedDuo"
+        inh = ["inheritedDuo"]
         self.inh.trio.mother.affected_status = "1"
         self.assertFalse(self.inh.inheritance_matches_parental_affected_status(inh))
         self.inh.trio.father.affected_status = "2"
@@ -121,7 +135,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(inh))
         
         # check that noninherited CNVs pass, regardless of parental affected status
-        inh = "deNovo"
+        inh = ["deNovo"]
         self.inh.trio.mother.affected_status = "1"
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(inh))
     

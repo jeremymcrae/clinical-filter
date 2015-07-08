@@ -34,23 +34,18 @@ class TestAcghCnvPy(unittest.TestCase):
         self.var.cnv.set_gender("F")
     
     def test_fails_mad_ratio(self):
-        """ test that fails_mad_ratio() works correctly
+        """ test that fails_mad_ratio() works correctly.
         """
         
-        # check that var passes when MAD ratio > 15
+        # check that var passes when MAD ratio > 0
         self.var.cnv.info["MEANLR2"] = "0.5"
         self.var.cnv.info["MADL2R"] = "0.02"
         self.assertFalse(self.var.fails_mad_ratio())
         
-        # check that var passes when MAD ratio == 15
+        # check that var passes when MAD ratio == 0
         self.var.cnv.info["MEANLR2"] = "0.3"
-        self.var.cnv.info["MADL2R"] = "0.02"
+        self.var.cnv.info["MADL2R"] = float("inf")
         self.assertFalse(self.var.fails_mad_ratio())
-        
-        # check that var fails when MAD ratio < 15
-        self.var.cnv.info["MEANLR2"] = "0.2"
-        self.var.cnv.info["MADL2R"] = "0.02"
-        self.assertTrue(self.var.fails_mad_ratio())
         
         # check that var fails when trying to divide by zero
         self.var.cnv.info["MEANLR2"] = "0.2"
