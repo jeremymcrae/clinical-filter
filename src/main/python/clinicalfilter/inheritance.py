@@ -437,7 +437,7 @@ class CNVInheritance(object):
         """
         
         if not self.trio.has_parents():
-            self.check_variant_without_parents()
+            return self.check_variant_without_parents()
         
         # check that the inheritance status is consistent with the parental
         # affected status
