@@ -276,7 +276,10 @@ class VariantInfo(object):
         
         hgnc = self.get_genes()
         if len(hgnc) > 0:
-            hgnc = hgnc[0]
+            lengths = [ len(x) for x in hgnc ]
+            max_len = max(lengths)
+            pos = lengths.index(max_len)
+            hgnc = hgnc[pos]
         
         enst = None
         if "ENST" in self.info:
@@ -302,8 +305,9 @@ class VariantInfo(object):
         # consequence within each geen list.
         if type(consequences[0]) is list:
             new_list = []
-            for i in range(len(consequences[0])):
-                per_gene = [ x[i] for x in consequences ]
+            max_len = max([ len(x) for x in consequences ])
+            for i in range(max_len):
+                per_gene = [ x[i] for x in consequences if i < len(x)]
                 new_list.append(self.get_most_severe_consequence(per_gene))
             
             return new_list

@@ -109,7 +109,7 @@ class ACGH_CNV(object):
         """
         
         try:
-            return int(self.cnv.info["ACGH_RC_FREQ50"] > 0.01)
+            return float(self.cnv.info["ACGH_RC_FREQ50"]) > 0.01
         except KeyError:
             # If the field isn't available, assume the frequency is 0.
             return False
