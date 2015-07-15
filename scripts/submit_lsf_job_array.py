@@ -18,8 +18,8 @@ APP_FOLDER = os.path.join(USER_DIR, "apps", "clinical-filter")
 
 FILTER_CODE = os.path.join(APP_FOLDER, "src", "main", "python", "clinical_filter.py")
 
-DATAFREEZE = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2014-11-04/"
-KNOWN_GENES_PATH = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2014-11-04/DDG2P/dd_genes_for_clinical_filter"
+DATAFREEZE = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2015-04-13"
+KNOWN_GENES_PATH = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2015-04-13/DDG2P/dd_genes_for_clinical_filter"
 ALT_IDS_PATH = os.path.join(DATAFREEZE, "person_sanger_decipher.txt")
 PED_PATH = os.path.join(DATAFREEZE, "family_relationships.txt")
 SYNDROMES_PATH = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
