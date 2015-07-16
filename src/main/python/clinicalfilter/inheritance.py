@@ -329,11 +329,15 @@ class Allosomal(Inheritance):
         super(Allosomal, self).__init__(variants, trio, known_genes, gene_inheritance, cnv_regions)
         
         self.inheritance_modes = set(["X-linked dominant", "Hemizygous", \
-            "Monoallelic"])
+            "Monoallelic", "X-linked over-dominance"])
         
         # on the X chrom, treat monoallelic and X-linked dominant modes of
         # inheritance the same
         if "Monoallelic" in self.gene_inheritance:
+            self.gene_inheritance.add("X-linked dominant")
+            self.gene_inheritance.remove("Monoallelic")
+        
+        if "X-linked over-dominance" in self.gene_inheritance:
             self.gene_inheritance.add("X-linked dominant")
             self.gene_inheritance.remove("Monoallelic")
     
