@@ -244,12 +244,11 @@ def load_ped_file(path):
         sex[individual_id] = gender
         
         # track the child, maternal and paternal IDs
-        if paternal_id != "0" and maternal_id != "0":
+        if paternal_id != "0" or maternal_id != "0":
             children[individual_id] = family_id
-        if paternal_id != 0:
-            fathers[individual_id] = paternal_id
-        if maternal_id != 0:
-            mothers[individual_id] = maternal_id
+        
+        fathers[individual_id] = paternal_id
+        mothers[individual_id] = maternal_id
     
     ped.close()
     
