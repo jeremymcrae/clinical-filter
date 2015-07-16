@@ -102,7 +102,8 @@ def main():
         "--alternate-ids", alternate_ids, \
         "--output", random_filename + ".output.txt", \
         "--export-vcf", os.getcwd(), \
-        "--syndrome-regions", syndrome_regions_filename] + logging_option
+        "--syndrome-regions", syndrome_regions_filename, \
+        "--pp-dnm-threshold", "0"] + logging_option
     
     if not options.all_genes:
         filter_command += ["--known-genes", known_genes]

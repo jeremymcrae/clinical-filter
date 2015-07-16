@@ -282,7 +282,8 @@ def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, log_options
         "--ped", "{0}.\$LSB_JOBINDEX\.txt".format(temp_name), \
         "--output", "{0}.\$LSB_JOBINDEX\.txt".format(output_name), \
         "--syndrome-regions", SYNDROMES_PATH, \
-        "--alternate-ids", ALT_IDS_PATH] + log_options
+        "--alternate-ids", ALT_IDS_PATH, \
+        "--pp-dnm-threshold", "0"] + log_options
     
     # sometimes we don't want to restrict to the DDG2P genes, then all_genes
     # would be False and variants would be assessed in every gene.
