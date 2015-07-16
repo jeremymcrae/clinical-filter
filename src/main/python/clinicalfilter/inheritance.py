@@ -339,7 +339,7 @@ class Allosomal(Inheritance):
         
         if "X-linked over-dominance" in self.gene_inheritance:
             self.gene_inheritance.add("X-linked dominant")
-            self.gene_inheritance.remove("Monoallelic")
+            self.gene_inheritance.remove("X-linked over-dominance")
     
     def check_variant_without_parents(self, inheritance):
         """ test variants in children where we lack parental genotypes
