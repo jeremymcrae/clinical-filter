@@ -44,12 +44,65 @@ def get_options():
     parser.add_argument("--without-parents", default=False,
         action="store_true", help="whether to remove the parents and analyse \
         probands only")
+    parser.add_argument("--use-singletons-with-parents", default=False,
+        action="store_true", help="Some probands have parents, but genotypes \
+        from one or both parents are not yet available. The genetic data for \
+        these parents will eventually be available. Other probands lack one or \
+        both parents (and they will never be available). The singleton probands \
+        with parents can be distingushed in the ped file as probands where both \
+        parental IDs are non-zero, but lines defining either parent do not \
+        exist. We'll currently exclude the singletons with parents, as \
+        filtering of their genetic variants would provide an abundance of \
+        variants that would later be clarified with parental genotypes.")
     
     args = parser.parse_args()
     
     return args
 
-def split_pedigree_file(tempname, ped_path, number_of_jobs, exclude_parents):
+def check_for_singletons_missing_parents(family):
+    """ figure out whether a family has parents, but lack parental data
+    
+    Args:
+        family: list of lines from ped for family members
+    
+    Returns:
+        true/false for whether the family has a proband with defined parents,
+        but the parents do not have VCFs available.
+    """
+    
+    # make sure we are working on a copy of the family lines, so we don't
+    # interfere with later processing
+    family = family[:]
+    
+    # make sure all of the samples are split into lists
+    for pos in range(len(family)):
+        family[pos] = family[pos].strip().split("\t")
+        
+    # identify the members in the family
+    children = []
+    parents = []
+    for sample in family:
+        dad_id = sample[2]
+        mom_id = sample[3]
+        
+        if dad_id != "0" or mom_id != "0":
+            children.append(sample)
+        else:
+            parents.append(sample)
+    
+    # get the IDs for the mother and father (these are the same for all children
+    # in the family).
+    dad_id = children[0][2]
+    mom_id = children[0][3]
+    
+    # probands who are missing one of their parents don't need to be excluded,
+    # since their missing parent will never have genetic data available.
+    if dad_id == "0" or mom_id == "0":
+        return False
+    
+    return len(parents) != 2
+
+def split_pedigree_file(tempname, ped_path, number_of_jobs, exclude_parents, use_singletons_with_parents):
     """ split the ped file into multiple smaller ped files
     
     Args:
@@ -59,6 +112,9 @@ def split_pedigree_file(tempname, ped_path, number_of_jobs, exclude_parents):
             Note that due to how the families are striuctured (siblings etc), we
             might get more files than this
         exclude_parents: true/false for whether to exclude parents from the run.
+        use_singletons_with_parents: true/false for whether to exclude probands
+            who have parents define, but where one or both parents genotypes are
+            not yet available.
     
     Returns:
         The number of files that the cohort has been split across (which will
@@ -85,6 +141,12 @@ def split_pedigree_file(tempname, ped_path, number_of_jobs, exclude_parents):
                 families[family_ID] = []
             
             families[family_ID].append(line)
+    
+    if not use_singletons_with_parents:
+        for family_id in sorted(families):
+            family = families[family_id]
+            if check_for_singletons_missing_parents(family):
+                del families[family_id]
     
     # figure out how many families to include per file, in order to make the correct number of jobs
     max_trios_in_ped_file = float(len(families))/float(number_of_jobs)
@@ -269,7 +331,7 @@ def main():
     temp_name = "tmp_ped.{0}".format(hash_string)
     
     tidy_directory_before_start()
-    trio_counter = split_pedigree_file(temp_name, opts.ped_path, opts.n_jobs, opts.without_parents)
+    trio_counter = split_pedigree_file(temp_name, opts.ped_path, opts.n_jobs, opts.without_parents, opts.use_singletons_with_parents)
     run_array(hash_string, trio_counter, temp_name, opts.ddg2p_path, opts.all_genes, log_options)
     run_cleanup(hash_string)
 
