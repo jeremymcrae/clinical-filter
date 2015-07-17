@@ -2,6 +2,7 @@
 """
 
 import unittest
+from clinicalfilter.ped import Family
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
@@ -15,6 +16,11 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         """ define a default VcfInfo object
         """
         
+        family = Family("FamID")
+        family.add_child("child_id", "/child/path", "2", "M")
+        family.add_mother("mom_id", "/mother/path", "1", "F")
+        family.add_father("dad_id", "/father/path", "2", "M")
+        
         variants = []
         snv = self.create_var("1", True)
         cnv = self.create_var("1", False)
@@ -22,7 +28,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         variants.append((snv, "single_variant", "Monoallelic", ["ATRX"]))
         variants.append((cnv, "single_variant", "Monoallelic", ["ATRX"]))
         
-        self.post_filter = PostInheritanceFilter(variants)
+        self.post_filter = PostInheritanceFilter(variants, family)
         
     def create_var(self, chrom, snv=True, geno=["0/1", "0/1", "0/1"]):
         """ define a family and variant, and start the Inheritance class

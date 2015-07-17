@@ -96,7 +96,7 @@ class ClinicalFilter(LoadOptions):
         found_vars = self.exclude_duplicates(found_vars)
         
         # apply some final filters to the flagged variants
-        post_filter = PostInheritanceFilter(found_vars, self.debug_chrom, self.debug_pos)
+        post_filter = PostInheritanceFilter(found_vars, self.family, self.debug_chrom, self.debug_pos)
         found_vars = post_filter.filter_variants()
         
         # export the results to either tab-separated table or VCF format

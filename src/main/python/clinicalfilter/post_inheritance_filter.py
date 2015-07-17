@@ -21,13 +21,14 @@ class PostInheritanceFilter(object):
     """ Apply some post inheritance filters to flagged variants
     """
     
-    def __init__(self, variants, debug_chrom=None, debug_pos=None):
+    def __init__(self, variants, family, debug_chrom=None, debug_pos=None):
         """intialise the class with the some definitions
         """
         
         self.variants = variants
         self.debug_chrom = debug_chrom
         self.debug_pos = debug_pos
+        self.family = family
     
     def filter_variants(self):
         """ loads trio variants, and screens for candidate variants
@@ -111,7 +112,9 @@ class PostInheritanceFilter(object):
             elif "Biallelic" in inh and max_maf >= 0.001:
                 passed_vars.append((var, check, "Biallelic", hgnc))
             else:
-                if max_maf <= 0.001:
+                if max_maf <= 0.001 and self.family.has_parents():
+                    passed_vars.append((var, check, inh, hgnc))
+                elif max_maf < 0.0001 and not self.family.has_parents():
                     passed_vars.append((var, check, inh, hgnc))
                 else:
                     logging.debug(str(var) + " dropped from low MAF in non-biallelic variant")
