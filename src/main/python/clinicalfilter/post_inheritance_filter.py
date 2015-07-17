@@ -114,7 +114,7 @@ class PostInheritanceFilter(object):
             else:
                 if max_maf <= 0.001 and self.family.has_parents():
                     passed_vars.append((var, check, inh, hgnc))
-                elif max_maf < 0.0001 and not self.family.has_parents():
+                elif max_maf <= 0.0001 and not self.family.has_parents():
                     passed_vars.append((var, check, inh, hgnc))
                 else:
                     logging.debug(str(var) + " dropped from low MAF in non-biallelic variant")
@@ -148,6 +148,11 @@ class PostInheritanceFilter(object):
                     var.get_trio_genotype() == var.get_de_novo_genotype() or \
                     var.get_trio_genotype()[1:] == ("NA", "NA"):
                 passes = True
+            
+            if not self.family.has_parents() and "Biallelic" in inh \
+                  and "PolyPhen" in var.child.info \
+                  and "benign" in var.child.info["PolyPhen"]:
+                passes = False
             
             # check all of the other variants to see if any are in the same
             # gene, compound_het, and polyphen benign
