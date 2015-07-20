@@ -34,13 +34,20 @@ def get_options():
     parser.add_argument('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
     parser.add_argument('--debug-chrom', dest='debug_chrom', help='chromosome of variant to debug.')
     parser.add_argument('--debug-pos', dest='debug_pos', help='position of variant to debug.')
+    parser.add_argument('--without-parents', default=False, action="store_true",
+        help='whether to remove the parents for a proband only-analysis.')
     
     args = parser.parse_args()
     
     return args
 
-def load_ped(ped_path, proband_ID):
+def load_ped(ped_path, proband_ID, exclude_parents):
     """ loads the pedigree details for a prband
+    
+    Args:
+        ped_path: path to pedigree file for cohort
+        proband_ID: individual Id for proband of interest
+        exclude_parents: whether to exclude the parents of the proband
     """
     
     ped = open(ped_path, "r")
@@ -64,7 +71,9 @@ def load_ped(ped_path, proband_ID):
         split_line = line.strip().split()
         individual_ID = split_line[1]
         
-        if individual_ID == proband_ID or individual_ID == paternal_ID or individual_ID == maternal_ID:
+        if individual_ID == proband_ID:
+            new_ped_lines.append(line)
+        elif not exclude_parents and (individual_ID == paternal_ID or individual_ID == maternal_ID):
             new_ped_lines.append(line)
     
     return new_ped_lines
@@ -78,7 +87,7 @@ def main():
     proband_ID = options.proband_ID
     logging_option = ["--log", options.loglevel]
     
-    new_ped = load_ped(ped_file, proband_ID)
+    new_ped = load_ped(ped_file, proband_ID, options.without_parents)
     
     # remove the temp files from the previous run
     tmp_name = "tmp_run."
