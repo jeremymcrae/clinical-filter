@@ -148,7 +148,32 @@ class TestAcghCnvPy(unittest.TestCase):
 
         self.var.cnv.info["NUMBEREXONS"] = "0"
         self.assertTrue(self.var.fails_no_exons())
-
-
-if __name__ == '__main__':
-    unittest.main()
+    
+    def test_fails_frequency(self):
+        """ test that fails_frequency() works correctly
+        """
+        
+        # a low population frequency will pass
+        self.var.cnv.info["ACGH_RC_FREQ50"] = "0.01"
+        self.assertFalse(self.var.fails_frequency())
+        
+        # a high population frequency will fail
+        self.var.cnv.info["ACGH_RC_FREQ50"] = "0.011"
+        self.assertTrue(self.var.fails_frequency())
+        
+        # if population frequency information is unavailable, it should pass,
+        # since this suggests the frequency is 0.
+        del self.var.cnv.info["ACGH_RC_FREQ50"]
+        self.assertFalse(self.var.fails_frequency())
+    
+    def test_fails_cifer_inh(self):
+        """ test that fails_cifer_inh() works correctly
+        """
+        
+        # CNVs annotated as not_inherited, or inherited will pass
+        self.var.cnv.format["CIFER_INHERITANCE"] = "not_inherited"
+        self.assertFalse(self.var.fails_cifer_inh())
+        
+        # CNVs annotated as false_positive will fail
+        self.var.cnv.format["CIFER_INHERITANCE"] = "false_positive"
+        self.assertTrue(self.var.fails_cifer_inh())
