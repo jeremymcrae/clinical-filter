@@ -250,9 +250,7 @@ class Autosomal(Inheritance):
         """
         
         self.log_string = "autosomal without parents"
-        if self.child.is_het() and inheritance == "Biallelic":
-            return "compound_het"
-        elif self.child.is_hom_alt() and inheritance == "Biallelic":
+        if self.child.is_hom_alt() and inheritance == "Biallelic":
             return "single_variant"
         elif self.child.is_het() and inheritance == "Monoallelic":
             return "single_variant"

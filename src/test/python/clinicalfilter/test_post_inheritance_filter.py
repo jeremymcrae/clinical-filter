@@ -195,6 +195,29 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         del snv_1.child.info["AFR_AF"]
         variants = [(snv_1, "single_variant", "Monoallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
+    
+    def test_filter_by_maf_without_parents(self):
+        """ test that filter_by_maf() works correctly when lacking parents
+        """
+        # create a child without parents
+        self.post_filter.family.mother = None
+        self.post_filter.family.father = None
+        
+        # create a variant with an allele frequency that will fail when lacking
+        # parents
+        snv = self.create_var("1", snv=True)
+        snv.child.info["AFR_AF"] = 0.0002
+        
+        # check that a variant with an allele frequency above the without-parents
+        # frequency is removed.
+        variants = [(snv, "single_variant", "Monoallelic", ["ATRX"])]
+        self.assertEqual(self.post_filter.filter_by_maf(variants), [])
+        
+        # check that a variant with an allele frequency below the without-parents
+        # frequency still passes.
+        snv.child.info["AFR_AF"] = 0.0001
+        variants = [(snv, "single_variant", "Monoallelic", ["ATRX"])]
+        self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
     def test_filter_polyphen(self):
         """ check that filter_polyphen() works correctly

@@ -100,7 +100,6 @@ class PostInheritanceFilter(object):
         
         passed_vars = []
         for (var, check, inh, hgnc) in variants:
-            # populations = var.child.tags["MAX_MAF"]
             max_maf = var.child.find_max_allele_frequency()
             if max_maf is None: # set maf=NA to 0 to reduce later checks
                 max_maf = 0
@@ -148,11 +147,6 @@ class PostInheritanceFilter(object):
                     var.get_trio_genotype() == var.get_de_novo_genotype() or \
                     var.get_trio_genotype()[1:] == ("NA", "NA"):
                 passes = True
-            
-            if not self.family.has_parents() and "Biallelic" in inh \
-                  and "PolyPhen" in var.child.info \
-                  and "benign" in var.child.info["PolyPhen"]:
-                passes = False
             
             # check all of the other variants to see if any are in the same
             # gene, compound_het, and polyphen benign
