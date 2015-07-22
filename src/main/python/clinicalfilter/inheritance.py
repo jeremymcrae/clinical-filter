@@ -170,11 +170,7 @@ class Inheritance(object):
         """ checks if any of the variants in a gene are CNVs
         """
         
-        for var in self.variants:
-            if var.is_cnv():
-                return True
-        
-        return False
+        return any([ x.is_cnv() for x in self.variants ])
     
     def check_compound_hets(self, variants):
         """ checks for compound hets within a gene
