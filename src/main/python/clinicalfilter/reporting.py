@@ -128,13 +128,15 @@ class Report(object):
         if "PP_DNM" in var.child.format:
             pp_dnm = var.child.format["PP_DNM"]
         
-        genes = list(set(candidate[3]))
+        genes = ",".join(list(set(candidate[3])))
+        result = ",".join(candidate[1])
+        inh = ",".join(candidate[2])
         
         output_line = [self.family.child.get_id(), alternate_ID, \
             self.family.child.get_gender(), var.get_chrom(), \
-            str(var.get_position()), ",".join(genes), var.child.get_mutation_id(), \
-            transcript, consequence, alleles, max_maf, candidate[2], \
-            trio_genotype, mom_aff, dad_aff, candidate[1], pp_dnm]
+            str(var.get_position()), genes, var.child.get_mutation_id(), \
+            transcript, consequence, alleles, max_maf, inh, \
+            trio_genotype, mom_aff, dad_aff, result, pp_dnm]
         
         output_line = "\t".join(output_line) + "\n"
         
@@ -297,8 +299,8 @@ class Report(object):
             
             vcf_line = var.child.get_vcf_line()
             
-            filter_type = ";ClinicalFilterType=" + candidate[1]
-            gene_inheritance = ";ClinicalFilterGeneInheritance=" + candidate[2]
+            filter_type = ";ClinicalFilterType=" + ",".join(candidate[1])
+            gene_inheritance = ";ClinicalFilterGeneInheritance=" + ",".join(candidate[2])
             reportable_gene = ";ClinicalFilterReportableHGNC={0}".format(",".join(list(set(candidate[3]))))
             vcf_line[7] += gene_inheritance + filter_type + reportable_gene
             

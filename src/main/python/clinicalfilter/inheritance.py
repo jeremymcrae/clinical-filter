@@ -129,9 +129,9 @@ class Inheritance(object):
         """
         
         if check == "compound_het":
-            self.compound_hets.append((variant, check, inheritance))
+            self.compound_hets.append((variant, [check], [inheritance]))
         elif check == "single_variant":
-            self.candidates.append((variant, check, inheritance))
+            self.candidates.append((variant, [check], [inheritance]))
     
     def examine_variant(self, variant, inheritance):
         """ examines a single variant for whether or not to report it

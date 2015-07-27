@@ -104,12 +104,12 @@ class PostInheritanceFilter(object):
             if max_maf is None: # set maf=NA to 0 to reduce later checks
                 max_maf = 0
             
-            if inh == "Biallelic":
+            if inh == ["Biallelic"]:
                 passed_vars.append((var, check, inh, hgnc))
             # variants with multiple inheritance types should be left as
             # Biallelic if the other inheritance type fails the MAF threshold
             elif "Biallelic" in inh and max_maf >= 0.001:
-                passed_vars.append((var, check, "Biallelic", hgnc))
+                passed_vars.append((var, check, ["Biallelic"], hgnc))
             else:
                 if max_maf <= 0.001 and self.family.has_parents():
                     passed_vars.append((var, check, inh, hgnc))

@@ -112,7 +112,7 @@ class TestClinicalFilterPy(unittest.TestCase):
         
         # check the simplest case, a variant in a known gene
         self.assertEqual(self.finder.find_variants([snv1], "TEST1"),
-            [(snv1, "single_variant", "Monoallelic", ["TEST1"])])
+            [(snv1, ["single_variant"], ["Monoallelic"], ["TEST1"])])
         
         # check that a gene not in a known gene does not pass
         self.assertEqual(self.finder.find_variants([snv1], "TEST2"), [])
@@ -126,12 +126,12 @@ class TestClinicalFilterPy(unittest.TestCase):
         
         # check that a variant on chrX passes through the allosomal instance
         self.assertEqual(self.finder.find_variants([snv4], "TESTX"),
-            [(snv4, "single_variant", "X-linked dominant", ["TESTX"])])
+            [(snv4, ["single_variant"], ["X-linked dominant"], ["TESTX"])])
         
         # remove the known genes, so that the variants in unknown genes pass
         self.finder.known_genes = None
         self.assertEqual(self.finder.find_variants([snv1], "TEST2"),
-            [(snv1, "single_variant", "Monoallelic", ["TEST2"])])
+            [(snv1, ["single_variant"], ["Monoallelic"], ["TEST2"])])
         
         # but variants without gene symbols still are excluded
         self.assertEqual(self.finder.find_variants([snv3], None), [])
@@ -146,28 +146,28 @@ class TestClinicalFilterPy(unittest.TestCase):
         # two variants that lie in different genes on different chromosomes
         # should not be merged
         snv2 = self.create_trio_variant("F", "missense_variant", "OTHER1", chrom="2")
-        variants = [(snv1, "single_variant", "Monoallelic", ["TEST1"]),
-            ((snv2, "single_variant", "Monoallelic", ["OTHER1"]))]
+        variants = [(snv1, ["single_variant"], ["Monoallelic"], ["TEST1"]),
+            ((snv2, ["single_variant"], ["Monoallelic"], ["OTHER1"]))]
         self.assertEqual(sorted(self.finder.exclude_duplicates(variants)), sorted(variants))
         
         # create a list of variant tuples that passed filtering for two
         # different gene symbols
-        variants = [(snv1, "single_variant", "Monoallelic", ["TEST1"]),
-            ((snv1, "compound_het", "Biallelic", ["TEST1"])),
-            ((snv1, "compound_het", "Biallelic", ["TEST1"]))]
+        variants = [(snv1, ["single_variant"], ["Monoallelic"], ["TEST1"]),
+            ((snv1, ["compound_het"], ["Biallelic"], ["TEST1"])),
+            ((snv1, ["compound_het"], ["Biallelic"], ["TEST1"]))]
         self.assertEqual(self.finder.exclude_duplicates(variants),
-            [(snv1, "single_variant,compound_het", "Monoallelic,Biallelic", ["TEST1"])])
+            [(snv1, ["single_variant", "compound_het"], ["Monoallelic", "Biallelic"], ["TEST1"])])
         
         # create a list of variant tuples that passed filtering for two
         # different gene symbols
-        variants = [(snv1, "single_variant", "Monoallelic", ["TEST1"]),
-            ((snv1, "single_variant", "Monoallelic", ["TEST2"]))]
+        variants = [(snv1, ["single_variant"], ["Monoallelic"], ["TEST1"]),
+            ((snv1, ["single_variant"], ["Monoallelic"], ["TEST2"]))]
         
         # the same variant passing for two gene symbols should be collapsed
         # into a single entry, where the entry contains a list ofall the gene
         # symbols
         self.assertEqual(self.finder.exclude_duplicates(variants),
-            [(snv1, "single_variant", "Monoallelic", ["TEST1", "TEST2"])])
+            [(snv1, ["single_variant"], ["Monoallelic"], ["TEST1", "TEST2"])])
         
         
         

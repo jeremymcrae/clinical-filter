@@ -165,35 +165,35 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         snv_2.child.info["AFR_AF"] = 0.002
         
         # low maf Biallelic var returns the same
-        variants = [(snv_1, "single_variant", "Biallelic", ["ATRX"])]
+        variants = [(snv_1, ["single_variant"], ["Biallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
         # low maf non-biallelic var returns the same
-        variants = [(snv_1, "single_variant", "Monoallelic", ["ATRX"])]
+        variants = [(snv_1, ["single_variant"], ["Monoallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
         # high maf Biallelic var returns the same
-        variants = [(snv_2, "single_variant", "Monoallelic", ["ATRX"])]
+        variants = [(snv_2, ["single_variant"], ["Monoallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), [])
         
         # high maf non-Biallelic is filtered out
-        variants = [(snv_2, "single_variant", "Biallelic", ["ATRX"])]
+        variants = [(snv_2, ["single_variant"], ["Biallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
         # var with multiple inheritance modes should drop the non-biallelic
         # mode if the var has a high maf (leaving the Biallelic mode)
-        variants = [(snv_2, "single_variant", "Monoallelic,Biallelic", ["ATRX"])]
-        expected = [(snv_2, "single_variant", "Biallelic", ["ATRX"])]
+        variants = [(snv_2, ["single_variant"], ["Monoallelic", "Biallelic"], ["ATRX"])]
+        expected = [(snv_2, ["single_variant"], ["Biallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), expected)
         
         # var with multiple inheritance modes should keep the non-biallelic
         # mode if the var has a low maf
-        variants = [(snv_1, "single_variant", "Monoallelic,Biallelic", ["ATRX"])]
+        variants = [(snv_1, ["single_variant"], ["Monoallelic", "Biallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
         
         # check a de novo (lacking any MAF values)
         del snv_1.child.info["AFR_AF"]
-        variants = [(snv_1, "single_variant", "Monoallelic", ["ATRX"])]
+        variants = [(snv_1, ["single_variant"], ["Monoallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
     
     def test_filter_by_maf_without_parents(self):

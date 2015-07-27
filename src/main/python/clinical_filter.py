@@ -197,16 +197,14 @@ class ClinicalFilter(LoadOptions):
                 
                 # append the check type and inheritance type to the first
                 # instance of the variant
-                if result not in unique_vars[key][1]:
-                    unique_vars[key][1] += "," + result
-                if inh not in unique_vars[key][2]:
-                    unique_vars[key][2] += "," + inh
+                unique_vars[key][1] += [x for x in result if x not in unique_vars[key][1]]
+                unique_vars[key][2] += [x for x in inh if x not in unique_vars[key][2]]
                 
                 # add the HGNC symbols that are unique to the current variant
                 # to the merged variant
                 hgnc = [x for x in hgnc if x not in unique_vars[key][3]]
-                unique_vars[key][3] = unique_vars[key][3] + hgnc
-        
+                unique_vars[key][3] += hgnc
+                
         unique_vars = [tuple(unique_vars[x]) for x in unique_vars]
         
         return unique_vars
