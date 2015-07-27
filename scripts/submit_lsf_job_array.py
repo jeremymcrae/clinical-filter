@@ -57,6 +57,9 @@ def get_options():
     
     args = parser.parse_args()
     
+    if args.without_parents:
+        args.use_singletons_with_parents = True
+    
     return args
 
 def check_for_singletons_missing_parents(family):
