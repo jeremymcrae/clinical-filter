@@ -242,7 +242,7 @@ class TestReportPy(unittest.TestCase):
         alt_id = "test_id"
         
         # check the output for the default variant
-        expected = "child\ttest_id\tF\tX\t15000000\tTEST\tNA\tNA\tmissense_variant\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t0\tsingle_variant\tNA\n"
+        expected = "child\ttest_id\tF\tX\t15000000\tTEST\tNA\tNA\tmissense_variant\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t0\tsingle_variant\tNA\tNA\n"
         self.assertEqual(self.report._get_output_line(var, dad_aff, mom_aff, alt_id), expected)
         
         # introduce additional info for the output line parsing, check the line
@@ -250,6 +250,6 @@ class TestReportPy(unittest.TestCase):
         var[0].child.info["PolyPhen"] = "probably_damaging(0.99)"
         var[0].child.info["SIFT"] = "deleterious(0)"
         var[0].child.info["ENST"] = "ENST00X"
-        expected = "child\ttest_id\tF\tX\t15000000\tTEST\tNA\tENST00X\tmissense_variant,PolyPhen=probably_damaging(0.99),SIFT=deleterious(0)\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t0\tsingle_variant\tNA\n"
+        expected = "child\ttest_id\tF\tX\t15000000\tTEST\tNA\tENST00X\tmissense_variant,PolyPhen=probably_damaging(0.99),SIFT=deleterious(0)\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t0\tsingle_variant\tNA\tNA\n"
         self.assertEqual(self.report._get_output_line(var, dad_aff, mom_aff, alt_id), expected)
         

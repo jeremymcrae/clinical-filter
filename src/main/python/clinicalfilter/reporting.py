@@ -33,7 +33,8 @@ class Report(object):
             output.write("\t".join(["proband", "alternate_ID", "sex", \
                 "chrom", "position", "gene", "mutation_ID", "transcript", \
                 "consequence", "ref/alt_alleles", "MAX_MAF", "inheritance", \
-                "trio_genotype", "mom_aff", "dad_aff", "result", "pp_dnm"]) + "\n")
+                "trio_genotype", "mom_aff", "dad_aff", "result", "pp_dnm", \
+                "exac_allele_count"]) + "\n")
             output.close()
         
         self._log_run_details()
@@ -128,6 +129,10 @@ class Report(object):
         if "PP_DNM" in var.child.format:
             pp_dnm = var.child.format["PP_DNM"]
         
+        exac_ac = "NA"
+        if "Adj_AC" in var.child.info:
+            exac_ac = var.child.info["Adj_AC"]
+        
         genes = ",".join(list(set(candidate[3])))
         result = ",".join(candidate[1])
         inh = ",".join(candidate[2])
@@ -136,7 +141,7 @@ class Report(object):
             self.family.child.get_gender(), var.get_chrom(), \
             str(var.get_position()), genes, var.child.get_mutation_id(), \
             transcript, consequence, alleles, max_maf, inh, \
-            trio_genotype, mom_aff, dad_aff, result, pp_dnm]
+            trio_genotype, mom_aff, dad_aff, result, pp_dnm, exac_ac]
         
         output_line = "\t".join(output_line) + "\n"
         
