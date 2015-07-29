@@ -44,7 +44,7 @@ class PostInheritanceFilter(object):
         
         self.variants = self.filter_polyphen(self.variants)
         
-        self.filter_exac_hemizygous(self.variants)
+        self.variants = self.filter_exac_hemizygous(self.variants)
         
         return self.variants
     
