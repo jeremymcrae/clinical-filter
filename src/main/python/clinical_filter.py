@@ -170,7 +170,7 @@ class ClinicalFilter(LoadOptions):
             finder = Allosomal(variants, self.family, self.known_genes, gene_inh, self.cnv_regions)
         
         variants = finder.get_candidate_variants()
-        variants = [ (x[0], x[1], x[2], [gene]) for x in variants ]
+        variants = [ (x[0], list(x[1]), list(x[2]), [gene]) for x in variants ]
         
         return variants
     

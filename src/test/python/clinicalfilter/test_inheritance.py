@@ -179,7 +179,7 @@ class TestInheritancePy(unittest.TestCase):
         self.inh.candidates = []
         self.inh.add_variant_to_appropriate_list(var, check, inheritance)
         self.assertEqual(self.inh.candidates, [])
-        self.assertEqual(self.inh.compound_hets, [(var, [check], [inheritance])])
+        self.assertEqual(self.inh.compound_hets, [(var, (check,), (inheritance,))])
         
         # check that single_variant vars are only added to the candidates list
         self.inh.compound_hets = []
