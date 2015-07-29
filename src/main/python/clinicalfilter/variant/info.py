@@ -29,12 +29,12 @@ class VariantInfo(object):
     # define the set of loss-of-function consequences
     lof_consequences = set(["transcript_ablation", "splice_donor_variant", \
         "splice_acceptor_variant", "stop_gained", "frameshift_variant",  \
-        "coding_sequence_variant"])
+        "coding_sequence_variant", "start_lost", "initiator_codon_variant"])
     
     # define the set of missense (or non loss-of-function) consequences
-    missense_consequences = set(["stop_lost", "initiator_codon_variant", \
+    missense_consequences = set(["stop_lost", \
         "inframe_insertion", "inframe_deletion", "missense_variant", \
-        "transcript_amplification", "start_lost", "protein_altering_variant"])
+        "transcript_amplification", "protein_altering_variant"])
     
     # define the populations who have minor allele frequencies in the INFO
     populations = set(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF", \
