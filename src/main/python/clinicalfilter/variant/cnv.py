@@ -99,23 +99,6 @@ class CNV(Variant, VariantInfo):
         
         self.gene = genes
     
-    def set_gene_from_info(self):
-        """ sets a gene to the var using the info. CNVs and SNVs act differently
-        """
-        
-        # sometimes the variant lacks an HGNC field, but does have a HGNC_ALL
-        # entry.
-        if "HGNC_ALL" in self.info:
-            self.gene = self.info["HGNC_ALL"].split("&")
-        elif "HGNC" not in self.info and "NUMBERGENES" in self.info:
-            self.gene = None
-            if int(self.info["NUMBERGENES"]) > 0:
-                self.gene = ["."]
-        elif "HGNC" in self.info:
-            self.gene = self.info["HGNC"].split("|")
-        else:
-            self.gene = None
-    
     def passes_filters(self):
         """Checks whether a VCF variant passes user defined criteria.
         

@@ -145,7 +145,7 @@ class ClinicalFilter(LoadOptions):
             gene_inh = self.known_genes[gene]["inh"]
         
         if self.known_genes is not None and gene not in self.known_genes:
-            return []
+            variants = [ x for x in variants if x.is_cnv() ]
         
         # ignore intergenic variants
         if gene is None:

@@ -109,6 +109,9 @@ class VariantInfo(object):
         # HGNC_ALL entry is a "&"-separated list of Vega symbols.
         elif self.gene is None and "HGNC_ALL" in self.info:
             self.gene = self.info["HGNC_ALL"].split("&")
+        elif self.is_cnv() and "HGNC" not in self.info and "NUMBERGENES" in self.info:
+            if int(self.info["NUMBERGENES"]) > 0:
+                self.gene = ["."]
         # If we are not using a set of known genes, we still want to check
         # variants that haven't been annotated with a HGNC, since some of these
         # have a functional VEP annotation, presumably due to difficulties in
