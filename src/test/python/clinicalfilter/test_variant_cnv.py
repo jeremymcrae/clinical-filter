@@ -126,6 +126,11 @@ class TestVariantCnvPy(unittest.TestCase):
         """ test that set_add_gene_from_info() works correctly
         """
         
+        # make sure the known genes are None, otherwise sometimes the values
+        # from test_variant_info.py unit tests can bleed through. I'm not sure
+        # why!
+        self.var.known_genes = None
+        
         # check that HGNC takes precedence
         self.var.info["HGNC"] = "A"
         self.var.info["HGNC_ALL"] = "B"
@@ -151,10 +156,16 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.set_gene_from_info()
         self.assertEqual(self.var.gene, ["."])
         
+        print()
+        print(self.var)
+        print(self.var.known_genes)
+        
         # finally check for no HGNC, HGNC_ALL, or NUMBERGENES
         del self.var.info["NUMBERGENES"]
         self.var.set_gene_from_info()
         self.assertEqual(self.var.gene, "1:15000000")
+        
+        print(self.var)
     
     def test_get_genes(self):
         """ test that get_genes() works correctly
