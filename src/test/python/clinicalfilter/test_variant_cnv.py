@@ -126,20 +126,20 @@ class TestVariantCnvPy(unittest.TestCase):
         """ test that set_add_gene_from_info() works correctly
         """
         
-        # check that HGNC_ALL takes precedence
+        # check that HGNC takes precedence
         self.var.info["HGNC"] = "A"
         self.var.info["HGNC_ALL"] = "B"
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.gene, ["B"])
+        self.assertEqual(self.var.gene, ["A"])
         
         # check that HGNC is used in the absence of HGNC_ALL
-        del self.var.info["HGNC_ALL"]
+        del self.var.info["HGNC"]
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.gene, ["A"])
+        self.assertEqual(self.var.gene, ["B"])
         
         # check that when HGNC and HGNC_ALL are undefined, we can still include
         # CNVs overlapping genes through NUMBERGENES > 0.
-        del self.var.info["HGNC"]
+        del self.var.info["HGNC_ALL"]
         
         # first test for NUMBERGENES = 0
         self.var.info["NUMBERGENES"] = 0
@@ -154,7 +154,7 @@ class TestVariantCnvPy(unittest.TestCase):
         # finally check for no HGNC, HGNC_ALL, or NUMBERGENES
         del self.var.info["NUMBERGENES"]
         self.var.set_gene_from_info()
-        self.assertIsNone(self.var.gene)
+        self.assertEqual(self.var.gene, "1:15000000")
     
     def test_get_genes(self):
         """ test that get_genes() works correctly
