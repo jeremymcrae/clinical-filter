@@ -129,7 +129,7 @@ class Inheritance(object):
         """
         
         if check == "compound_het":
-            self.compound_hets.append((variant, (check, ), (inheritance, )))
+            self.compound_hets.append((variant, (check,), (inheritance,)))
         elif check == "single_variant":
             self.candidates.append((variant, [check], [inheritance]))
     
