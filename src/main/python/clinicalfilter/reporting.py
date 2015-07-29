@@ -130,8 +130,8 @@ class Report(object):
             pp_dnm = var.child.format["PP_DNM"]
         
         exac_ac = "NA"
-        if "Adj_AC" in var.child.info:
-            exac_ac = var.child.info["Adj_AC"]
+        if "AC_Adj" in var.child.info:
+            exac_ac = var.child.info["AC_Adj"]
         
         genes = ",".join(list(set(candidate[3])))
         result = ",".join(candidate[1])
