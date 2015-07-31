@@ -302,7 +302,7 @@ def run_cleanup(hash_string):
     date = time.strftime("%Y-%m-%d", time.localtime())
     output_name = "tmp_ped.{0}.output".format(hash_string)
     merged_output = "clinical_reporting.{}.txt".format(date)
-    merged_log = "clinical_reporting.{}.txt".format(date)
+    merged_log = "clinical_reporting.{}.log".format(date)
     
     # merge the array output after the array finishes
     merge_id = "merge1_{0}".format(hash_string)
