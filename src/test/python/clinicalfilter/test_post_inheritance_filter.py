@@ -218,7 +218,43 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         snv.child.info["AFR_AF"] = 0.0001
         variants = [(snv, "single_variant", "Monoallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
+    
+    def test_get_polyphen_for_genes(self):
+        """ test that get_polyphen_for_genes works correctly
+        """
         
+        snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"])
+        snv_1.genes = ["ATRX", "TEST"]
+        snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)|benign(0.01)"
+        
+        # pulling the prediction for a single gene gets the correct prediction
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["ATRX"]),
+            ["probably_damaging"])
+        # pulling the prediction for a different gene gets the correct prediction
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["TEST"]),
+            ["benign"])
+        # pulling the prediction for multiple genes gets the correct predictions
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["TEST", "ATRX"]),
+            ["probably_damaging", "benign"])
+        # the genes order doesn't affect the polyphen prediction order
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["ATRX", "TEST"]),
+            ["probably_damaging", "benign"])
+        
+        # check that only having one polyphen prediction works corectly
+        snv_1.genes = ["ATRX"]
+        snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)"
+        # extracting the polyphen works as expected
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["ATRX"]),
+            ["probably_damaging"])
+        # predcitions for a nonexistent gene should return a blank list
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["TEST"]),
+            [])
+        
+        # expect a blank list if the variant lacks a polyphen prediction
+        del snv_1.child.info["PolyPhen"]
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["ATRX"]),
+            [])
+    
     def test_filter_polyphen(self):
         """ check that filter_polyphen() works correctly
         """
@@ -279,6 +315,17 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         passing_vars = [(snv_2, "compound_het", "Biallelic", ["ATRX"]), \
             (snv_3, "compound_het", "Biallelic", ["ATRX"])]
         self.assertEqual(self.post_filter.filter_polyphen(variants), passing_vars)
+        
+        # if the variants overlap multiple genes, and one of the genes is
+        # predicted as benign, make sure this doesn't stop variants passing for
+        # the gene of interest if they are predicted to be damaging.
+        snv_1.genes = ["ATRX", "TEST"]
+        snv_2.genes = ["ATRX", "TEST"]
+        snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)|benign(0.01)"
+        snv_2.child.info["PolyPhen"] = "probably_damaging(0.99)|probably_damaging(0.01)"
+        variants = [(snv_1, "compound_het", "Biallelic", ["ATRX"]), \
+            (snv_2, "compound_het", "Biallelic", ["ATRX"])]
+        self.assertEqual(self.post_filter.filter_polyphen(variants), variants)
     
     def test_has_compound_match(self):
         """ check that has_compound_match() works correctly

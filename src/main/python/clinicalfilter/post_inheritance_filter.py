@@ -122,6 +122,41 @@ class PostInheritanceFilter(object):
         
         return passed_vars
     
+    def get_polyphen_for_genes(self, var, hgnc):
+        """ get the polyphen predictions for a variant for specific gene symbols
+        
+        Genetic variants can lie within multiple genes, each of which has a
+        polyphen prediction (if the site has an appropriate functional
+        consequence). This function pulls out the polyphen predictions for
+        specific gene symbols, in order to check whether a candidate variant
+        has a "benign" polyphen prediction.
+        
+        Args:
+            var: TrioGenotypes object for a variant
+            hgnc: list of gene symbols
+        
+        Returns:
+            list of polyphen predictions
+        """
+        
+        # find the HGNC symbol positions in the partner variant that match the
+        # HGNC symbols
+        genes = var.get_genes()
+        pos = [ x for x in range(len(genes)) if genes[x] in hgnc ]
+        
+        polyphen = []
+        if "PolyPhen" in var.child.info:
+            # get the polyphen predictions for the genes matching the required
+            # gene symbols. NOTE: This does not account for multi-allelic sites,
+            # but we don't examine compound hets at multi-allelic sites, so this
+            # shouldn't be a problem.
+            polyphen = [ var.child.info["PolyPhen"].split("|")[n] for n in pos ]
+            
+            # remove the numeric scores from the annotations
+            polyphen = [ x.split("(")[0] for x in polyphen ]
+        
+        return polyphen
+    
     def filter_polyphen(self, variants):
         """ filter variants based on polyphen predictions
         
@@ -139,14 +174,12 @@ class PostInheritanceFilter(object):
         passed_vars = []
         
         for (var, check, inh, hgnc) in variants:
-            passes = False
             
             # check if the variant on it's own would pass
-            if "PolyPhen" not in var.child.info or \
-                    not "benign" in var.child.info["PolyPhen"] or \
+            passes = "PolyPhen" not in var.child.info or \
+                    "benign" not in self.get_polyphen_for_genes(var, hgnc) or \
                     var.get_trio_genotype() == var.get_de_novo_genotype() or \
-                    var.get_trio_genotype()[1:] == ("NA", "NA"):
-                passes = True
+                    "NA" in var.get_trio_genotype()
             
             # check all of the other variants to see if any are in the same
             # gene, compound_het, and polyphen benign
@@ -177,21 +210,14 @@ class PostInheritanceFilter(object):
         Args:
             var: TrioGenotypes object
             hgnc: HGNC symbol that we need to match for the partner variant
-            variants: list of (variant, check, inheritance) tuples
+            variants: list of (variant, check, inheritance, gene) tuples
         
         Returns:
             True/false for whether there is a compound het match
         """
         
         # get a list of the variants in the gene
-        compound_vars = []
-        for (alt_var, alt_check, alt_inh, alt_hgnc) in variants:
-            # ignore if we are looking at another gene
-            if hgnc not in alt_hgnc:
-                continue
-            if "compound_het" not in alt_check:
-                continue
-            compound_vars.append(alt_var)
+        compound_vars = [ x[0] for x in variants if hgnc in x[3] and "compound_het" in x[1] ]
         
         if len(compound_vars) == 0:
             return False
@@ -204,26 +230,17 @@ class PostInheritanceFilter(object):
                 not_benign.append(alt_var)
             elif alt_var.get_trio_genotype() == alt_var.get_de_novo_genotype():
                 not_benign.append(alt_var)
-            elif alt_var.get_trio_genotype()[1:] == ("NA", "NA"):
+            elif "NA" in alt_var.get_trio_genotype():
                 not_benign.append(alt_var)
-            else:
-                # find the HGNC symbol positions in the partner variant that
-                # match the HGNC symbol
-                alt_genes = alt_var.get_genes()
-                pos = [ x for x in range(len(alt_genes)) if alt_genes[x] == hgnc ]
-                
-                # get the polyphen predicitons for the matching gene positions
-                polyphen = [ alt_var.child.info["PolyPhen"].split("|")[n] for n in pos ]
-                
-                if not any("benign" in x for x in polyphen):
-                    not_benign.append(alt_var)
+            elif "benign" not in self.get_polyphen_for_genes(alt_var, hgnc):
+                not_benign.append(alt_var)
         
         # if we have more than two non-benign variants with different genotypes,
         # then we don't want to exclude these variants. Unless we lack parents
         # since those will have the same trio genotypes by virtue of having
         # "NA" values for the parental genotypes.
         genotypes = set([ x.get_trio_genotype() for x in not_benign ])
-        if var.get_trio_genotype()[1:] == ("NA", "NA"):
+        if "NA" in var.get_trio_genotype():
             genotypes = [ x.get_trio_genotype() for x in not_benign ]
         
         return len(genotypes) <= 1
