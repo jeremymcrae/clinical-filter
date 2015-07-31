@@ -254,6 +254,12 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         del snv_1.child.info["PolyPhen"]
         self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["ATRX"]),
             [])
+        
+        # gene symbols of None shouldn't break the code.
+        snv_1.genes = [None, "TEST"]
+        snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)|benign(0.01)"
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["TEST"]),
+            ["benign"])
     
     def test_filter_polyphen(self):
         """ check that filter_polyphen() works correctly

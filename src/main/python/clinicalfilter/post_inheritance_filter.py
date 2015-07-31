@@ -142,7 +142,7 @@ class PostInheritanceFilter(object):
         # find the HGNC symbol positions in the partner variant that match the
         # HGNC symbols
         genes = var.get_genes()
-        pos = [ x for x in range(len(genes)) if genes[x] in hgnc ]
+        pos = [ x for x in range(len(genes)) if genes[x] is not None and genes[x] in hgnc ]
         
         polyphen = []
         if "PolyPhen" in var.child.info:
