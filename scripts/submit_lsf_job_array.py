@@ -299,20 +299,23 @@ def run_cleanup(hash_string):
     """ runs a lsf job to clean up the files
     """
     
+    date = time.strftime("%Y-%m-%d", time.localtime())
     output_name = "tmp_ped.{0}.output".format(hash_string)
+    merged_output = "clinical_reporting.{}.txt".format(date)
+    merged_log = "clinical_reporting.{}.txt".format(date)
     
     # merge the array output after the array finishes
     merge_id = "merge1_{0}".format(hash_string)
     command = ["head", "-n", "1", output_name + ".1.txt", \
-        ">", "clinical_reporting.txt", ";", \
+        ">", merged_output, ";", \
         "tail", "-q", "-n", "+2", output_name + "*", \
-        ">>", "clinical_reporting.txt"]
+        ">>", merged_output]
     submit_bsub_job(command, job_id=merge_id, dependent_id=hash_string, \
         logfile="tmp_ped.{0}*bjob_output.var_merge.txt".format(hash_string))
     
     # merge the log files after the array finishes
     log_merge_id = "merge2_{0}".format(hash_string)
-    command = ["cat", "tmp_ped.{0}*.log".format(hash_string), ">", "clinical_reporting.log"]
+    command = ["cat", "tmp_ped.{0}*.log".format(hash_string), ">", merged_log]
     submit_bsub_job(command, job_id=log_merge_id, dependent_id=hash_string, \
         logfile="tmp_ped.{0}*bjob_output.log_merge.txt".format(hash_string))
     
