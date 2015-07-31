@@ -176,8 +176,7 @@ class PostInheritanceFilter(object):
         for (var, check, inh, hgnc) in variants:
             
             # check if the variant on it's own would pass
-            passes = "PolyPhen" not in var.child.info or \
-                    "benign" not in self.get_polyphen_for_genes(var, hgnc) or \
+            passes = "benign" not in self.get_polyphen_for_genes(var, hgnc) or \
                     var.get_trio_genotype() == var.get_de_novo_genotype() or \
                     "NA" in var.get_trio_genotype()
             
@@ -226,9 +225,7 @@ class PostInheritanceFilter(object):
         # or are benign but de novo.
         not_benign = []
         for alt_var in compound_vars:
-            if "PolyPhen" not in alt_var.child.info:
-                not_benign.append(alt_var)
-            elif alt_var.get_trio_genotype() == alt_var.get_de_novo_genotype():
+            if alt_var.get_trio_genotype() == alt_var.get_de_novo_genotype():
                 not_benign.append(alt_var)
             elif "NA" in alt_var.get_trio_genotype():
                 not_benign.append(alt_var)
