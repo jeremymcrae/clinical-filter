@@ -96,9 +96,14 @@ class VariantInfo(object):
         
         self.gene = None
         
-        if "HGNC" in self.info:
+        if "HGNC" in self.info or "SYMBOL" in self.info:
+            try:
+                gene_num = len(self.info["HGNC"].split(","))
+            except KeyError:
+                gene_num = len(self.info["SYMBOL"].split(","))
+            
             self.gene = []
-            for pos in range(len(self.info["HGNC"].split(","))):
+            for pos in range(gene_num):
                 self.gene.append(self.get_genes_for_allele(pos))
             
             # pull out the gene list for single allele variants
