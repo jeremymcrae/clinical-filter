@@ -144,6 +144,10 @@ class ClinicalFilter(LoadOptions):
         if self.known_genes is not None and gene in self.known_genes:
             gene_inh = self.known_genes[gene]["inh"]
         
+        # If we are looking for variants in a set of known genes, and the gene
+        # isn't part of that set, then we don't ant to examine the variant for
+        # that gene, UNLESS the variant is a CNV, since CNVs can be included
+        # purely from size thresholds, regardless of which gene they overlap.
         if self.known_genes is not None and gene not in self.known_genes:
             variants = [ x for x in variants if x.is_cnv() ]
         
