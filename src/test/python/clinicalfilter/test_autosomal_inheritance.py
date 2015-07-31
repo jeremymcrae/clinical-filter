@@ -141,7 +141,7 @@ class TestAutosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.log_string, "autosomal without parents")
         
         # check for biallelic inheritance
-        self.assertEqual(self.inh.check_variant_without_parents("Biallelic"), "nothing")
+        self.assertEqual(self.inh.check_variant_without_parents("Biallelic"), "compound_het")
         
         self.set_trio_genos(var, "200")
         self.assertEqual(self.inh.check_variant_without_parents("Monoallelic"), "nothing")
