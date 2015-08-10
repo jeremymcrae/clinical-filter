@@ -36,7 +36,7 @@ class Variant(object):
         self.format = None
         self.inheritance_type = None
         self.info = {}
-        self.gene = None
+        self.genes = None
         self.consequence = None
         self.genotype = None
         

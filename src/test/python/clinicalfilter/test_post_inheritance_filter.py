@@ -224,7 +224,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         """
         
         snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"])
-        snv_1.genes = ["ATRX", "TEST"]
+        snv_1.child.genes = ["ATRX", "TEST"]
         snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)|benign(0.01)"
         
         # pulling the prediction for a single gene gets the correct prediction
@@ -241,7 +241,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
             ["probably_damaging", "benign"])
         
         # check that only having one polyphen prediction works corectly
-        snv_1.genes = ["ATRX"]
+        snv_1.child.genes = ["ATRX"]
         snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)"
         # extracting the polyphen works as expected
         self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["ATRX"]),
@@ -256,7 +256,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
             [])
         
         # gene symbols of None shouldn't break the code.
-        snv_1.genes = [None, "TEST"]
+        snv_1.child.genes = [None, "TEST"]
         snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)|benign(0.01)"
         self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["TEST"]),
             ["benign"])

@@ -94,7 +94,7 @@ class VariantInfo(object):
         """ sets a gene to the var using the info. CNVs and SNVs act differently
         """
         
-        self.gene = None
+        self.genes = None
         
         if "HGNC" in self.info or "SYMBOL" in self.info:
             try:
@@ -102,28 +102,28 @@ class VariantInfo(object):
             except KeyError:
                 gene_num = len(self.info["SYMBOL"].split(","))
             
-            self.gene = []
+            self.genes = []
             for pos in range(gene_num):
-                self.gene.append(self.get_genes_for_allele(pos))
+                self.genes.append(self.get_genes_for_allele(pos))
             
             # pull out the gene list for single allele variants
-            if len(self.gene) == 1:
-                self.gene = self.gene[0]
+            if len(self.genes) == 1:
+                self.genes = self.genes[0]
         
         # some genes lack an HGNC entry, but do have an HGNC_ALL entry. The
         # HGNC_ALL entry is a "&"-separated list of Vega symbols.
-        elif self.gene is None and "HGNC_ALL" in self.info:
-            self.gene = self.info["HGNC_ALL"].split("&")
+        elif self.genes is None and "HGNC_ALL" in self.info:
+            self.genes = self.info["HGNC_ALL"].split("&")
         elif self.is_cnv() and "HGNC" not in self.info and "NUMBERGENES" in self.info:
             if int(self.info["NUMBERGENES"]) > 0:
-                self.gene = ["."]
+                self.genes = ["."]
         # If we are not using a set of known genes, we still want to check
         # variants that haven't been annotated with a HGNC, since some of these
         # have a functional VEP annotation, presumably due to difficulties in
         # identifying an HGNC symbol. We don't need to worry about this when
         # using a set of known genes, since those should all have HGNC symbols.
-        elif self.gene is None and self.known_genes is None:
-            self.gene = "{0}:{1}".format(self.chrom, self.position)
+        elif self.genes is None and self.known_genes is None:
+            self.genes = "{0}:{1}".format(self.chrom, self.position)
     
     def get_genes_for_allele(self, position):
         """ gets list of gene symbols for an allele, prioritising HGNC symbols.
@@ -184,8 +184,8 @@ class VariantInfo(object):
             list of gene IDs
         """
         
-        genes = self.gene
-        if self.gene is None:
+        genes = self.genes
+        if self.genes is None:
             genes = []
         
         return genes
@@ -199,7 +199,7 @@ class VariantInfo(object):
             cq = self.info["CQ"].split("|")
         
         if "," in self.alt_allele:
-            (cq, self.gene, enst) = self.correct_multiple_alt(cq)
+            (cq, self.genes, enst) = self.correct_multiple_alt(cq)
             
             if "ENST" in self.info:
                 self.info["ENST"] = enst

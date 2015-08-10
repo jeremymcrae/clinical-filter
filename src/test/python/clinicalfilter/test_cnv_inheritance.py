@@ -223,17 +223,16 @@ class TestCNVInheritancePy(unittest.TestCase):
         """
         
         gene = "TEST"
+        inh = "X-linked dominant"
         
         # check that a CNV with mismatched chrom fails
-        inh = "X-linked dominant"
         self.inh.variant.child.genotype = "DUP"
         self.inh.variant.child.info["CNS"] = "3"
         self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         self.assertFalse(self.inh.passes_gene_inheritance(gene, inh))
         
         # check that a CNV with correct chrom passes
-        inh = "X-linked dominant"
-        self.inh.variant.chrom = "X"
+        self.inh.variant.child.chrom = "X"
         self.inh.variant.child.info["CNS"] = "3"
         self.assertTrue(self.inh.passes_gene_inheritance(gene, inh))
     
@@ -242,11 +241,11 @@ class TestCNVInheritancePy(unittest.TestCase):
         """
         
         gene = "TEST"
+        inh = "Hemizygous"
         
         # check that female hemizygous CNV must be DUPs
-        inh = "Hemizygous"
         self.inh.variant.child.gender = "F"
-        self.inh.variant.chrom = "X"
+        self.inh.variant.child.chrom = "X"
         self.inh.variant.child.info["CNS"] = "3"
         self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         self.assertTrue(self.inh.passes_gene_inheritance(gene, inh))
@@ -270,10 +269,10 @@ class TestCNVInheritancePy(unittest.TestCase):
         """
         
         gene = "TEST"
+        inh = "Mosaic"
         
         # check that non-supported inheritance modes fail, even if they
         # otherwise would
-        inh = "Mosaic"
         self.inh.variant.child.info["CNS"] = "1"
         self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         self.assertFalse(self.inh.passes_gene_inheritance(gene, inh))
@@ -288,7 +287,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         gene = "TEST"
         inh = "Monoallelic"
-        self.inh.variant.chrom = "1"
+        self.inh.variant.child.chrom = "1"
         self.inh.variant.child.info["CNS"] = "3"
         self.inh.known_genes[gene]["inh"][inh] = {"Increased gene dosage"}
         
@@ -304,12 +303,12 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.assertTrue(self.inh.passes_ddg2p_filter())
         
         # check that we only pass genes with exact matches from DDG2P
-        self.inh.variant.child.gene = ["TEST1"]
+        self.inh.variant.child.genes = ["TEST1"]
         self.assertFalse(self.inh.passes_ddg2p_filter())
         
         # check if the variant passes if the confirmed type is "Both DD and IF",
         # even if the variant wouldn't otherwise pass
-        self.inh.variant.child.gene = ["TEST"]
+        self.inh.variant.child.genes = ["TEST"]
         self.inh.known_genes[gene]["status"] = {"Both DD and IF"}
         self.inh.known_genes[gene]["inh"][inh] = {"Loss of function"}
         self.assertTrue(self.inh.passes_ddg2p_filter())
@@ -325,9 +324,8 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         # now check that if the CNV lies across any gene that passes, we pass
         # the variant
-        self.inh.variant.child.gene = ["TEST", "TEST2"]
+        self.inh.variant.child.genes = ["TEST", "TEST2"]
         self.assertTrue(self.inh.passes_ddg2p_filter())
-        
     
     def test_check_passes_intragenic_dup(self):
         """ test that passes_intragenic_dup() works correctly
@@ -454,7 +452,7 @@ class TestCNVInheritancePy(unittest.TestCase):
             {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         self.inh.known_genes = gene_inh
-        self.inh.variant.chrom = "1"
+        self.inh.variant.child.chrom = "1"
         self.inh.variant.child.info["CNS"] = "3"
         self.inh.variant.child.info["SVLEN"] = "1000001"
         
@@ -491,7 +489,7 @@ class TestCNVInheritancePy(unittest.TestCase):
             {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
         
         self.inh.known_genes = gene_inh
-        self.inh.variant.chrom = "X"
+        self.inh.variant.child.chrom = "X"
         self.inh.variant.child.info["CNS"] = "1"
         self.inh.variant.child.info["SVLEN"] = "500001"
         
@@ -503,11 +501,11 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.assertTrue(self.inh.check_compound_inheritance())
         
         # check that low SVLEN combined with incorrect chrom fails
-        self.inh.variant.chrom = "1"
+        self.inh.variant.child.chrom = "1"
         self.assertFalse(self.inh.check_compound_inheritance())
         
         # check that low SVLEN combined with incorrect sex fails
-        self.inh.variant.chrom = "X"
+        self.inh.variant.child.chrom = "X"
         self.inh.trio.child.gender = "M"
         self.assertFalse(self.inh.check_compound_inheritance())
         

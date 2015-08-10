@@ -97,7 +97,7 @@ class CNV(Variant, VariantInfo):
                 if start <= gene_end and end >= gene_start:
                     genes.append(gene)
         
-        self.gene = genes
+        self.genes = genes
     
     def passes_filters(self):
         """Checks whether a VCF variant passes user defined criteria.

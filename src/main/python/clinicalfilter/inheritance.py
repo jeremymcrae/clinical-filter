@@ -512,7 +512,7 @@ class CNVInheritance(object):
         # is on a biallelic gene, but the CNV spans multiple genes, if any of
         # those genes involves a disorder inherited in a biallelic mode, then
         # the CNV will be passed through for compound het checking.
-        genes = self.variant.child.get_genes()
+        genes = self.variant.get_genes()
         for gene in genes:
             if self.known_genes is not None and gene in self.known_genes:
                 if "Biallelic" in self.known_genes[gene]["inh"] or \
@@ -609,7 +609,7 @@ class CNVInheritance(object):
         """ checks if a CNV passes the DDG2P CNV criteria
         """
             
-        genes = self.variant.child.get_genes()
+        genes = self.variant.get_genes()
         
         self.log_string = "non-reported CNV"
         for gene in genes:

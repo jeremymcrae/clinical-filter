@@ -43,29 +43,29 @@ class TestVariantInfoPy(unittest.TestCase):
         # check for when a HGNC key exists
         self.var.info["HGNC"] = "A"
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.gene, ["A"])
+        self.assertEqual(self.var.genes, ["A"])
         
         # check for when a HGNC key doesn't exist
         del self.var.info["HGNC"]
         self.var.set_gene_from_info()
-        self.assertIsNone(self.var.gene)
+        self.assertIsNone(self.var.genes)
         
         # check for multiple gene symbols
         self.var.info["HGNC"] = "A|B|C"
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.gene, ["A", "B", "C"])
+        self.assertEqual(self.var.genes, ["A", "B", "C"])
         
         # check for multiple gene symbols, when some are missing
         self.var.info["HGNC"] = "|.|C"
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.gene, [None, None, "C"])
+        self.assertEqual(self.var.genes, [None, None, "C"])
         
         # check for multiple gene symbols, when some missing symbols have
         # alternates in other symbol fields.
         self.var.info["HGNC"] = ".|.|C"
         self.var.info["SYMBOL"] = "Z|.|C"
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.gene, ["Z", None, "C"])
+        self.assertEqual(self.var.genes, ["Z", None, "C"])
         
         # Check that including alternate symbols has the correct precendence
         # order. Note that doing this properly would require checking all of the
@@ -74,7 +74,7 @@ class TestVariantInfoPy(unittest.TestCase):
         self.var.info["SYMBOL"] = "Z|.|C"
         self.var.info["ENSG"] = "A|.|C"
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.gene, ["Z", None, "C"])
+        self.assertEqual(self.var.genes, ["Z", None, "C"])
     
     def test_is_lof(self):
         """ test that is_lof() works correctly
@@ -95,7 +95,7 @@ class TestVariantInfoPy(unittest.TestCase):
         # check when the variant overlaps multiple genes (so has multiple
         # gene symbols and consequences).
         self.var.consequence = ["stop_gained", "missense_variant"]
-        self.var.gene = ["ATRX", "TTN"]
+        self.var.genes = ["ATRX", "TTN"]
         self.assertTrue(self.var.is_lof())
         self.assertTrue(self.var.is_lof("ATRX"))
         self.assertFalse(self.var.is_lof("TTN"))
@@ -166,7 +166,7 @@ class TestVariantInfoPy(unittest.TestCase):
         """ test that get_per_gene_consequence works correctly
         """
         
-        self.var.gene = ["ATRX"]
+        self.var.genes = ["ATRX"]
         self.var.consequence = ["missense_variant"]
         
         self.assertEqual(self.var.get_per_gene_consequence(None), ["missense_variant"])
@@ -175,20 +175,20 @@ class TestVariantInfoPy(unittest.TestCase):
         
         # check a variant with consequences in multiple genes, that we only
         # pull out the consequencesquences for a single gene
-        self.var.gene = ["ATRX", "TTN"]
+        self.var.genes = ["ATRX", "TTN"]
         self.var.consequence = ["missense_variant", "synonymous_variant"]
         self.assertEqual(self.var.get_per_gene_consequence("ATRX"), ["missense_variant"])
         self.assertEqual(self.var.get_per_gene_consequence("TTN"), ["synonymous_variant"])
         
         # check a symbol where two symbols match
-        self.var.gene = ["TEMP", "ATRX", "TEMP"]
+        self.var.genes = ["TEMP", "ATRX", "TEMP"]
         self.var.consequence = ["splice_acceptor_variant", "missense_variant", \
             "synonymous_variant"]
         self.assertEqual(self.var.get_per_gene_consequence("TEMP"), \
             ["splice_acceptor_variant", "synonymous_variant"])
         
         # check a symbol with some None gene symbols
-        self.var.gene = [None, "ATRX", None]
+        self.var.genes = [None, "ATRX", None]
         self.var.consequence = ["splice_acceptor_variant", "missense_variant", \
             "synonymous_variant"]
         self.assertEqual(self.var.get_per_gene_consequence("ATRX"), \
@@ -198,7 +198,7 @@ class TestVariantInfoPy(unittest.TestCase):
         # symbols from HGNC_ALL give the same consequence for all genes.
         info = "HGNC_ALL=ATRX&TTN;CQ=missense_variant;random_tag"
         del self.var.info["HGNC"]
-        self.var.gene = None
+        self.var.genes = None
         self.var.add_info(info)
         
         self.assertEqual(self.var.get_per_gene_consequence("ATRX"), \

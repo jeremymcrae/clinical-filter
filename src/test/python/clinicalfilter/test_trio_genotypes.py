@@ -158,21 +158,21 @@ class TestTrioGenotypesPy(unittest.TestCase):
         del self.var.father
         self.assertEqual(self.var.get_trio_genotype(), (1,"NA","NA"))
     
-    def test_convert_chrom_to_int(self):
-        """ test that convert_chrom_to_int() works correctly
+    def test_chrom_to_int(self):
+        """ test that chrom_to_int() works correctly
         """
         
         # check that an autosomal chrom works
-        self.assertEqual(self.var.convert_chrom_to_int("1"), 1)
+        self.assertEqual(self.var.chrom_to_int("1"), 1)
         
         # check that an X chrom works
-        self.assertEqual(self.var.convert_chrom_to_int("X"), 23)
+        self.assertEqual(self.var.chrom_to_int("X"), 23)
         
         # check that an X chrom works
-        self.assertEqual(self.var.convert_chrom_to_int("chrX"), 23)
+        self.assertEqual(self.var.chrom_to_int("chrX"), 23)
         
         # check that a Y chrom works
-        self.assertEqual(self.var.convert_chrom_to_int("chrY"), 24)
+        self.assertEqual(self.var.chrom_to_int("chrY"), 24)
 
 
 if __name__ == '__main__':
