@@ -114,17 +114,17 @@ class ClinicalFilter(LoadOptions):
         """
         
         # organise the variants into entries for each gene
-        genes_dict = {}
+        genes = {}
         for var in variants:
             # variants (particularly CNVs) can span multiple genes, so we need
             # to check each gene separately, and then collapse duplicates later
             for gene in var.get_genes():
-                if gene not in genes_dict:
-                    genes_dict[gene] = []
+                if gene not in genes:
+                    genes[gene] = []
                 # add the variant to the gene entry
-                genes_dict[gene].append(var)
+                genes[gene].append(var)
         
-        return genes_dict
+        return genes
         
     def find_variants(self, variants, gene):
         """ finds variants that fit inheritance models
