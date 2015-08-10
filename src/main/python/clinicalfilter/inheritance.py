@@ -455,8 +455,6 @@ class CNVInheritance(object):
             return "single_variant"
         elif self.cnv_regions is not None and self.check_cnv_region_overlap(self.cnv_regions):
             return "single_variant"
-        # elif self.check_compound_inheritance():
-        #     return "compound_het"
         
         if self.check_compound_inheritance():
             self.log_string = "possible compound het CNV"
@@ -538,8 +536,6 @@ class CNVInheritance(object):
             return "single_variant"
         elif self.known_genes is not None and self.passes_ddg2p_filter():
             return "single_variant"
-        # elif self.check_compound_inheritance():
-        #     return "compound_het"
         
         if self.check_compound_inheritance():
             self.log_string = "possible compound het CNV"
@@ -726,6 +722,7 @@ class CNVInheritance(object):
             
             if start <= region_end and end >= region_start and \
                     self.has_enough_overlap(start, end, region_start, region_end):
+                self.log_string = "in DECIPHER syndrome region"
                 return True
         
         return False
