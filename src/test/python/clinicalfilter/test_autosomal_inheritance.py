@@ -35,10 +35,9 @@ class TestAutosomalPy(unittest.TestCase):
         self.variants = [var]
         
         # make sure we've got known genes data
-        self.known_genes = {"TEST": {"inheritance": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}}
-        gene_inh = self.known_genes[var.get_genes()[0]]["inheritance"]
+        self.known_genes = {"TEST": {"inh": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}}
         
-        self.inh = Autosomal(self.variants, self.trio, gene_inh)
+        self.inh = Autosomal(self.variants, self.trio, self.known_genes, "TEST")
         self.inh.is_lof = var.child.is_lof()
     
     def create_snv(self, gender, genotype):

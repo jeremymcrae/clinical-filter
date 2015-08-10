@@ -35,10 +35,9 @@ class TestInheritancePy(unittest.TestCase):
         self.variants.append(self.create_variant(child_gender))
         
         # make sure we've got known genes data
-        self.known_genes = {"TEST": {"inheritance": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}}
-        gene_inh = self.known_genes[self.variants[0].get_genes()[0]]["inheritance"]
+        self.known_genes = {"TEST": {"inh": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}}
         
-        self.inh = Autosomal(self.variants, self.trio, gene_inh)
+        self.inh = Autosomal(self.variants, self.trio, self.known_genes, "TEST")
     
     def create_snv(self, gender, genotype, chrom, pos):
         """ create a default variant
@@ -254,9 +253,10 @@ class TestInheritancePy(unittest.TestCase):
         
         # set the inheritance type, the compound het type ("compound_het"
         # for autosomal variants, and start autosomal inheritance)
-        inh = "Biallelic"
+        # known_genes = "Biallelic"
+        known_genes = {"TEST": {"inh": ["Biallelic"], "confirmed_status": ["Confirmed DD Gene"]}}
         compound = "compound_het"
-        self.inh = Autosomal([var1, var2, var3], self.trio, inh)
+        self.inh = Autosomal([var1, var2, var3], self.trio, known_genes, "TEST")
         
         variants = ["", ""]
         
@@ -350,9 +350,10 @@ class TestInheritancePy(unittest.TestCase):
         
         # set the inheritance type, the compound het type ("hemizygous"
         # for allosomal variants, and start allosomal inheritance)
+        known_genes = {"TEST": {"inh": ["Hemizygous"], "confirmed_status": ["Confirmed DD Gene"]}}
         inh = "Hemizygous"
         compound = "hemizygous"
-        self.inh = Allosomal([var1, var2], self.trio, inh)
+        self.inh = Allosomal([var1, var2], self.trio, known_genes, "TEST")
         
         variants = ["", ""]
         

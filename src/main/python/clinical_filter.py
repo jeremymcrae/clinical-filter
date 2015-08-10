@@ -164,14 +164,13 @@ class ClinicalFilter(LoadOptions):
         if variants == []:
             return []
         
-        logging.debug(self.family.child.get_id() + " " + gene + " " + \
-            str(variants) + " " + str(gene_inh))
+        logging.debug("{} {} {} {}".format(self.family.child.get_id(), gene, variants, gene_inh))
         chrom_inheritance = variants[0].get_inheritance_type()
         
         if chrom_inheritance == "autosomal":
-            finder = Autosomal(variants, self.family, self.known_genes, gene_inh, self.cnv_regions)
+            finder = Autosomal(variants, self.family, self.known_genes, gene, self.cnv_regions)
         elif chrom_inheritance in ["XChrMale", "XChrFemale", "YChrMale"]:
-            finder = Allosomal(variants, self.family, self.known_genes, gene_inh, self.cnv_regions)
+            finder = Allosomal(variants, self.family, self.known_genes, gene, self.cnv_regions)
         
         variants = finder.get_candidate_variants()
         variants = [ (x[0], list(x[1]), list(x[2]), [gene]) for x in variants ]
