@@ -26,7 +26,7 @@ class Inheritance(object):
         Args:
             variants: list of TrioGenotypes variants in a gene
             trio: a Family object for the family
-            knwon_genes: a dictionary ofgeens known to be incolved in
+            known_genes: a dictionary ofgeens known to be incolved in
                 developmental disorders, with the inheriotance modes expected
                 for the gene, and mechanisms of action.
             gene: symbol for gene (e.g. "ARID1B")
