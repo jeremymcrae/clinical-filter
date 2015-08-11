@@ -99,7 +99,7 @@ class Variant(object):
     def __str__(self):
         
         return "{0} chr{1}: {2} {3} in {4}".format(str(self.__class__.__name__), \
-                  self.chrom, self.position, self.genotype, self.gene)
+                  self.chrom, self.position, self.genotype, self.genes)
     
     def add_format(self, format_keys, sample_values):
         """Parses the FORMAT column from VCF files.
