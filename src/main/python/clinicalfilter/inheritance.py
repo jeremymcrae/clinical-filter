@@ -79,7 +79,6 @@ class Inheritance(object):
         
         for variant in self.variants:
             self.set_trio_genotypes(variant)
-            self.is_lof = variant.child.is_lof()
             
             # check against every inheritance mode for the gene
             for inheritance in self.inheritance_modes & self.gene_inheritance:
@@ -183,59 +182,67 @@ class Inheritance(object):
         if len(variants) < 2:
             return []
         
-        # check for proband without parental genotypes
-        if not self.trio.has_parents():
-            return variants
-        
         compound = set([])
         for first in variants:
             for second in variants:
-                if first[0] == second[0]:
-                    continue
-                
-                # some CNVs get lumped with NA "." gene values, which mean when
-                # we get two CNVs under "." gene IDs, these automatically come
-                # through as compound hets, even though they might be on
-                # different chroms
-                if first[0].get_genes() == ".":
-                    continue
-                
-                # include CNVs in compound hets
-                if first[0].is_cnv() or second[0].is_cnv():
-                    compound = compound | {first, second}
-                    continue
-                
-                # now we have two different variants in the same gene
-                self.set_trio_genotypes(first[0])
-                mom_1 = self.mom
-                dad_1 = self.dad
-                self.set_trio_genotypes(second[0])
-                mom_2 = self.mom
-                dad_2 = self.dad
-                
-                # compound hets on the X chromosome occur when the father has a
-                # nonref genotype and is affected (or both ref, but one de novo)
-                if first[0].child.get_inheritance_type() != "autosomal" and \
-                   (dad_1.is_hom_alt() or dad_2.is_hom_alt()):
-                    if not self.father_affected:
-                        continue
-                
-                # check for 111, 111 combo
-                if mom_1.is_not_ref() and mom_2.is_not_ref() and \
-                    dad_1.is_not_ref() and dad_2.is_not_ref():
-                    # if both variants are 1/1/1, both parents must be affected
-                    if self.mother_affected and self.father_affected:
-                        compound = compound | {first, second}
-                elif (mom_1.is_hom_ref() and dad_1.is_hom_ref()) or \
-                    (mom_2.is_hom_ref() and dad_2.is_hom_ref()):
-                    # one is de novo, so they both definitely get reported
-                    compound = compound | {first, second}
-                elif not ((mom_1.is_hom_ref() and mom_2.is_hom_ref()) or \
-                    (dad_1.is_hom_ref() and dad_2.is_hom_ref())):
+                if self.is_compound_pair(first[0], second[0]):
                     compound = compound | {first, second}
         
         return list(compound)
-
+    
+    def is_compound_pair(self, first, second):
+        """ determines whether two variants form a compound pair
+        
+        Args:
+            first: TrioGenotypes object for first variant
+            second: TrioGenotypes object for second variant
+        
+        Returns:
+            true/false for whather the pair of variants could be a compound het.
+        """
+        
+        if first == second:
+            return False
+        
+        # some CNVs get lumped with NA "." gene values, which mean when
+        # we get two CNVs under "." gene IDs, these automatically come
+        # through as compound hets, even though they might be on
+        # different chroms
+        if first.get_genes() == ".":
+            return False
+        
+        # now we have two different variants in the same gene
+        self.set_trio_genotypes(first)
+        mom_1, dad_1 = self.mom, self.dad
+        self.set_trio_genotypes(second)
+        mom_2, dad_2 = self.mom, self.dad
+        
+        # include CNVs in compound hets, and assume variants in probands without
+        # parents are compound hets
+        if first.is_cnv() or second.is_cnv() or mom_1 is None:
+            return True
+        
+        # compound hets on the X chromosome occur when the father has a
+        # nonref genotype and is affected (or both ref, but one de novo)
+        if first.get_chrom() == "X" and (dad_1.is_hom_alt() or dad_2.is_hom_alt()) and \
+            not self.father_affected:
+            return False
+        
+        # check for 111, 111 combo
+        if mom_1.is_not_ref() and mom_2.is_not_ref() and \
+            dad_1.is_not_ref() and dad_2.is_not_ref():
+            # if both variants are 1/1/1, both parents must be affected
+            if self.mother_affected and self.father_affected:
+                return True
+        elif (mom_1.is_hom_ref() and dad_1.is_hom_ref()) or \
+            (mom_2.is_hom_ref() and dad_2.is_hom_ref()):
+            # one is de novo, so they both definitely get reported
+            return True
+        elif not ((mom_1.is_hom_ref() and mom_2.is_hom_ref()) or \
+            (dad_1.is_hom_ref() and dad_2.is_hom_ref())):
+            return True
+        
+        return False
 
 class Autosomal(Inheritance):
     
