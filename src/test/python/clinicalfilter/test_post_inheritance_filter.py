@@ -409,6 +409,12 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         variants = [(var, ["single_variant"], ["Hemizygous"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), [])
         
+        # if the variant has passed under multiple inheritance modes, then
+        # we trim out the hemizygous mode, leaving the remaining modes
+        variants = [(var, ["single_variant"], ["Hemizygous", "X-linked dominant"], ["ATRX"])]
+        expected = [(var, ["single_variant"], ["X-linked dominant"], ["ATRX"])]
+        self.assertEqual(self.post_filter.filter_exac(variants), expected)
+        
         # if the AC_Hemi count is zero, this should pass the filter
         var.child.info["AC_Hemi"] = 0
         variants = [(var, ["single_variant"], ["Hemizygous"], ["ATRX"])]
@@ -454,3 +460,10 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         var.child.info["AC_Het"] = 5
         variants = [(var, ["single_variant"], ["Monoallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), [])
+        
+        # if the variant has passed under multiple inheritance modes, then
+        # we trim out the monoallelic mode, leaving the remaining modes
+        variants = [(var, ["single_variant"], ["Monoallelic", "Biallelic"], ["ATRX"])]
+        expected = [(var, ["single_variant"], ["Biallelic"], ["ATRX"])]
+        self.assertEqual(self.post_filter.filter_exac(variants), expected)
+        
