@@ -14,7 +14,6 @@ assessed after the standard filters
         polyphen=benign, we require both SNVs to be polyphen=not benign
 """
 
-import sys
 import logging
 
 class PostInheritanceFilter(object):
@@ -44,7 +43,7 @@ class PostInheritanceFilter(object):
         
         self.variants = self.filter_polyphen(self.variants)
         
-        self.variants = self.filter_exac_hemizygous(self.variants)
+        self.variants = self.filter_exac(self.variants)
         
         return self.variants
     
@@ -242,16 +241,17 @@ class PostInheritanceFilter(object):
         
         return len(genotypes) <= 1
     
-    def filter_exac_hemizygous(self, variants):
-        """ drop inherited chrX male variants with ExAC hemizygous frequencies >0
+    def filter_exac(self, variants):
+        """ drop variants based on ExAC frequencies
+        
+        The frequency threshold depends on the inheritance mode.
         
         Args:
             variants: list of (variant, check, inheritance) tuples
         
         Returns:
             returns list of tuples without variants where the variant is on
-            chrX, in a male, inherited, and has a non-zero ExAC hemizygous
-            frequency.
+            has too high a frequency in ExAC.
         """
         
         passed_vars = []
@@ -259,21 +259,28 @@ class PostInheritanceFilter(object):
         for (var, check, inh, hgnc) in variants:
             passes = True
             
-            # we only apply this filter to variants on chrX in males. Autosomal
+            # filter out hemizygous variants on chrX in males. Autosomal
             # and female chrX variants should pass through unfiltered.
-            if var.inheritance_type == "XChrMale" and \
+            if "Hemizygous" in inh and self.family.child.is_male() and \
                 "AC_Hemi" in var.child.info and int(var.child.info["AC_Hemi"]) > 0:
                     passes = False
-                    logging.debug(str(var) + " dropped from ExAC hemizygous count")
-                    if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
-                        print(str(var) + " ddropped from ExAC hemizygous count")
+            
+            # filter out monoallelic variants with high ExAC het counts.
+            if ("Monoallelic" in inh or "X-linked dominant" in inh) and \
+                "AC_Het" in var.child.info and int(var.child.info["AC_Het"]) > 4:
+                    passes = False
+            
+            if not passes:
+                logging.debug(str(var) + " dropped from ExAC frequency count")
+                if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
+                    print(str(var) + " dropped from ExAC frequency count")
             
             # we don't filter out de novo variants based on the ExAC hemizygous
             # count. We only apply this filter to inherited variants.
-            if var.get_trio_genotype() == var.get_de_novo_genotype():
-                passes = True
-            elif var.get_trio_genotype()[1:] == ("NA", "NA"):
-                passes = True
+            geno = var.get_trio_genotype()
+            if "Hemizygous" in inh and \
+                (geno == var.get_de_novo_genotype() or geno[1:] == ("NA", "NA")):
+                    passes = True
             
             if passes:
                 passed_vars.append((var, check, inh, hgnc))
