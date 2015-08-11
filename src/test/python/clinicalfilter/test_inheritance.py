@@ -35,7 +35,7 @@ class TestInheritancePy(unittest.TestCase):
         
         self.inh = Autosomal(self.variants, self.trio, self.known_genes, "TEST")
     
-    def create_snv(self, gender, genotype, chrom, pos):
+    def create_snv(self, gender, genotype, chrom, pos, cq=None):
         """ create a default variant
         """
         
@@ -44,10 +44,13 @@ class TestInheritancePy(unittest.TestCase):
         alt = "G"
         filt = "PASS"
         
+        if cq is None:
+            cq = "missense_variant"
+        
         # set up a SNV object, since SNV inherits VcfInfo
         var = SNV(chrom, pos, snp_id, ref, alt, filt)
         
-        info = "HGNC=TEST;CQ=missense_variant;random_tag"
+        info = "HGNC=TEST;CQ={};random_tag".format(cq)
         format_keys = "GT:DP"
         sample_values = genotype + ":50"
         
@@ -58,19 +61,22 @@ class TestInheritancePy(unittest.TestCase):
         
         return var
     
-    def create_cnv(self, gender, inh, chrom, pos):
+    def create_cnv(self, gender, inh, chrom, pos, cq=None):
         """ create a default variant
         """
         
         snp_id = "."
         ref = "A"
-        alt = "<DUP>"
+        alt = "<DEL>"
         filt = "PASS"
+        
+        if cq is None:
+            cq = "transcript_ablation"
         
         # set up a SNV object, since SNV inherits VcfInfo
         var = CNV(chrom, pos, snp_id, ref, alt, filt)
         
-        info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000"
+        info = "CQ={};HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000".format(cq)
         format_keys = "INHERITANCE:DP"
         sample_values = inh + ":50"
         
@@ -81,14 +87,18 @@ class TestInheritancePy(unittest.TestCase):
         
         return var
     
-    def create_variant(self, child_gender, chrom="1", position="15000000"):
+    def create_variant(self, child_gender, chrom="1", position="15000000", cq=None):
         """ creates a TrioGenotypes variant
         """
         
         # generate a test variant
-        child_var = self.create_snv(child_gender, "0/1", chrom, position)
-        mom_var = self.create_snv("F", "0/0", chrom, position)
-        dad_var = self.create_snv("M", "0/0", chrom, position)
+        try:
+            child_var = self.create_snv(child_gender, "0/1", chrom, position, cq)
+        except ValueError:
+            child_var = self.create_snv(child_gender, "1/1", chrom, position, cq)
+        
+        mom_var = self.create_snv("F", "0/0", chrom, position, cq)
+        dad_var = self.create_snv("M", "0/0", chrom, position, cq)
         
         var = TrioGenotypes(child_var)
         var.add_mother_variant(mom_var)
@@ -214,7 +224,7 @@ class TestInheritancePy(unittest.TestCase):
         self.inh.variants.append(cnv_var)
         self.assertTrue(self.inh.check_if_any_variant_is_cnv())
     
-    def set_compound_het_var(self, var, geno, compound_type):
+    def set_compound_het_var(self, var, geno):
         """ convenience function to set the trio genotypes for a variant
         """
         
@@ -236,46 +246,35 @@ class TestInheritancePy(unittest.TestCase):
         var.father.set_genotype()
         
         # set the trio genotypes for the inheritance object
-        return (var, compound_type, "Biallelic")
+        return var
     
-    def test_check_compound_hets_autosomal(self):
+    def test_check_compound_hets(self):
         """ test that check_compound_hets() works correctly for autosomal vars
         """
         
         # set some variants, so we can alter them later
-        var1 = self.create_variant("F", chrom="1", position="15000000")
-        var2 = self.create_variant("F", chrom="1", position="16000000")
-        var3 = self.create_variant("F", chrom="1", position="17000000")
+        var1 = self.create_variant("F", chrom="1", position="15000000", cq="stop_gained")
+        var2 = self.create_variant("F", chrom="1", position="16000000", cq="stop_gained")
+        var3 = self.create_variant("F", chrom="1", position="17000000", cq="stop_gained")
         
         # set the inheritance type, the compound het type ("compound_het"
         # for autosomal variants, and start autosomal inheritance)
         # known_genes = "Biallelic"
         known_genes = {"TEST": {"inh": ["Biallelic"], "confirmed_status": ["Confirmed DD Gene"]}}
-        compound = "compound_het"
         self.inh = Autosomal([var1, var2, var3], self.trio, known_genes, "TEST")
         
-        variants = ["", ""]
+        variants = [(), ()]
         
         # check the expected "110, 101" combo passes
-        variants[0] = self.set_compound_het_var(var1, "110", compound)
-        variants[1] = self.set_compound_het_var(var2, "101", compound)
+        variants[0] = (self.set_compound_het_var(var1, "110"),)
+        variants[1] = (self.set_compound_het_var(var2, "101"),)
         self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
         
-        # check that "110, 110" combo fails
-        variants[0] = self.set_compound_het_var(var1, "110", compound)
-        variants[1] = self.set_compound_het_var(var2, "110", compound)
-        self.assertEqual(self.inh.check_compound_hets(variants), [])
-        
-        # check that "101, 101" combo fails
-        variants[0] = self.set_compound_het_var(var1, "101", compound)
-        variants[1] = self.set_compound_het_var(var2, "101", compound)
-        self.assertEqual(self.inh.check_compound_hets(variants), [])
-        
         # check that > 2 valid compound hets passes all variants
-        variants = ["", "", ""]
-        variants[0] = self.set_compound_het_var(var1, "110", compound)
-        variants[1] = self.set_compound_het_var(var2, "101", compound)
-        variants[2] = self.set_compound_het_var(var3, "110", compound)
+        variants = [(), (), ()]
+        variants[0] = (self.set_compound_het_var(var1, "110"),)
+        variants[1] = (self.set_compound_het_var(var2, "101"),)
+        variants[2] = (self.set_compound_het_var(var3, "110"),)
         self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
         
         # check that a single var fails to give compound hets
@@ -285,74 +284,161 @@ class TestInheritancePy(unittest.TestCase):
         # check that zero length list gives no compound hets
         no_vars = []
         self.assertEqual(self.inh.check_compound_hets(no_vars), [])
-        
-        # check that de novo containing "110, 100" combos give compound hets
-        variants = ["", ""]
-        variants[0] = self.set_compound_het_var(var1, "110", compound)
-        variants[1] = self.set_compound_het_var(var2, "100", compound)
-        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
-        
-        # check that de novo "100, 100" combos give compound hets
-        variants[0] = self.set_compound_het_var(var1, "100", compound)
-        variants[1] = self.set_compound_het_var(var2, "100", compound)
-        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
-        
-        # check that "111, 111" combos require affected parents
-        variants[0] = self.set_compound_het_var(var1, "111", compound)
-        variants[1] = self.set_compound_het_var(var2, "111", compound)
-        self.assertEqual(self.inh.check_compound_hets(variants), [])
-        
-        # check "111, 111" combo with a single affected parent
-        self.inh.mother_affected = True
-        self.assertEqual(self.inh.check_compound_hets(variants), [])
-        
-        # check "111, 111" combo with both parents affected
-        self.inh.father_affected = True
-        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
-        
-        # check that without parents, all variants are included, even if they
-        # wouldn't pass normally
-        self.inh.trio.mother = None
-        self.inh.trio.father = None
-        variants[0] = self.set_compound_het_var(var1, "101", compound)
-        variants[1] = self.set_compound_het_var(var2, "101", compound)
-        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
-        
-    def test_check_compound_hets_allosomal(self):
-        """ test that check_compound_hets() works correctly for allosomal vars
+    
+    def test_is_compound_pair_identical_variants(self):
+        """ check that is_compound_pair() excludes compound pairs where the
+        members are identical
         """
         
-        # set some X chrom variants, so we can alter them later
-        var1 = self.create_variant("F", chrom="X", position="15000000")
-        var2 = self.create_variant("F", chrom="X", position="16000000")
+        # set some variants, so we can alter them later
+        var1 = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
+        var2 = self.create_variant("F", chrom="1", position="160", cq="stop_gained")
         
-        # set the inheritance type, the compound het type ("hemizygous"
-        # for allosomal variants, and start allosomal inheritance)
-        known_genes = {"TEST": {"inh": ["Hemizygous"], "confirmed_status": ["Confirmed DD Gene"]}}
-        inh = "Hemizygous"
-        compound = "hemizygous"
-        self.inh = Allosomal([var1, var2], self.trio, known_genes, "TEST")
+        var1 = self.set_compound_het_var(var1, "110")
+        var2 = self.set_compound_het_var(var2, "101")
         
-        variants = ["", ""]
+        # don't include pairs where the first and the second variant are identical
+        self.assertFalse(self.inh.is_compound_pair(var1, var1))
         
-        # check that de novo containing "110, 100" combos pass
-        variants[0] = self.set_compound_het_var(var1, "110", compound)
-        variants[1] = self.set_compound_het_var(var2, "100", compound)
-        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
+        # make sure it works normally
+        self.assertFalse(self.inh.is_compound_pair(var1, var2))
+    
+    def test_is_compound_pair_identical_variants(self):
+        """check that is_compound_pair() excludes pairs where both are missense
+        """
         
-        # check that "110, 102" combo fails if the father is unaffected
-        variants[0] = self.set_compound_het_var(var1, "110", compound)
-        variants[1] = self.set_compound_het_var(var2, "102", compound)
-        self.assertEqual(self.inh.check_compound_hets(variants), [])
+        # set some variants, so we can alter them later
+        var1 = self.create_variant("F", chrom="1", position="150", cq="missense_variant")
+        var2 = self.create_variant("F", chrom="1", position="160", cq="missense_variant")
+        var3 = self.create_variant("F", chrom="1", position="160", cq="inframe_deletion")
+        var4 = self.create_variant("F", chrom="1", position="160", cq="stop_gained")
         
-        # check that "110, 102" combo passes if the father is affected
+        var1 = self.set_compound_het_var(var1, "110")
+        var2 = self.set_compound_het_var(var2, "101")
+        var3 = self.set_compound_het_var(var3, "101")
+        var4 = self.set_compound_het_var(var3, "101")
+        
+        # exclude pairs where both members are not loss-of-function
+        self.assertFalse(self.inh.is_compound_pair(var1, var2))
+        self.assertFalse(self.inh.is_compound_pair(var1, var3))
+        
+        # make sure it works normally
+        self.assertFalse(self.inh.is_compound_pair(var1, var4))
+    
+    def test_is_compound_pair_unknown_gene(self):
+        """check that is_compound_pair() excludes pairs for unknown genes
+        """
+        
+        # set some variants, so we can alter them later
+        var1 = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
+        var2 = self.create_variant("F", chrom="1", position="160", cq="stop_gained")
+        
+        var1 = self.set_compound_het_var(var1, "110")
+        var2 = self.set_compound_het_var(var2, "101")
+        
+        var1.child.genes = ["."]
+        var2.child.genes = ["."]
+        
+        # exclude pairs where both members are not loss-of-function
+        self.assertFalse(self.inh.is_compound_pair(var1, var2))
+    
+    def test_is_compound_pair_cnv(self):
+        """ check that is_compound_pair() includes pairs with CNVs
+        """
+        
+        # generate a test variant
+        chrom = "1"
+        position = "60000"
+        child_var = self.create_cnv("F", "unknown", chrom, position)
+        mom_var = self.create_cnv("F", "unknown", chrom, position)
+        dad_var = self.create_cnv("M", "unknown", chrom, position)
+        
+        cnv = TrioGenotypes(child_var)
+        cnv.add_mother_variant(mom_var)
+        cnv.add_father_variant(dad_var)
+        
+        # set some variants, so we can alter them later
+        snv = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
+        snv = self.set_compound_het_var(snv, "110")
+        
+        # exclude pairs where both members are not loss-of-function
+        self.assertTrue(self.inh.is_compound_pair(cnv, snv))
+    
+    def test_is_compound_pair_proband_only(self):
+        """ check that is_compound_pair() includes proband-only pairs
+        """
+        
+        fam = Family("test")
+        fam.add_child("child", "child_vcf", "2", "F")
+        fam.set_child()
+        
+        # set some variants, so we can alter them later
+        var1 = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
+        var2 = self.create_variant("F", chrom="1", position="160", cq="stop_gained")
+        
+        inh = Autosomal([var1, var2], fam, self.known_genes, "TEST")
+        
+        # check that a proband-only passes, regardless of the parental genotypes
+        self.assertTrue(inh.is_compound_pair(var1, var2))
+    
+    def test_is_compound_pair_allosomal(self):
+        """ check that is_compound_pair() works when the father is affected
+        """
+        
+        # set some variants, so we can alter them later
+        var1 = self.create_variant("M", chrom="X", position="150", cq="stop_gained")
+        var2 = self.create_variant("M", chrom="X", position="160", cq="stop_gained")
+        
+        var1 = self.set_compound_het_var(var1, "210")
+        var2 = self.set_compound_het_var(var2, "202")
+        
+        # check when the father is unaffected
+        self.assertFalse(self.inh.is_compound_pair(var1, var2))
+        
+        # now check when the father is affected
         self.inh.father_affected = True
-        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
+        self.assertTrue(self.inh.is_compound_pair(var1, var2))
         
         # make sure we can't set the father as het on the X chrom
         with self.assertRaises(ValueError):
-            self.set_compound_het_var(var2, "101", compound)
-
-
-if __name__ == '__main__':
-    unittest.main()
+            self.set_compound_het_var(var2, "201")
+    
+    def test_is_compound_pair_genotype_combinations(self):
+        """ check the various genotype combinations for a compound het
+        """
+        
+        # set some variants, so we can alter them later
+        var1 = self.create_variant("M", chrom="1", position="150", cq="stop_gained")
+        var2 = self.create_variant("M", chrom="1", position="160", cq="stop_gained")
+        
+        var1 = self.set_compound_het_var(var1, "110")
+        var2 = self.set_compound_het_var(var2, "101")
+        
+        # check that the expected scenario passes
+        self.assertTrue(self.inh.is_compound_pair(var1, var2))
+        
+        # check that compound hets with de novos fail
+        var1 = self.set_compound_het_var(var1, "100")
+        var2 = self.set_compound_het_var(var2, "101")
+        self.assertFalse(self.inh.is_compound_pair(var1, var2))
+        
+        # check that compound hets have to be transmitted from both parents
+        var1 = self.set_compound_het_var(var1, "101")
+        var2 = self.set_compound_het_var(var2, "101")
+        self.assertFalse(self.inh.is_compound_pair(var1, var2))
+        
+        # check that compound hets have to be transmitted from both parents
+        var1 = self.set_compound_het_var(var1, "110")
+        var2 = self.set_compound_het_var(var2, "110")
+        self.assertFalse(self.inh.is_compound_pair(var1, var2))
+        
+        # make sure that only compound hets in trans pass. We exclude
+        var1 = self.set_compound_het_var(var1, "111")
+        var2 = self.set_compound_het_var(var2, "101")
+        self.assertFalse(self.inh.is_compound_pair(var1, var2))
+        
+        var1 = self.set_compound_het_var(var1, "111")
+        var2 = self.set_compound_het_var(var2, "111")
+        self.assertFalse(self.inh.is_compound_pair(var1, var2))
+        
+        

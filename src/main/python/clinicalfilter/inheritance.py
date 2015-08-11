@@ -204,11 +204,14 @@ class Inheritance(object):
         if first == second:
             return False
         
+        if first.child.is_missense(self.gene) and second.child.is_missense(self.gene):
+            return False
+        
         # some CNVs get lumped with NA "." gene values, which mean when
         # we get two CNVs under "." gene IDs, these automatically come
         # through as compound hets, even though they might be on
         # different chroms
-        if first.get_genes() == ".":
+        if first.get_genes() == ["."]:
             return False
         
         # now we have two different variants in the same gene
@@ -228,18 +231,10 @@ class Inheritance(object):
             not self.father_affected:
             return False
         
-        # check for 111, 111 combo
-        if mom_1.is_not_ref() and mom_2.is_not_ref() and \
-            dad_1.is_not_ref() and dad_2.is_not_ref():
-            # if both variants are 1/1/1, both parents must be affected
-            if self.mother_affected and self.father_affected:
-                return True
-        elif (mom_1.is_hom_ref() and dad_1.is_hom_ref()) or \
-            (mom_2.is_hom_ref() and dad_2.is_hom_ref()):
-            # one is de novo, so they both definitely get reported
-            return True
-        elif not ((mom_1.is_hom_ref() and mom_2.is_hom_ref()) or \
-            (dad_1.is_hom_ref() and dad_2.is_hom_ref())):
+        if (mom_1.is_hom_ref() and mom_2.is_not_ref() \
+            and dad_1.is_not_ref() and dad_2.is_hom_ref()) or \
+            (mom_1.is_not_ref() and mom_2.is_hom_ref() \
+            and dad_1.is_hom_ref() and dad_2.is_not_ref()):
             return True
         
         return False
