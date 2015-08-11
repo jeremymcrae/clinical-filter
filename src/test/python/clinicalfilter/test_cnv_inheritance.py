@@ -115,6 +115,12 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.trio.father.affected_status = "1"
         self.assertFalse(self.inh.inheritance_matches_parental_affected_status(inh))
         
+        # check that maternally inherited CNVs on chrX in male probands pass
+        # regardless of the affected status of the mother.
+        self.inh.trio.child.gender = "male"
+        self.inh.variant.child.chrom = "X"
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(inh))
+        
         # check that biparentally inherited CNVs pass if either parent is affected
         inh = ["biparental"]
         self.assertFalse(self.inh.inheritance_matches_parental_affected_status(inh))

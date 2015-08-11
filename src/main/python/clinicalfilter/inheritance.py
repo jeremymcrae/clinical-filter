@@ -580,7 +580,8 @@ class CNVInheritance(object):
         elif (paternal and self.trio.father.is_affected()) or \
               (maternal and self.trio.mother.is_affected()) or \
               ((biparental or inh == "inheritedDuo") and \
-              (self.trio.father.is_affected() or self.trio.mother.is_affected())):
+              (self.trio.father.is_affected() or self.trio.mother.is_affected())) or \
+              (self.trio.child.is_male() and maternal and self.variant.get_chrom() == "X" and not self.trio.mother.is_affected()) :
             # if the inheritance status indiates that the CNV was inherited,
             # the pertinent parents need to be also affected.
             return True
