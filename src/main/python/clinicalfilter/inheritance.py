@@ -27,11 +27,11 @@ class Inheritance(object):
             variants: list of TrioGenotypes variants in a gene
             trio: a Family object for the family
             known_genes: a dictionary ofgeens known to be incolved in
-                developmental disorders, with the inheriotance modes expected
+                developmental disorders, with the inheritance modes expected
                 for the gene, and mechanisms of action.
             gene: symbol for gene (e.g. "ARID1B")
-            cnv_regions: a dictionary of genomic regions known to be involved in
-                CNV syndromes.
+            cnv_regions: a list of (chrom, start, end, copy_number) tuples of
+                genomic regions known to be involved in CNV syndromes.
         """
         
         self.variants = variants
@@ -701,6 +701,22 @@ class CNVInheritance(object):
     
     def check_cnv_region_overlap(self, cnv_regions):
         """ finds CNVs that overlap DECIPHER syndrome regions
+        
+        We have a set of genome regions known to be involved in CNV disorders.
+        We want to check if the current CNV has enough overlap with any of those
+        regions. This function checks the positions of the CNV and the genome
+        region, to determine how much the CNV overlaps the genome-region, and
+        how much the genome-region overlaps the CNV. We want the CNV to have
+        high overlap of the genome-region in order to claim that the CNV might
+        contribute to the probands disorder.
+        
+        Args:
+            cnv_regions: a list of (chrom, start, end, copy_number) tuples of
+                genomic regions known to be involved in CNV syndromes.
+        
+        Returns:
+            true/false for whether the current CNV overlaps any of the syndrome
+            regions.
         """
         
         chrom = self.variant.child.get_chrom()
@@ -725,6 +741,16 @@ class CNVInheritance(object):
     
     def has_enough_overlap(self, start, end, region_start, region_end):
         """ finds if a CNV and another chrom region share sufficient overlap
+        
+        Args:
+            start: start position of the CNV
+            end: end position of the CNV
+            region_start: start position of the genome region
+            region_end: end position of the genome region
+        
+        Returns:
+            true/false for whether the CNV has sufficient overlap of the genome
+            region.
         """
         
         # find the point where the overlap starts
@@ -750,5 +776,5 @@ class CNVInheritance(object):
         reverse = float(distance)/(abs(region_end - region_start) + 1)
         
         # determine whether there is sufficient overlap
-        return forward > 0.01 and reverse > 0.01
+        return forward > 0 and reverse > 0.5
         

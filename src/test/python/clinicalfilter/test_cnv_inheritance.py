@@ -409,37 +409,31 @@ class TestCNVInheritancePy(unittest.TestCase):
         """ test that has_enough_overlap() works correctly
         """
         
-        start_a = 1000
-        end_a = 2000
-        start_b = 1000
-        end_b = 2000
+        cnv_start = 1000
+        cnv_end = 2000
+        region_start = 1000
+        region_end = 2000
         
         # check that CNV and syndrome region with 100% overlap, forwards and
         # backwards, pass
-        self.assertTrue(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
+        self.assertTrue(self.inh.has_enough_overlap(cnv_start, cnv_end, region_start, region_end))
         
-        # check that CNV with 1% overlap to the syndrome region passes
-        end_a = 1010
-        self.assertTrue(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
+        # check that CNV with 50% overlap to the syndrome region passes
+        cnv_end = 1500
+        self.assertTrue(self.inh.has_enough_overlap(cnv_start, cnv_end, region_start, region_end))
         
-        # check that CNV with < 1% overlap to the syndrome region fails
-        end_a = 1009
-        self.assertFalse(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
+        # check that CNV with < 50% overlap to the syndrome region fails
+        cnv_end = 1499
+        self.assertFalse(self.inh.has_enough_overlap(cnv_start, cnv_end, region_start, region_end))
         
         # check that syndrome region with 1% overlap to the CNV passes
-        end_a = 2000
-        end_b = 1010
-        self.assertTrue(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
+        cnv_end = 2000
+        region_end = 1010
+        self.assertTrue(self.inh.has_enough_overlap(cnv_start, cnv_end, region_start, region_end))
         
-        # check that syndrome region with < 1% overlap to the CNV fails
-        end_b = 1009
-        self.assertFalse(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
-        
-        # check that syndrome regions as SNVs still pass if the CNV region is
-        # short enough
-        end_b = 1050
-        end_a = 1000
-        self.assertTrue(self.inh.has_enough_overlap(start_a, end_a, start_b, end_b))
+        # check that 1 bp syndrome region which overlaps the CNV still passes
+        region_end = 1001
+        self.assertTrue(self.inh.has_enough_overlap(cnv_start, cnv_end, region_start, region_end))
     
     def test_check_compound_inheritance(self):
         """ test that check_compound_inheritance() works correctly
