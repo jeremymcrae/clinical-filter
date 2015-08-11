@@ -2,7 +2,6 @@
 """
 
 import unittest
-import sys
 
 from clinicalfilter.ped import Family
 from clinicalfilter.variant.snv import SNV
@@ -10,9 +9,6 @@ from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.inheritance import Autosomal
 from clinicalfilter.inheritance import Allosomal
 from clinicalfilter.trio_genotypes import TrioGenotypes
-
-IS_PYTHON2 = sys.version_info[0] == 2
-IS_PYTHON3 = sys.version_info[0] == 3
 
 
 class TestInheritancePy(unittest.TestCase):
@@ -263,10 +259,7 @@ class TestInheritancePy(unittest.TestCase):
         # check the expected "110, 101" combo passes
         variants[0] = self.set_compound_het_var(var1, "110", compound)
         variants[1] = self.set_compound_het_var(var2, "101", compound)
-        if IS_PYTHON3:
-            self.assertCountEqual(self.inh.check_compound_hets(variants), variants)
-        elif IS_PYTHON2:
-            self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
+        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
         
         # check that "110, 110" combo fails
         variants[0] = self.set_compound_het_var(var1, "110", compound)
@@ -283,10 +276,7 @@ class TestInheritancePy(unittest.TestCase):
         variants[0] = self.set_compound_het_var(var1, "110", compound)
         variants[1] = self.set_compound_het_var(var2, "101", compound)
         variants[2] = self.set_compound_het_var(var3, "110", compound)
-        if IS_PYTHON3:
-            self.assertCountEqual(self.inh.check_compound_hets(variants), variants)
-        elif IS_PYTHON2:
-            self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
+        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
         
         # check that a single var fails to give compound hets
         single_var = variants[:1]
@@ -300,18 +290,12 @@ class TestInheritancePy(unittest.TestCase):
         variants = ["", ""]
         variants[0] = self.set_compound_het_var(var1, "110", compound)
         variants[1] = self.set_compound_het_var(var2, "100", compound)
-        if IS_PYTHON3:
-            self.assertCountEqual(self.inh.check_compound_hets(variants), variants)
-        elif IS_PYTHON2:
-            self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
+        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
         
         # check that de novo "100, 100" combos give compound hets
         variants[0] = self.set_compound_het_var(var1, "100", compound)
         variants[1] = self.set_compound_het_var(var2, "100", compound)
-        if IS_PYTHON3:
-            self.assertCountEqual(self.inh.check_compound_hets(variants), variants)
-        elif IS_PYTHON2:
-            self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
+        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
         
         # check that "111, 111" combos require affected parents
         variants[0] = self.set_compound_het_var(var1, "111", compound)
@@ -324,10 +308,7 @@ class TestInheritancePy(unittest.TestCase):
         
         # check "111, 111" combo with both parents affected
         self.inh.father_affected = True
-        if IS_PYTHON3:
-            self.assertCountEqual(self.inh.check_compound_hets(variants), variants)
-        elif IS_PYTHON2:
-            self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
+        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
         
         # check that without parents, all variants are included, even if they
         # wouldn't pass normally
@@ -335,10 +316,7 @@ class TestInheritancePy(unittest.TestCase):
         self.inh.trio.father = None
         variants[0] = self.set_compound_het_var(var1, "101", compound)
         variants[1] = self.set_compound_het_var(var2, "101", compound)
-        if IS_PYTHON3:
-            self.assertCountEqual(self.inh.check_compound_hets(variants), variants)
-        elif IS_PYTHON2:
-            self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
+        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
         
     def test_check_compound_hets_allosomal(self):
         """ test that check_compound_hets() works correctly for allosomal vars
@@ -360,10 +338,7 @@ class TestInheritancePy(unittest.TestCase):
         # check that de novo containing "110, 100" combos pass
         variants[0] = self.set_compound_het_var(var1, "110", compound)
         variants[1] = self.set_compound_het_var(var2, "100", compound)
-        if IS_PYTHON3:
-            self.assertCountEqual(self.inh.check_compound_hets(variants), variants)
-        elif IS_PYTHON2:
-            self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
+        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
         
         # check that "110, 102" combo fails if the father is unaffected
         variants[0] = self.set_compound_het_var(var1, "110", compound)
@@ -372,10 +347,7 @@ class TestInheritancePy(unittest.TestCase):
         
         # check that "110, 102" combo passes if the father is affected
         self.inh.father_affected = True
-        if IS_PYTHON3:
-            self.assertCountEqual(self.inh.check_compound_hets(variants), variants)
-        elif IS_PYTHON2:
-            self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
+        self.assertEqual(sorted(self.inh.check_compound_hets(variants)), sorted(variants))
         
         # make sure we can't set the father as het on the X chrom
         with self.assertRaises(ValueError):
