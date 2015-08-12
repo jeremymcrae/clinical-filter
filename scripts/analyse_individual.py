@@ -50,11 +50,12 @@ def load_ped(ped_path, proband_ID, exclude_parents):
         exclude_parents: whether to exclude the parents of the proband
     """
     
-    ped = open(ped_path, "r")
-    ped_read = ped.readlines()
-    ped.close()
+    with open(ped_path, "r") as ped:
+        ped_read = ped.readlines()
     
     # find the maternal and paternal IDs for the individual
+    maternal_ID = None
+    paternal_ID = None
     for line in ped_read:
         line = line.split()
         individual_ID = line[1]
@@ -64,6 +65,9 @@ def load_ped(ped_path, proband_ID, exclude_parents):
             paternal_ID = line[2]
             maternal_ID = line[3]
             break
+    
+    if maternal_ID is None:
+        sys.exit("Could not find sample ID in family relationships file.")
     
     # extract all the lines for the individual
     new_ped_lines = []
