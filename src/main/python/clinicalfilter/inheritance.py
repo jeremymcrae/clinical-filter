@@ -594,7 +594,8 @@ class CNVInheritance(object):
             return True
         elif (paternal and self.trio.father.is_affected()) or \
               (maternal and self.trio.mother.is_affected()) or \
-              ((biparental or inh == "inheritedDuo") and \
+              (biparental and int(variant.child.info["CNS"]) == 0) or \
+              (biparental and \
               (self.trio.father.is_affected() or self.trio.mother.is_affected())) or \
               (self.trio.child.is_male() and maternal and variant.get_chrom() == "X" and not self.trio.mother.is_affected()) :
             # if the inheritance status indiates that the CNV was inherited,
@@ -694,9 +695,19 @@ class CNVInheritance(object):
             # criteria
             copies = {"XXXX"}
         
+        # check if the CNV is a duplication that surrounds a gene, where the
+        # mechanism is loss of function, since these whole-gene duplications
+        # won't disrupt the gene.
+        start, end = variant.child.get_range()
+        surrounding_disruptive_dup = variant.child.genotype == "DUP" and \
+            "Loss of function" in self.known_genes[gene]["inh"][inh] and \
+            inh in ["Monoallelic", "Hemizygous", "X-linked dominant"] and \
+            start < self.known_genes[gene]["start"] and end > self.known_genes[gene]["end"]
+        
         return variant.get_chrom() in chroms and \
             variant.child.info["CNS"] in copies and \
-            len(self.known_genes[gene]["inh"][inh] & mechanisms) > 0
+            len(self.known_genes[gene]["inh"][inh] & mechanisms) > 0 and \
+            not surrounding_disruptive_dup
     
     def passes_intragenic_dup(self, variant, gene, inh):
         """ checks if the CNV is an intragenic dup (in an appropriate gene)

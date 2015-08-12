@@ -45,7 +45,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         # set up a SNV object, since SNV inherits VcfInfo
         var = CNV(chrom, pos, snp_id, ref, alt, filt)
         
-        info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000"
+        info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000;CNS=3"
         format_keys = "CIFER:INHERITANCE:DP"
         sample_values = cifer + ":" + inh + ":50"
         
@@ -122,8 +122,12 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.trio.child.gender = "male"
         cnv.child.chrom = "X"
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+    
+    def test_inheritance_matches_parental_affected_status_biparental(self):
+        """ check that biparentally inherited CNVs pass if either parent is affected
+        """
         
-        # check that biparentally inherited CNVs pass if either parent is affected
+        cnv = self.create_variant("female")
         inh = ["biparental"]
         self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
         self.inh.trio.father.affected_status = "2"
@@ -141,10 +145,27 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.trio.father.affected_status = "1"
         self.inh.trio.mother.affected_status = "2"
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+    
+    def test_inheritance_matches_parental_affected_status_biparental_copy_zero(self):
+        """ check that biparentally inherited CNVs with a copy number of 0 pass if either parent is affected
+        """
         
-        # check that noninherited CNVs pass, regardless of parental affected status
+        cnv = self.create_variant("female")
+        inh = ["biparental"]
+        cnv.child.info["CNS"] = "0"
+        self.inh.trio.mother.affected_status = "1"
+        self.inh.trio.father.affected_status = "1"
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+    
+    def test_inheritance_matches_parental_affected_status_de_novo(self):
+        """ check that noninherited CNVs pass, even if neither parent is affected
+        """
+        
+        cnv = self.create_variant("female")
         inh = ["deNovo"]
         self.inh.trio.mother.affected_status = "1"
+        self.inh.trio.father.affected_status = "1"
+        
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
     
     def test_passes_nonddg2p_filter(self):
@@ -340,8 +361,40 @@ class TestCNVInheritancePy(unittest.TestCase):
             {"Increased gene dosage"}}, "status": {"Both DD and IF"}}
         self.assertFalse(self.inh.passes_ddg2p_filter(cnv))
     
-    def test_passes_ddg2p_filter_surrounding_disruptive_dup(self):
-        pass
+    def test_passes_gene_inheritance_surrounding_disruptive_dup(self):
+        """ test that passes_gene_inheritance() works when examining a disruptive dup
+        """
+        
+        gene_inh = {"TEST": {"inh": {"Monoallelic": \
+            {"Loss of function"}}, "status": \
+            {"Confirmed DD Gene"}, "start": 5000, "end": 6000}}
+        
+        # make a gene that is loss of function, with a monoallelic inheritance
+        self.inh.known_genes = gene_inh
+        self.inh.gene = "TEST"
+        gene = "TEST"
+        inh = "Monoallelic"
+        
+        # make a CNV that surrounds the gene
+        cnv = self.create_variant("female")
+        cnv.child.info["CNS"] = "1"
+        cnv.child.position = 4000
+        cnv.child.info["END"] = 7000
+        
+        # a duplication that surrounds a monoallelic gene with a loss-of-function
+        # mechanism won't be pathogenic.
+        self.assertFalse(self.inh.passes_gene_inheritance(cnv, gene, inh))
+        
+        # now shift the CNV range so that it doesn't surround the gene, this
+        # should allow the CNV to pass
+        cnv.child.position = 5500
+        self.assertTrue(self.inh.passes_gene_inheritance(cnv, gene, inh))
+        
+        # shift the range so the CNV surrounds the gene, but check that deletions
+        # don't get excluded due to this rule.
+        cnv.child.position = 4000
+        cnv.child.genotype = "DEL"
+        self.assertTrue(self.inh.passes_gene_inheritance(cnv, gene, inh))
     
     def test_check_passes_intragenic_dup(self):
         """ test that passes_intragenic_dup() works correctly
