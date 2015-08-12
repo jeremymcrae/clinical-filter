@@ -1,3 +1,0 @@
-female_affected_parents	child	father	mother	F	2	unit_tests/child.vcf
-female_affected_parents	father	0	0	M	2	unit_tests/father.vcf
-female_affected_parents	mother	0	0	F	2	unit_tests/mother.vcf
