@@ -450,11 +450,6 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         variants = [(var, ["single_variant"], ["Monoallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), [])
         
-        # check that X-linked dominant variants in the same manner as the
-        # monoallelic
-        variants = [(var, ["single_variant"], ["X-linked dominant"], ["ATRX"])]
-        self.assertEqual(self.post_filter.filter_exac(variants), [])
-        
         # construct a variant that will fail
         var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/0"])
         var.child.info["AC_Het"] = 5
@@ -466,4 +461,36 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         variants = [(var, ["single_variant"], ["Monoallelic", "Biallelic"], ["ATRX"])]
         expected = [(var, ["single_variant"], ["Biallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), expected)
+    
+    def test_filter_exac_x_linked_dominant(self):
+        """check filter_exac() under X-linked dominant inheritance
+        """
+        
+        # check that X-linked dominant variants pass when the allele count is low
+        var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
+        var.child.info["AC_Het"] = 4
+        variants = [(var, ["single_variant"], ["X-linked dominant"], ["ATRX"])]
+        self.assertEqual(self.post_filter.filter_exac(variants), variants)
+        
+        # check that X-linked dominant variants fail when the het count is high
+        var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
+        var.child.info["AC_Het"] = 5
+        variants = [(var, ["single_variant"], ["X-linked dominant"], ["ATRX"])]
+        self.assertEqual(self.post_filter.filter_exac(variants), [])
+        
+        # check that X-linked dominant variants fail when the hemi count is high
+        var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
+        var.child.info["AC_Hemi"] = 5
+        variants = [(var, ["single_variant"], ["X-linked dominant"], ["ATRX"])]
+        self.assertEqual(self.post_filter.filter_exac(variants), [])
+        
+        # check that X-linked dominant variants fail when neither the het or
+        # hemi count on their own are too high, but combined they exceed the threshold
+        var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
+        var.child.info["AC_Het"] = 3
+        var.child.info["AC_Hemi"] = 3
+        variants = [(var, ["single_variant"], ["X-linked dominant"], ["ATRX"])]
+        self.assertEqual(self.post_filter.filter_exac(variants), [])
+        
+        
         

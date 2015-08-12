@@ -255,22 +255,27 @@ class PostInheritanceFilter(object):
         
         for (var, check, inh, hgnc) in variants:
             
+            # figure out what the het and hemi counts are in ExAC (if available)
+            hemi, het = 0, 0
+            if "AC_Hemi" in var.child.info:
+                hemi = int(var.child.info["AC_Hemi"])
+            if "AC_Het" in var.child.info:
+                het = int(var.child.info["AC_Het"])
+            
             geno = var.get_trio_genotype()
             # filter out hemizygous variants on chrX in males. Autosomal
             # and female chrX variants should pass through unfiltered.
             # We don't filter out de novo variants based on the ExAC hemizygous
             # count. We only apply this filter to inherited variants.
-            if "Hemizygous" in inh and self.family.child.is_male() and \
-                "AC_Hemi" in var.child.info and int(var.child.info["AC_Hemi"]) > 0 and \
+            if "Hemizygous" in inh and self.family.child.is_male() and hemi > 0 and \
                 geno != var.get_de_novo_genotype() and geno[1:] != ("NA", "NA"):
                     inh.remove("Hemizygous")
             
             # filter out monoallelic variants with high ExAC het counts.
-            if "AC_Het" in var.child.info and int(var.child.info["AC_Het"]) > 4:
-                if "Monoallelic" in inh:
-                    inh.remove("Monoallelic")
-                if "X-linked dominant" in inh:
-                    inh.remove("X-linked dominant")
+            if var.get_chrom() != "X" and het > 4 and "Monoallelic" in inh:
+                inh.remove("Monoallelic")
+            elif var.get_chrom() == "X" and (het + hemi) > 4 and "X-linked dominant" in inh:
+                inh.remove("X-linked dominant")
             
             if inh == []:
                 logging.debug("{} dropped from ExAC frequency count".format(var))
