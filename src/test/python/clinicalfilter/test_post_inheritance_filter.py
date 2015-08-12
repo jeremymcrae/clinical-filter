@@ -378,17 +378,30 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
             (snv_3, ["compound_het"], ["Biallelic"], ["ATRX"])]
         self.assertFalse(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
         
-        # check that we exclude benign de novos
-        snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)"
-        snv_3.child.info["PolyPhen"] = "benign(0.01)"
-        variants = [(snv_1, ["compound_het"], ["Biallelic"], ["ATRX"]), \
-            (snv_3, ["compound_het"], ["Biallelic"], ["ATRX"])]
-        self.assertFalse(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
-        
         # check that single variants in the same gene still return True
         variants = [(snv_1, ["compound_het"], ["Biallelic"], ["ATRX"]), \
             (snv_2, ["single_variant"], ["Biallelic"], ["ATRX"])]
         self.assertTrue(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
+    
+    def test_has_compound_match_proband_only(self):
+        """ check that has_compound_match() works correctly without parents
+        """
+        
+        snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"])
+        snv_2 = self.create_var("1", snv=True, geno=["0/1", "1/0", "0/1"])
+        snv_1.position = 1000
+        snv_2.position = 2000
+        
+        del snv_1.mother
+        del snv_1.father
+        del snv_2.mother
+        del snv_2.father
+        
+        variants = [(snv_1, ["compound_het"], ["Biallelic"], ["ATRX"]), \
+            (snv_2, ["compound_het"], ["Biallelic"], ["ATRX"])]
+        
+        # check that two vars without polyphen annotations return false
+        self.assertFalse(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
     
     def test_filter_exac(self):
         """ check that filter_exac() works correctly
