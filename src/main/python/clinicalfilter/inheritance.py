@@ -210,6 +210,9 @@ class Inheritance(object):
         if first == second:
             return False
         
+        # we don't include compound hets where we lack parents, and both
+        # variants have missense equivalent consequences, since these are very
+        # unlikely to be pathogenic.
         if not self.trio.has_parents() and \
           first.child.is_missense(self.gene) and second.child.is_missense(self.gene):
             return False
