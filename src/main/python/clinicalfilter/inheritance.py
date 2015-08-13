@@ -646,21 +646,17 @@ class CNVInheritance(object):
         self.log_string = "non-reported DDG2P CNV"
         gene_type = self.known_genes[self.gene]["status"]
         
-        inh_passes = []
         if "Both DD and IF" in gene_type:
             self.log_string = "Both DD and IF DDG2P gene"
-            inh_passes.append(True)
+            return True
         elif {"Confirmed DD Gene", "Probable DD gene"} & gene_type == set():
             return False
         
         for inh in self.known_genes[self.gene]["inh"]:
-            passes = self.passes_gene_inheritance(variant, self.gene, inh) or \
-                self.passes_intragenic_dup(variant, self.gene, inh)
-            inh_passes.append(passes)
-        
-        if any(inh_passes):
-            self.log_string = "DDG2P CNV"
-            return True
+            if self.passes_gene_inheritance(variant, self.gene, inh) or \
+                    self.passes_intragenic_dup(variant, self.gene, inh):
+                self.log_string = "DDG2P CNV"
+                return True
         
         return False
     
