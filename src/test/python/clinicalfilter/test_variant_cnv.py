@@ -113,7 +113,7 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.position = 900
         self.var.info["END"] = "950"
         self.var.fix_gene_IDs()
-        self.assertEqual(self.var.genes, ["TEST2"])
+        self.assertEqual(self.var.genes, [".", "TEST2"])
         
         # check that when we do not have any known genes, the gene names are
         # unaltered

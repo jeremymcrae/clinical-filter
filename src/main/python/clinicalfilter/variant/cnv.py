@@ -96,6 +96,8 @@ class CNV(Variant, VariantInfo):
                 # indicate that it overlaps with the CNV, otherwise exclude it.
                 if start <= gene_end and end >= gene_start:
                     genes.append(gene)
+                else:
+                    genes.append(".")
         
         self.genes = genes
     
