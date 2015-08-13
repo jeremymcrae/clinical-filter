@@ -301,9 +301,9 @@ class TestInheritancePy(unittest.TestCase):
         self.assertFalse(self.inh.is_compound_pair(var1, var1))
         
         # make sure it works normally
-        self.assertFalse(self.inh.is_compound_pair(var1, var2))
+        self.assertTrue(self.inh.is_compound_pair(var1, var2))
     
-    def test_is_compound_pair_identical_variants(self):
+    def test_is_compound_pair_both_missense_with_parents(self):
         """check that is_compound_pair() excludes pairs where both are missense
         """
         
@@ -316,14 +316,41 @@ class TestInheritancePy(unittest.TestCase):
         var1 = self.set_compound_het_var(var1, "110")
         var2 = self.set_compound_het_var(var2, "101")
         var3 = self.set_compound_het_var(var3, "101")
-        var4 = self.set_compound_het_var(var3, "101")
+        var4 = self.set_compound_het_var(var4, "101")
+        
+        # dont exclude pairs where both members are not loss-of-function if the
+        # proband has parents
+        self.assertTrue(self.inh.is_compound_pair(var1, var2))
+        self.assertTrue(self.inh.is_compound_pair(var1, var3))
+        
+        # make sure it works normally
+        self.assertTrue(self.inh.is_compound_pair(var1, var4))
+    
+    def test_is_compound_pair_both_missense_without_parents(self):
+        """check that is_compound_pair() excludes pairs where both are missense
+        """
+        
+        # set some variants, so we can alter them later
+        var1 = self.create_variant("F", chrom="1", position="150", cq="missense_variant")
+        var2 = self.create_variant("F", chrom="1", position="160", cq="missense_variant")
+        var3 = self.create_variant("F", chrom="1", position="160", cq="inframe_deletion")
+        var4 = self.create_variant("F", chrom="1", position="160", cq="stop_gained")
+        
+        var1 = self.set_compound_het_var(var1, "110")
+        var2 = self.set_compound_het_var(var2, "101")
+        var3 = self.set_compound_het_var(var3, "101")
+        var4 = self.set_compound_het_var(var4, "101")
+        
+        # drop the parents
+        self.inh.trio.father = None
+        self.inh.trio.mother = None
         
         # exclude pairs where both members are not loss-of-function
         self.assertFalse(self.inh.is_compound_pair(var1, var2))
         self.assertFalse(self.inh.is_compound_pair(var1, var3))
         
-        # make sure it works normally
-        self.assertFalse(self.inh.is_compound_pair(var1, var4))
+        # make sure it works if one variant is loss-of-function
+        self.assertTrue(self.inh.is_compound_pair(var1, var4))
     
     def test_is_compound_pair_unknown_gene(self):
         """check that is_compound_pair() excludes pairs for unknown genes

@@ -210,7 +210,8 @@ class Inheritance(object):
         if first == second:
             return False
         
-        if first.child.is_missense(self.gene) and second.child.is_missense(self.gene):
+        if not self.trio.has_parents() and \
+          first.child.is_missense(self.gene) and second.child.is_missense(self.gene):
             return False
         
         # some CNVs get lumped with NA "." gene values, which mean when
