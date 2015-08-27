@@ -255,12 +255,13 @@ class PostInheritanceFilter(object):
         
         for (var, check, inh, hgnc) in variants:
             
+            print(var)
             # figure out what the het and hemi counts are in ExAC (if available)
             hemi, het = 0, 0
-            if "AC_Hemi" in var.child.info:
-                hemi = int(var.child.info["AC_Hemi"])
+            if "AC_Hemi" in var.child.info and var.get_chrom() == "X":
+                hemi = sum([int(x) for x in var.child.info["AC_Hemi"].split(",")])
             if "AC_Het" in var.child.info:
-                het = int(var.child.info["AC_Het"])
+                het = sum([int(x) for x in var.child.info["AC_Het"].split(",")])
             
             geno = var.get_trio_genotype()
             # filter out hemizygous variants on chrX in males. Autosomal
