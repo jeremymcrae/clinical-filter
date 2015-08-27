@@ -418,7 +418,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         # now construct a male chrX variant, which contains a non-zero AC_Hemi
         # annotation. This should fail the filter
         var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
-        var.child.info["AC_Hemi"] = 1
+        var.child.info["AC_Hemi"] = "1"
         variants = [(var, ["single_variant"], ["Hemizygous"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), [])
         
@@ -429,12 +429,12 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         self.assertEqual(self.post_filter.filter_exac(variants), expected)
         
         # if the AC_Hemi count is zero, this should pass the filter
-        var.child.info["AC_Hemi"] = 0
+        var.child.info["AC_Hemi"] = "0"
         variants = [(var, ["single_variant"], ["Hemizygous"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), variants)
         
         # check that chrX females with non-zero AC_Hemi counts are not excluded
-        var.child.info["AC_Hemi"] = 1
+        var.child.info["AC_Hemi"] = "1"
         self.post_filter.family.child.gender = "female"
         variants = [(var, ["single_variant"], ["Hemizygous"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), variants)
@@ -442,7 +442,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         # now construct a de novo male chrX variant, which contains a non-zero
         # AC_Hemi annotation. Since this is not inherited, it should pass.
         var = self.create_var("X", snv=True, geno=["1/1", "0/0", "0/0"])
-        var.child.info["AC_Hemi"] = 1
+        var.child.info["AC_Hemi"] = "1"
         self.post_filter.family.child.gender = "male"
         variants = [(var, ["single_variant"], ["Hemizygous"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), variants)
@@ -453,19 +453,19 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # construct a monoallelic variant that will pass
         var = self.create_var("1", snv=True, geno=["0/1", "0/1", "0/1"])
-        var.child.info["AC_Het"] = 4
+        var.child.info["AC_Het"] = "4"
         variants = [(var, ["single_variant"], ["Monoallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), variants)
         
         # construct a monoallelic variant that will fail
         var = self.create_var("1", snv=True, geno=["0/1", "0/1", "0/1"])
-        var.child.info["AC_Het"] = 5
+        var.child.info["AC_Het"] = "5"
         variants = [(var, ["single_variant"], ["Monoallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), [])
         
         # construct a variant that will fail
         var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/0"])
-        var.child.info["AC_Het"] = 5
+        var.child.info["AC_Het"] = "5"
         variants = [(var, ["single_variant"], ["Monoallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), [])
         
@@ -481,27 +481,34 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # check that X-linked dominant variants pass when the allele count is low
         var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
-        var.child.info["AC_Het"] = 4
+        var.child.info["AC_Het"] = "4"
         variants = [(var, ["single_variant"], ["X-linked dominant"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), variants)
         
         # check that X-linked dominant variants fail when the het count is high
         var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
-        var.child.info["AC_Het"] = 5
+        var.child.info["AC_Het"] = "5"
         variants = [(var, ["single_variant"], ["X-linked dominant"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), [])
         
         # check that X-linked dominant variants fail when the hemi count is high
         var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
-        var.child.info["AC_Hemi"] = 5
+        var.child.info["AC_Hemi"] = "5"
         variants = [(var, ["single_variant"], ["X-linked dominant"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), [])
         
         # check that X-linked dominant variants fail when neither the het or
         # hemi count on their own are too high, but combined they exceed the threshold
         var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
-        var.child.info["AC_Het"] = 3
-        var.child.info["AC_Hemi"] = 3
+        var.child.info["AC_Het"] = "3"
+        var.child.info["AC_Hemi"] = "3"
+        variants = [(var, ["single_variant"], ["X-linked dominant"], ["ATRX"])]
+        self.assertEqual(self.post_filter.filter_exac(variants), [])
+        
+        # check that X-linked dominant variants fail multi-allelic sites
+        # combined exceed the threshold
+        var = self.create_var("X", snv=True, geno=["1/1", "1/1", "1/1"])
+        var.child.info["AC_Hemi"] = "3,3"
         variants = [(var, ["single_variant"], ["X-linked dominant"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), [])
         
