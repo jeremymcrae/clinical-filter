@@ -255,7 +255,6 @@ class PostInheritanceFilter(object):
         
         for (var, check, inh, hgnc) in variants:
             
-            print(var)
             # figure out what the het and hemi counts are in ExAC (if available)
             hemi, het = 0, 0
             if "AC_Hemi" in var.child.info and var.get_chrom() == "X":
