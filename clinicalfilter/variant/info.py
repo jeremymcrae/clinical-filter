@@ -460,11 +460,16 @@ class Info(object):
         
         return len(set(cq) & self.missense_consequences) > 0
     
-    def is_synonymous(self):
+    def is_synonymous(self, hgnc_symbol=None):
         """ checks if a variant has a missense-styled consequence
         """
         
-        return self.consequence in self.synonymous_consequences
+        if self.consequence is None:
+            return False
+        
+        cq = self.get_per_gene_consequence(hgnc_symbol)
+        
+        return len(set(cq) - self.synonymous_consequences) == 0
     
     def get_allele_frequency(self, values):
         """ extracts the allele frequency float from a VCF string
