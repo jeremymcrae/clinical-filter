@@ -41,8 +41,6 @@ class PostInheritanceFilter(object):
         # and filter by a lower MAF threshold
         self.variants = self.filter_by_maf(self.variants)
         
-        self.variants = self.filter_polyphen(self.variants)
-        
         self.variants = self.filter_exac(self.variants)
         
         return self.variants
@@ -120,123 +118,6 @@ class PostInheritanceFilter(object):
                         print(str(var) + " dropped from low MAF in non-biallelic variant")
         
         return passed_vars
-    
-    def get_polyphen_for_genes(self, var, hgnc):
-        """ get the polyphen predictions for a variant for specific gene symbols
-        
-        Genetic variants can lie within multiple genes, each of which has a
-        polyphen prediction (if the site has an appropriate functional
-        consequence). This function pulls out the polyphen predictions for
-        specific gene symbols, in order to check whether a candidate variant
-        has a "benign" polyphen prediction.
-        
-        Args:
-            var: TrioGenotypes object for a variant
-            hgnc: list of gene symbols
-        
-        Returns:
-            list of polyphen predictions
-        """
-        
-        # find the HGNC symbol positions in the partner variant that match the
-        # HGNC symbols
-        genes = var.get_genes()
-        pos = [ x for x in range(len(genes)) if genes[x] is not None and genes[x] in hgnc ]
-        
-        polyphen = []
-        if "PolyPhen" in var.child.info:
-            # get the polyphen predictions for the genes matching the required
-            # gene symbols. NOTE: This does not account for multi-allelic sites,
-            # but we don't examine compound hets at multi-allelic sites, so this
-            # shouldn't be a problem.
-            polyphen = [ var.child.info["PolyPhen"].split("|")[n] for n in pos ]
-            
-            # remove the numeric scores from the annotations
-            polyphen = [ x.split("(")[0] for x in polyphen ]
-        
-        return polyphen
-    
-    def filter_polyphen(self, variants):
-        """ filter variants based on polyphen predictions
-        
-        filter out compound hets where both have benign predictions from
-        polyphen, but retain compound hets where only one is polyphen benign.
-        Also filter out single variants where polyphen predicts benign.
-        
-        Args:
-            variants: list of (variant, check, inheritance) tuples
-        
-        Returns:
-            returns list of tuples without polyphen benign variants
-        """
-        
-        passed_vars = []
-        
-        for (var, check, inh, hgnc) in variants:
-            
-            # check if the variant on it's own would pass
-            passes = "benign" not in self.get_polyphen_for_genes(var, hgnc) or \
-                    var.get_trio_genotype() == var.get_de_novo_genotype()
-            
-            # check all of the other variants to see if any are in the same
-            # gene, compound_het, and polyphen benign
-            benign_matches = [ self.has_compound_match(var, x, variants) for x in hgnc ]
-            
-            # exclude HGNC symbols where partner variants are polyphen benign
-            hgnc = [ hgnc[x] for x in range(len(hgnc)) if not(benign_matches[x]) ]
-            
-            # check if any of the genes for the partner variants have damaging
-            # consequences
-            benign_match = not(any([ not x for x in benign_matches ]))
-            
-            if passes and not benign_match:
-                passed_vars.append((var, check, inh, hgnc))
-            else:
-                logging.debug(str(var) + " dropped from polyphen prediction")
-                if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
-                    print(str(var) + " dropped from polyphen prediction")
-        
-        return passed_vars
-    
-    def has_compound_match(self, var, hgnc, variants):
-        """ for a compound var, find if its partner is also polyphen benign
-        
-        Check all of the other variants to see if any are in the same
-        gene, compound_het, and polyphen benign.
-        
-        Args:
-            var: TrioGenotypes object
-            hgnc: HGNC symbol that we need to match for the partner variant
-            variants: list of (variant, check, inheritance, gene) tuples
-        
-        Returns:
-            True/false for whether there is a compound het match
-        """
-        
-        # get a list of the variants in the gene
-        compound_vars = [ x[0] for x in variants if hgnc in x[3] and "compound_het" in x[1] ]
-        
-        if len(compound_vars) == 0:
-            return False
-        
-        # run through the variants, find all the variants that are not benign,
-        # or are benign but de novo.
-        not_benign = []
-        for alt_var in compound_vars:
-            if alt_var.get_trio_genotype() == alt_var.get_de_novo_genotype():
-                not_benign.append(alt_var)
-            elif "benign" not in self.get_polyphen_for_genes(alt_var, hgnc):
-                not_benign.append(alt_var)
-        
-        # if we have more than two non-benign variants with different genotypes,
-        # then we don't want to exclude these variants. Unless we lack parents
-        # since those will have the same trio genotypes by virtue of having
-        # "NA" values for the parental genotypes.
-        genotypes = set([ x.get_trio_genotype() for x in not_benign ])
-        if "NA" in var.get_trio_genotype():
-            genotypes = [ x.get_trio_genotype() for x in not_benign ]
-        
-        return len(genotypes) <= 1
     
     def filter_exac(self, variants):
         """ drop variants based on ExAC frequencies
