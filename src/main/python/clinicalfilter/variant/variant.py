@@ -101,21 +101,15 @@ class Variant(object):
         return "{0} chr{1}: {2} {3} in {4}".format(str(self.__class__.__name__), \
                   self.chrom, self.position, self.genotype, self.genes)
     
-    def add_format(self, format_keys, sample_values):
+    def add_format(self, keys, values):
         """Parses the FORMAT column from VCF files.
         
         Args:
-            format_keys: FORMAT text from a line in a VCF file
-            sample_values: the values for the format keys
+            keys: FORMAT text from a line in a VCF file
+            values: the values for the format keys
         """
         
-        self.format = {}
-        
-        tag_labels = format_keys.split(":")
-        tag_values = sample_values.split(":")
-        
-        for i, value in enumerate(tag_values):
-            self.format[tag_labels[i]] = value
+        self.format = dict(zip(keys.split(":"), values.split(":")))
     
     def add_vcf_line(self, vcf_line):
         self.vcf_line = vcf_line
