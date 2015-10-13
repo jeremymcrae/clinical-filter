@@ -183,6 +183,8 @@ class LoadVCFs(object):
         except ValueError:
             # we only get ValueError when the genotype cannot be set, which
             # occurs for x chrom male heterozygotes (an impossible genotype)
+            if var.get_chrom() == var.debug_chrom and var.get_position() == var.debug_pos:
+                print("failed as heterozygous genotype in male on chrX")
             pass
     
     def construct_variant(self, line, gender):
