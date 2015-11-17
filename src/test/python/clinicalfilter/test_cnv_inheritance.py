@@ -45,7 +45,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         # set up a SNV object, since SNV inherits VcfInfo
         var = CNV(chrom, pos, snp_id, ref, alt, filt)
         
-        info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000;CNS=3"
+        info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000;CNS=3;CALLSOURCE=aCGH"
         format_keys = "CIFER:INHERITANCE:DP"
         sample_values = cifer + ":" + inh + ":50"
         

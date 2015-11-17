@@ -46,7 +46,7 @@ class CNV(Variant, VariantInfo):
                 if cnv_start_inh != "autosomal":
                     self.set_inheritance_type()
         
-        if self.info["CALLSOURCE"] == "EXOME":
+        if "CALLSOURCE" in self.info and self.info["CALLSOURCE"] == "EXOME":
             self.add_cns_state()
         
         if self.get_inheritance_type() == "YChrFemale":
