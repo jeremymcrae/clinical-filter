@@ -129,6 +129,7 @@ class CNV(Variant, VariantInfo):
         elif "EXOME" in self.info["CALLSOURCE"]:
             # currently return false for all exome-only CNVs, undergoing testing
             filt = ExomeCNV(self)
+            self.add_cns_state()
             # passes = filt.filter_cnv(track_variant)
             passes = False
         else:
@@ -157,3 +158,16 @@ class CNV(Variant, VariantInfo):
     def is_not_alt(self):
         # return True
         return self.genotype in self.ref_genotypes
+    
+    def add_cns_state(self):
+        """ determines the CNS value from MEANLR2 values
+        """
+        
+        if float(self.info["MEANLR2"]) >= 0:
+            self.info["CNS"] = "3"
+        elif 0 > float(self.info["MEANLR2"]) >= -2:
+            self.info["CNS"] = "1"
+        elif -2 > float(self.info["MEANLR2"]):
+            self.info["CNS"] = "0"
+        else:
+            raise ValueError("Shouldn't reach here")

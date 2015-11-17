@@ -14,8 +14,6 @@ class ExomeCNV(object):
         """ filters the CNV
         """
         
-        self.add_cns_state()
-        
         passes = True
         if self.fails_convex_score():
             passes = False
@@ -72,17 +70,3 @@ class ExomeCNV(object):
         """
         
         return float(self.cnv.info["NUMBEREXONS"]) < 1
-    
-    def add_cns_state(self):
-        """ determines the CNS value from MEANLR2 values
-        """
-        
-        if float(self.cnv.info["MEANLR2"]) >= 0:
-            self.cnv.info["CNS"] = "3"
-        elif 0 > float(self.cnv.info["MEANLR2"]) >= -2:
-            self.cnv.info["CNS"] = "1"
-        elif -2 > float(self.cnv.info["MEANLR2"]):
-            self.cnv.info["CNS"] = "0"
-        else:
-            raise ValueError("Shouldn't reach here")
-        

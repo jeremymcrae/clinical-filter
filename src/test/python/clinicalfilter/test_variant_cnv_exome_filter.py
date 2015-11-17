@@ -39,23 +39,23 @@ class TestExomeCnvPy(unittest.TestCase):
         
         # meanl2r > 0 gives cns of 3
         self.var.cnv.info["MEANLR2"] = "1"
-        self.var.add_cns_state()
+        self.var.cnv.add_cns_state()
         self.assertEqual(self.var.cnv.info["CNS"], "3")
         
         self.var.cnv.info["MEANLR2"] = "0"
-        self.var.add_cns_state()
+        self.var.cnv.add_cns_state()
         self.assertEqual(self.var.cnv.info["CNS"], "3")
         
         self.var.cnv.info["MEANLR2"] = "-0.1"
-        self.var.add_cns_state()
+        self.var.cnv.add_cns_state()
         self.assertEqual(self.var.cnv.info["CNS"], "1")
         
         self.var.cnv.info["MEANLR2"] = "-2"
-        self.var.add_cns_state()
+        self.var.cnv.add_cns_state()
         self.assertEqual(self.var.cnv.info["CNS"], "1")
         
         self.var.cnv.info["MEANLR2"] = "-2.1"
-        self.var.add_cns_state()
+        self.var.cnv.add_cns_state()
         self.assertEqual(self.var.cnv.info["CNS"], "0")
     
     def test_fails_mad_ratio(self):
