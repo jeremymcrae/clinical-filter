@@ -46,6 +46,9 @@ class CNV(Variant, VariantInfo):
                 if cnv_start_inh != "autosomal":
                     self.set_inheritance_type()
         
+        if self.info["CALLSOURCE"] == "EXOME":
+            self.add_cns_state()
+        
         if self.get_inheritance_type() == "YChrFemale":
             raise ValueError("cannot have CNV on female Y chromosome")
         
@@ -129,9 +132,8 @@ class CNV(Variant, VariantInfo):
         elif "EXOME" in self.info["CALLSOURCE"]:
             # currently return false for all exome-only CNVs, undergoing testing
             filt = ExomeCNV(self)
-            self.add_cns_state()
-            # passes = filt.filter_cnv(track_variant)
-            passes = False
+            passes = filt.filter_cnv(track_variant)
+            # passes = False
         else:
             if track_variant:
                 print("CNV is not an aCGH or exome CNV")
