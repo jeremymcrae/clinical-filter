@@ -236,6 +236,7 @@ class Inheritance(object):
         
         # assume variants in probands without parents are compound hets
         if mom_1 is None:
+            return True
         
         # compound hets on the X chromosome occur when the father has a
         # nonref genotype and is affected (or both ref, but one de novo)
