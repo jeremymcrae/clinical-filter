@@ -230,10 +230,12 @@ class Inheritance(object):
         self.set_trio_genotypes(second)
         mom_2, dad_2 = self.mom, self.dad
         
-        # include CNVs in compound hets, and assume variants in probands without
-        # parents are compound hets
-        if first.is_cnv() or second.is_cnv() or mom_1 is None:
-            return True
+        # if either variant is a CNV, then we check the inheritance separately
+        if first.is_cnv() or second.is_cnv():
+            return self.check_pair_with_cnv(first, second)
+        
+        # assume variants in probands without parents are compound hets
+        if mom_1 is None:
         
         # compound hets on the X chromosome occur when the father has a
         # nonref genotype and is affected (or both ref, but one de novo)
@@ -245,6 +247,45 @@ class Inheritance(object):
             and dad_1.is_not_ref() and dad_2.is_hom_ref()) or \
             (mom_1.is_not_ref() and mom_2.is_hom_ref() \
             and dad_1.is_hom_ref() and dad_2.is_not_ref()):
+            return True
+        
+        return False
+    
+    def check_pair_with_cnv(self, first, second):
+        """ check whether a pair of variants with 1+ CNV could be a compound het
+        
+        Args:
+            first: TrioGenotypes object for first variant
+            second: TrioGenotypes object for second variant
+        
+        Returns:
+            true/false for whather the pair of variants could be a compound het.
+        """
+        
+        # swap the variants around so the first variant has to be a CNV. Note
+        # that the other variant might still be a CNV.
+        if second.is_cnv():
+            first, second = second, first
+        
+        # if one of the variants is not a CNV, then check
+        if not second.is_cnv():
+            # set the parental genotypes for the SNV variant
+            self.set_trio_genotypes(second)
+            mom_2, dad_2 = self.mom, self.dad
+            
+            # get the inheritance state of the CNV variant
+            inh = [first.child.format["INHERITANCE"], first.child.format["CIFER_INHERITANCE"]]
+            paternal = any([ "paternal" in x for x in inh ])
+            maternal = any([ "maternal" in x for x in inh ])
+            
+            # If the CNV is paternally inherited, then for the other variant, we
+            # need it to be inherited from the mother, and not from the father.
+            # This is vice-versa if the CNV is maternally inherited.
+            if paternal:
+                return dad_2.is_hom_ref() and mom_2.is_not_ref()
+            elif maternal:
+                return dad_2.is_not_ref() and mom_2.is_hom_ref()
+        elif first.is_cnv() and second.is_cnv():
             return True
         
         return False
