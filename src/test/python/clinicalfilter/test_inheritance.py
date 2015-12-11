@@ -77,8 +77,8 @@ class TestInheritancePy(unittest.TestCase):
         var = CNV(chrom, pos, snp_id, ref, alt, filt)
         
         info = "CQ={};HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000".format(cq)
-        format_keys = "INHERITANCE:DP"
-        sample_values = inh + ":50"
+        format_keys = "INHERITANCE:DP:CIFER_INHERITANCE"
+        sample_values = "{0}:50:{0}".format(inh)
         
         var.add_info(info)
         var.add_format(format_keys, sample_values)
@@ -369,14 +369,14 @@ class TestInheritancePy(unittest.TestCase):
         # exclude pairs where both members are not loss-of-function
         self.assertFalse(self.inh.is_compound_pair(var1, var2))
     
-    def test_is_compound_pair_cnv(self):
+    def test_is_compound_pair_cnv_paternal(self):
         """ check that is_compound_pair() includes pairs with CNVs
         """
         
         # generate a test variant
         chrom = "1"
         position = "60000"
-        child_var = self.create_cnv("F", "unknown", chrom, position)
+        child_var = self.create_cnv("F", "paternal", chrom, position)
         mom_var = self.create_cnv("F", "unknown", chrom, position)
         dad_var = self.create_cnv("M", "unknown", chrom, position)
         
@@ -388,8 +388,43 @@ class TestInheritancePy(unittest.TestCase):
         snv = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
         snv = self.set_compound_het_var(snv, "110")
         
-        # exclude pairs where both members are not loss-of-function
+        # check that these variants are compound hets, no matter which order
+        # they are given as.
         self.assertTrue(self.inh.is_compound_pair(cnv, snv))
+        self.assertTrue(self.inh.is_compound_pair(snv, cnv))
+        
+        # check that if the SNV is inherited from the same parent as the CNV,
+        # then the pair isn't a compound het.
+        snv = self.set_compound_het_var(snv, "101")
+        self.assertFalse(self.inh.is_compound_pair(cnv, snv))
+    
+    def test_is_compound_pair_cnv_maternal(self):
+        """ check that is_compound_pair() includes pairs with CNVs
+        """
+        
+        # generate a test variant
+        chrom = "1"
+        position = "60000"
+        child_var = self.create_cnv("F", "maternal", chrom, position)
+        mom_var = self.create_cnv("F", "unknown", chrom, position)
+        dad_var = self.create_cnv("M", "unknown", chrom, position)
+        
+        cnv = TrioGenotypes(child_var)
+        cnv.add_mother_variant(mom_var)
+        cnv.add_father_variant(dad_var)
+        
+        # set some variants, so we can alter them later
+        snv = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
+        snv = self.set_compound_het_var(snv, "101")
+        
+        # check that these variants are compound hets, no matter which order
+        # they are given as.
+        self.assertTrue(self.inh.is_compound_pair(cnv, snv))
+        
+        # check that if the SNV is inherited from the same parent as the CNV,
+        # then the pair isn't a compound het.
+        snv = self.set_compound_het_var(snv, "110")
+        self.assertFalse(self.inh.is_compound_pair(cnv, snv))
     
     def test_is_compound_pair_proband_only(self):
         """ check that is_compound_pair() includes proband-only pairs
