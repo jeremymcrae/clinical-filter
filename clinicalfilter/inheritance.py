@@ -411,7 +411,7 @@ class Allosomal(Inheritance):
         
         if "X-linked over-dominance" in self.gene_inheritance:
             self.gene_inheritance.add("X-linked dominant")
-            self.gene_inheritance.remove("X-linked over-dominance")
+            # self.gene_inheritance.remove("X-linked over-dominance")
     
     def check_variant_without_parents(self, inheritance):
         """ test variants in children where we lack parental genotypes
@@ -431,7 +431,7 @@ class Allosomal(Inheritance):
         """ checks if a heterozygous genotype could contribute to disease
         """
         
-        if "X-linked dominant" == inheritance:
+        if inheritance in ["X-linked dominant", "X-linked over-dominance"]:
             report = "single_variant"
         elif "Hemizygous" == inheritance:
             # recessive: should be marked for compound-het screen
@@ -448,6 +448,9 @@ class Allosomal(Inheritance):
              (self.dad.is_hom_ref() or self.father_affected):
             self.log_string = "x chrom transmitted from aff, other parent non-carrier or aff"
             return report
+        elif inheritance == "X-linked over-dominance" and self.dad.is_not_ref():
+            self.log_string = "variant inherited from dad in X-linked over-dominance gene"
+            return report
         else:
             self.log_string = "variant not compatible with being causal"
             return "nothing"
@@ -456,7 +459,7 @@ class Allosomal(Inheritance):
         """ checks if a homozygous genotype could contribute to disease
         """
         
-        if inheritance not in ["X-linked dominant", "Hemizygous"]:
+        if inheritance not in ["X-linked dominant", "Hemizygous", "X-linked over-dominance"]:
             raise ValueError("unknown gene inheritance: " + str(inheritance))
         
         # treat male sex inheritance differently from female sex inheritance
@@ -464,6 +467,10 @@ class Allosomal(Inheritance):
             if self.mom.is_hom_ref():
                 self.log_string = "male X chrom de novo"
                 return "single_variant"
+            elif inheritance == "X-linked over-dominance" and self.mom.is_het() \
+                    and not self.mother_affected:
+                self.log_string = "inherited variant in X-linked over-dominant gene, but from unaffected mother"
+                return "nothing"
             elif (self.mom.is_het() and not self.mother_affected) or \
                  (self.mom.is_hom_alt() and self.mother_affected):
                 self.log_string = "male X chrom inherited from het mother or hom affected mother"
