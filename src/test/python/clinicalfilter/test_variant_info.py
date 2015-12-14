@@ -23,7 +23,7 @@ class TestVariantInfoPy(unittest.TestCase):
         # set up a SNV object, since SNV inherits VcfInfo
         self.var = SNV(chrom, pos, snp_id, ref, alt, filt)
         self.var.debug_chrom = "1"
-        self.var.debug_pos = "15000000"
+        self.var.debug_pos = 15000000
         
         self.default_info = "HGNC=ATRX;CQ=missense_variant;random_tag"
         
@@ -32,9 +32,32 @@ class TestVariantInfoPy(unittest.TestCase):
             {"Loss of function"}}, "start": "10000000", "chrom": "1", \
             "confirmed_status": {"Confirmed DD Gene"}, "end": "20000000"}}
         
-        SNV.known_genes = known_genes
+        self.var.known_genes = known_genes
         
         self.var.add_info(self.default_info)
+    
+    def test_set_consequence(self):
+        """ test that set_consequence works correctly
+        """
+        
+        # check that in the absence of any known conserved final exon positions,
+        # the consequence is unchanged.
+        self.var.set_consequence()
+        self.assertEqual(self.var.consequence, ["missense_variant"])
+        
+        # Now check that if the variant is at a position where it is a final
+        # base in an exon with a conserved base, the consequence gets converted.
+        self.var.last_base = set([("1", 15000000)])
+        self.var.set_consequence()
+        self.assertEqual(self.var.consequence, ["conserved_exon_terminus_variant"])
+        
+        # If we have a variant in multiple genes, check that it only alters the
+        # missense/splice_region variants, and doesn't alter synonymous variants
+        # (since these will be in transcripts where the variant is distant from
+        # an exon boundary.)
+        self.var.info["CQ"] = "missense_variant|synonymous_variant"
+        self.var.set_consequence()
+        self.assertEqual(self.var.consequence, ["conserved_exon_terminus_variant", "synonymous_variant"])
     
     def test_set_gene_from_info(self):
         """ test that test_set_gene_from_info() works correctly

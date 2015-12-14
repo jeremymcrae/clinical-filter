@@ -206,13 +206,19 @@ class VariantInfo(object):
             if "ENST" in self.info:
                 self.info["ENST"] = enst
         
-        # allow for sites at the end of exons, changing from a conserved base
+        # Allow for sites at the end of exons, changing from a conserved base.
+        # These haven't been annotated in the VCF, so we modify the VEP
+        # consequence. We only need to account for "missense_variant" and
+        # "splice_region_variant", since variants near an exon end can only have
+        # these consequences. The splice_region variants would ordinarily be
+        # missed. We might erroneously change missense_variants in transcripts
+        # where in one transcript the exon ends, while the other transcript the
+        # exon continues, but those seem sufficiently rare.
         if (self.get_chrom(), self.get_position()) in self.last_base:
-            types = ["missense_variant", "splice_region_variant"]
+            required = ["missense_variant", "splice_region_variant"]
             
-            self.consequence = [ "conserved_exon_terminus_variant" if x in types \
-                else x for x in self.consequence ]
-            self.info["CQ"] = self.consequence
+            cq = [ "conserved_exon_terminus_variant" if x in required \
+                else x for x in cq ]
         
         self.consequence = cq
     
