@@ -27,7 +27,6 @@ class Variant(object):
         self.ref_allele = ref_allele
         self.alt_allele = alt_allele
         
-        # self.quality = quality
         self.filter = filt
         
         # intialise variables that will be set later

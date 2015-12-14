@@ -46,6 +46,7 @@ class VariantInfo(object):
     known_genes = None
     debug_chrom = None
     debug_pos = None
+    last_base = set([])
     
     def add_info(self, info_values):
         """Parses the INFO column from VCF files.

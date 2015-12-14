@@ -30,6 +30,7 @@ class TestClinicalFilterPy(unittest.TestCase):
             loglevel = "debug"
             debug_chrom, debug_pos = None, None
             pp_filter = 0.9
+            lof_sites = None
         
         self.finder = ClinicalFilter(opts)
     

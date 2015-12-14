@@ -21,7 +21,7 @@ class LoadVCFs(object):
     """ load VCF files for a trio
     """
     
-    def __init__(self, total_trios, known_genes, debug_chrom, debug_pos, last_base):
+    def __init__(self, total_trios, known_genes, last_base, debug_chrom, debug_pos):
         """ intitalise the class with the filters and tags details etc
         
         Args:
