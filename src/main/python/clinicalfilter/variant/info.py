@@ -5,8 +5,6 @@ class VariantInfo(object):
     """ parses the VCF info field
     """
     
-    changed_consequence = False
-    
     # Here are the VEP consequences, ranked in severity from the most severe to
     # the least severe as defined at:
     # http://www.ensembl.org/info/genome/variation/predicted_data.html
@@ -31,7 +29,8 @@ class VariantInfo(object):
     # define the set of loss-of-function consequences
     lof_consequences = set(["transcript_ablation", "splice_donor_variant", \
         "splice_acceptor_variant", "stop_gained", "frameshift_variant",  \
-        "coding_sequence_variant", "start_lost", "initiator_codon_variant"])
+        "coding_sequence_variant", "start_lost", "initiator_codon_variant",
+        "conserved_exon_terminus_variant"])
     
     # define the set of missense (or non loss-of-function) consequences
     missense_consequences = set(["stop_lost", \
@@ -206,6 +205,14 @@ class VariantInfo(object):
             if "ENST" in self.info:
                 self.info["ENST"] = enst
         
+        # allow for sites at the end of exons, changing from a conserved base
+        if (self.get_chrom(), self.get_position()) in self.last_base:
+            types = ["missense_variant", "splice_region_variant"]
+            
+            self.consequence = [ "conserved_exon_terminus_variant" if x in types \
+                else x for x in self.consequence ]
+            self.info["CQ"] = self.consequence
+        
         self.consequence = cq
     
     def get_per_gene_consequence(self, hgnc_symbol):
@@ -242,13 +249,6 @@ class VariantInfo(object):
             return self.consequence
         
         return [ self.consequence[n] for n in pos ]
-        
-        if self.consequence in ["missense_variant", "synonymous_variant"]:
-            key = (self.get_chrom(), self.get_position())
-            if key in self.last_base:
-                self.consequence = "splice_donor_variant"
-                self.info["CQ"] = self.consequence
-                self.changed_consequence = True
         
     def correct_multiple_alt(self, cq):
         """ gets correct consequence, HGNC and ensembl IDs for multiple alt vars
