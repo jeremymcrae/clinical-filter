@@ -307,7 +307,7 @@ class Autosomal(Inheritance):
         
         super(Autosomal, self).__init__(variants, trio, known_genes, gene, cnv_regions)
         
-        self.inheritance_modes = set(["Monoallelic", "Biallelic", "Both"])
+        self.inheritance_modes = set(["Monoallelic", "Biallelic", "Both", 'Imprinted'])
     
     def check_variant_without_parents(self, inheritance):
         """ test variants in children where we lack parental genotypes
@@ -319,6 +319,8 @@ class Autosomal(Inheritance):
         elif self.child.is_hom_alt() and inheritance == "Biallelic":
             return "single_variant"
         elif self.child.is_het() and inheritance == "Monoallelic":
+            return "single_variant"
+        elif self.child.is_het() and inheritance == "Imprinted":
             return "single_variant"
         
         return "nothing"
@@ -333,6 +335,12 @@ class Autosomal(Inheritance):
         elif "Biallelic" == inheritance:
             # recessive: should be marked for compound-het screen
             report = "compound_het"
+        
+        if inheritance == 'Imprinted':
+            report = "single_variant"
+            if self.dad.is_not_ref() or self.mom.is_not_ref():
+                self.log_string = "imprinted variant"
+                return report
         
         if self.mom.is_hom_ref() and self.dad.is_hom_ref():
             self.log_string = "de novo as {0}".format(report)
@@ -381,6 +389,9 @@ class Autosomal(Inheritance):
             if self.father_affected and self.mother_affected:
                 self.log_string = "transmitted from affected parents"
                 return "single_variant"
+        elif "Imprinted" == inheritance:
+            self.log_string = "imprinted variant"
+            return "single_variant"
         
         self.log_string = "non-causal homozygous variant"
         return "nothing"
