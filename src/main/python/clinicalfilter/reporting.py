@@ -164,7 +164,10 @@ class Report(object):
         # include an alternate ID for the affected child, if it exists
         alt_id = 'no_alternate_ID'
         if self.ID_mapper is not None:
-            alt_id = self.ID_mapper[self.family.child.get_id()]
+            try:
+                alt_id = self.ID_mapper[self.family.child.get_id()]
+            except KeyError:
+                alt_id = 'no_alternate_ID'
         
         for var in sorted(variants):
             output_line = self._get_output_line(var, dad_aff, mom_aff, alt_id)
