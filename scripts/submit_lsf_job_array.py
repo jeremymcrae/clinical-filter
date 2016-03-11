@@ -344,6 +344,7 @@ def main():
     temp_name = "tmp_ped.{0}".format(hash_string)
     
     tidy_directory_before_start()
+    trio_counter = split_pedigree_file(temp_name, opts.ped_path, opts.n_jobs, opts.without_parents, opts.use_singletons_with_parents)
     run_array(hash_string, trio_counter, temp_name, opts.ddg2p_path, \
         opts.all_genes, opts.tweak_lof, log_options)
     run_cleanup(hash_string)
