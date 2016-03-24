@@ -23,7 +23,7 @@ known_genes = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2015-
 ped_file = os.path.join(datafreeze, "family_relationships.txt")
 alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.txt")
 syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
-LAST_BASE_PATH = "/nfs/users/nfs_j/jm33/apps/recessiveStats/data-raw/last_base_sites.json"
+LAST_BASE_PATH = "/lustre/scratch113/projects/ddd/users/jm33/last_base_sites_G.json"
 
 def get_options():
     """ gets the options from the command line
