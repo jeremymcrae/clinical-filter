@@ -127,7 +127,7 @@ def get_lof_recessive_variants(variants, lof_consequences):
                 line[15] = "single_variant"
             
             if consequence in lof_consequences and inheritance not in dominant_modes:
-                lof_variants.append(line)
+                lof_variants.append('\t'.join(line) + '\n')
     
     return lof_variants
 
@@ -137,7 +137,7 @@ def get_maternal_chrx_lof_in_males(variants, lof_consequences):
     
     mode = 'Hemizygous'
     
-    lof_variants 
+    lof_variants = []
     for person_id in variants:
         if variants[person_id]['sex'] not in ['M', 'Male', 'male']:
             continue
@@ -152,10 +152,7 @@ def get_maternal_chrx_lof_in_males(variants, lof_consequences):
             inheritance = line[11]
             
             if consequence in lof_consequences and mode in inheritance.split(','):
-                if person_id not in lof_variants:
-                    lof_variants[person_id] = {}
-                
-                lof_variants[person_id][key] = line
+                lof_variants.append('\t'.join(line) + '\n')
     
     return lof_variants
 
@@ -170,8 +167,7 @@ def write_output(filename, variants):
         "\ttrio_genotype\tmom_aff\tdad_aff\tresult\tomim_match\n"
     f.write(header)
     
-    for key in sorted(variants):
-        f.write(variants[key])
+    f.write(variants)
     
     f.close()
 
@@ -187,7 +183,6 @@ def main():
     recessive = get_lof_recessive_variants(vus_vars, LOF)
     maternal_chrx = get_maternal_chrx_lof_in_males(vus_vars, LOF)
     
-    for 
     variants = recessive + maternal_chrx
     
     write_output(output_file, variants)
