@@ -31,6 +31,10 @@ class ExomeCNV(object):
             passes = False
             if track_variant:
                 print("failed commonforwards", self.cnv.info["COMMONFORWARDS"])
+        elif self.fails_cifer_inh():
+            passes = False
+            if track_variant:
+                print("failed CIFER inheritance", self.cnv.format["CIFER_INHERITANCE"])
         # elif self.fails_no_exons():
         #     passes = False
         #     if track_variant:
@@ -70,3 +74,9 @@ class ExomeCNV(object):
         """
         
         return float(self.cnv.info["NUMBEREXONS"]) < 1
+    
+    def fails_cifer_inh(self):
+        """ check that the CIFER inheritance classification isn't false_positive
+        """
+        
+        return self.cnv.format["CIFER_INHERITANCE"] == "false_positive"
