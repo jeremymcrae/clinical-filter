@@ -99,6 +99,20 @@ class TestVariantInfoPy(unittest.TestCase):
         self.var.set_gene_from_info()
         self.assertEqual(self.var.genes, ["Z", None, "C"])
     
+    def test_set_gene_from_info_missing_gene(self):
+        ''' check the gene symbol is the genome pos when we lack any other info
+        '''
+        
+        # remove the known genes, an=y previously set gene info
+        self.var.known_genes = None
+        self.var.genes = None
+        
+        # remove the only possibly source of the gene symbol
+        del self.var.info["HGNC"]
+        
+        self.var.set_gene_from_info()
+        self.assertEqual(self.var.genes, ["1:15000000"])
+    
     def test_is_lof(self):
         """ test that is_lof() works correctly
         """

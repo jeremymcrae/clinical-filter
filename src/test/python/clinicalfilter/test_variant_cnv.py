@@ -159,7 +159,7 @@ class TestVariantCnvPy(unittest.TestCase):
         # finally check for no HGNC, HGNC_ALL, or NUMBERGENES
         del self.var.info["NUMBERGENES"]
         self.var.set_gene_from_info()
-        self.assertEqual(self.var.genes, "1:15000000")
+        self.assertEqual(self.var.genes, ["1:15000000"])
     
     def test_get_genes(self):
         """ test that get_genes() works correctly
