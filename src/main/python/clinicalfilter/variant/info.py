@@ -125,7 +125,7 @@ class VariantInfo(object):
         # identifying an HGNC symbol. We don't need to worry about this when
         # using a set of known genes, since those should all have HGNC symbols.
         elif self.genes is None and self.known_genes is None:
-            self.genes = "{0}:{1}".format(self.chrom, self.position)
+            self.genes = ["{0}:{1}".format(self.chrom, self.position)]
     
     def get_genes_for_allele(self, position):
         """ gets list of gene symbols for an allele, prioritising HGNC symbols.
