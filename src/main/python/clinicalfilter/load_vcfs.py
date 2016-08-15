@@ -25,11 +25,15 @@ class LoadVCFs(object):
         """ intitalise the class with the filters and tags details etc
         
         Args:
-            counter: count of how many trios have been analysed
             total_trios: count of how many trios are to be analysed
             known_genes: dictionary of genes known to be involved with genetic
                 disorders.
-            tags_dict: dictionary of alternate tags for INFO fields
+            last_base: set of sites in genome at conserved last base of exons,
+                where we upgrade the severity of variants to loss-of-function.
+            debug_chrom: chromosome string, to give more information about why
+                a variant fails to pass the filters.
+            debug_pos: chromosome position, to give more information about why
+                a variant fails to pass the filters.
         """
         
         self.family = None
