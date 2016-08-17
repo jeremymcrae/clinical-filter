@@ -42,10 +42,10 @@ clean-srcdir-git:
 	find $(SRCDIR)/src/main/ | grep "/\.gitignore"$ | xargs -I '{}' rm {}
 
 install-python:
-	rsync -rp --chmod=$(CHMOD) $(SRCDIR)/src/main/python/ $(CLINICAL_FILTER_PREFIX)
+	rsync -rp --chmod=$(CHMOD) $(SRCDIR)/clinicalfilter/ $(CLINICAL_FILTER_PREFIX)
 
 clean-tmpdir:
 	rm -r $(TMPDIR)
 
 test:
-	export PYTHONPATH="src/main/python:src/test/python:${PYTHONPATH}" && python3 -m unittest discover ./src/test/python/clinicalfilter
+	python3 setup.py test
