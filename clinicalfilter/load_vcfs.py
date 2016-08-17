@@ -27,6 +27,7 @@ from clinicalfilter.trio_genotypes import TrioGenotypes
 from clinicalfilter.match_cnvs import MatchCNVs
 from clinicalfilter.utils import open_vcf, get_vcf_header, exclude_header, \
     construct_variant
+from clinicalfilter.multinucleotide_variants import get_mnv_candidates
 
 class LoadVCFs(object):
     """ load VCF files for a trio
@@ -198,6 +199,8 @@ class LoadVCFs(object):
         logging.info("opening trio " + str(self.counter) + " of " + \
             str(self.total_trios) + ". child path: " + \
             self.family.child.get_path())
+        
+        mnv_candidates = get_mnv_candidates(self.family.child.get_path())
         
         # open the childs VCF file, and get the variant keys, to check if they
         # are in the parents VCF
