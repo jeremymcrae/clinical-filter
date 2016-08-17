@@ -172,10 +172,6 @@ class Report(object):
         for var in sorted(variants):
             output_line = self._get_output_line(var, dad_aff, mom_aff, alt_id)
             self.output.write(output_line)
-        
-        # leave a gap between individuals, as per previous reporting system
-        if len(variants) > 0:
-            self.output.write("\n")
     
     def _get_provenance(self, provenance, member):
         """ gets the VCF filename, checksum and VCF date for family members
