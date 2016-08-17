@@ -120,6 +120,9 @@ class Person(object):
         
         return self.get_id() > other.get_id()
     
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+    
     def __hash__(self):
         """ get a unique hash for the object from the sample strings
         """
