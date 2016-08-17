@@ -1,5 +1,23 @@
-""" unit testing of the Family class
-"""
+'''
+Copyright (c) 2016 Genome Research Ltd.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+'''
 
 import unittest
 from clinicalfilter.ped import Family
@@ -29,7 +47,7 @@ class TestFamily(unittest.TestCase):
         # check that adding a male father doesn't raise an error
         self.family.add_father(ID, path, affected, gender)
         
-        # check that adding a father for a second time is fine, but adding 
+        # check that adding a father for a second time is fine, but adding
         # a different father raises an error
         self.family.add_father(ID, path, affected, gender)
         with self.assertRaises(ValueError):
@@ -53,7 +71,7 @@ class TestFamily(unittest.TestCase):
         # check that adding a female mother doesn't raise an error
         self.family.add_mother(ID, path, affected, gender)
         
-        # check that adding a mother for a second time is fine, but adding 
+        # check that adding a mother for a second time is fine, but adding
         # a different mother raises an error
         self.family.add_mother(ID, path, affected, gender)
         with self.assertRaises(ValueError):
@@ -118,7 +136,7 @@ class TestFamily(unittest.TestCase):
         self.family.set_child()
         self.assertEqual(self.family.child, self.family.children[1])
         
-        # make sure that set_child_examined() doesn't default to None if we 
+        # make sure that set_child_examined() doesn't default to None if we
         # have children left to analyse
         self.family.add_child("child3", "/home/child3.vcf", "2", "2")
         self.family.set_child()
@@ -133,5 +151,3 @@ class TestFamily(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

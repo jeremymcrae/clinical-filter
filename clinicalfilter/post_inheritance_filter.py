@@ -1,23 +1,41 @@
-""" Postinheritance variant filter for clinical filtering code.
+'''
+Copyright (c) 2016 Genome Research Ltd.
 
-Most variants can be excluded on the basis of their individual characteristics
-(minor allele frequency, quality scores etc), but some variants need to be
-assessed after the standard filters
-    we fail CNVs where an individual has CNVs that pass the filters on three or
-        more chromosomes (so we can only filter these out once we have found the
-        CNVs that pass the filters).
-    We fail CNVs with minor allele frequencies greater than 0.1%, EXCEPT for
-        biallelic variants, they have a 1% threshold. We can only filter these
-        out once we have found variants that pass the different inheritance
-        models - then we can check if they are biallelelic or not.
-    We fail SNVs with polyphen=benign, even if a compound pair of the SNV is
-        polyphen=benign, we require both SNVs to be polyphen=not benign
-"""
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+'''
 
 import logging
 
 class PostInheritanceFilter(object):
-    """ Apply some post inheritance filters to flagged variants
+    """ Post-inheritance variant filter for clinical filtering code.
+
+    Most variants can be excluded on the basis of their individual characteristics
+    (minor allele frequency, quality scores etc), but some variants need to be
+    assessed after the standard filters
+        we fail CNVs where an individual has CNVs that pass the filters on three or
+            more chromosomes (so we can only filter these out once we have found the
+            CNVs that pass the filters).
+        We fail CNVs with minor allele frequencies greater than 0.1%, EXCEPT for
+            biallelic variants, they have a 1% threshold. We can only filter these
+            out once we have found variants that pass the different inheritance
+            models - then we can check if they are biallelelic or not.
+        We fail SNVs with polyphen=benign, even if a compound pair of the SNV is
+            polyphen=benign, we require both SNVs to be polyphen=not benign
     """
     
     def __init__(self, variants, family, debug_chrom=None, debug_pos=None):
