@@ -33,13 +33,12 @@ from clinicalfilter.variant.snv import SNV
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 from clinicalfilter.match_cnvs import MatchCNVs
-from clinicalfilter.load_vcfs import LoadVCFs, open_vcf, get_vcf_header, \
-    exclude_header, construct_variant, get_vcf_provenance
+from clinicalfilter.load_vcfs import LoadVCFs
+from clinicalfilter.utils import open_vcf, get_vcf_header, exclude_header, \
+    construct_variant, get_vcf_provenance
 from clinicalfilter.ped import Family
 
-IS_PYTHON2 = sys.version_info[0] == 2
-IS_PYTHON3 = sys.version_info[0] == 3
-
+IS_PYTHON3 = sys.version_info.major == 3
 
 class TestLoadVCFsPy(unittest.TestCase):
     """
@@ -83,41 +82,31 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         return vcf
     
-    def write_temp_vcf(self, filename, vcf_data):
-        """ writes data to a file, and returns the full path to the file
+    def write_temp_vcf(self, path, vcf_data):
+        """ writes data to a file
         """
         
-        full_path = os.path.join(self.temp_dir, filename)
-        
-        vcf_data = "".join(vcf_data)
-        output = open(full_path, "w")
-        output.write(vcf_data)
-        output.close()
-        
-        return full_path
+        with open(path, 'w') as handle:
+            handle.write("".join(vcf_data))
     
-    def write_gzipped_vcf(self, filename, vcf_data):
-        """ writes data to a gzip file, and returns the full path to the file
+    def write_gzipped_vcf(self, path, vcf_data):
+        """ writes data to a gzip file
         """
         
-        full_path = os.path.join(self.temp_dir, filename)
+        mode = 'wb'
+        if IS_PYTHON3:
+            mode = 'wt'
         
-        vcf_data = "".join(vcf_data)
-        if IS_PYTHON2:
-            f = gzip.open(full_path, 'wb')
-        elif IS_PYTHON3:
-            f = gzip.open(full_path, 'wt')
-        f.write(vcf_data)
-        f.close()
-        
-        return full_path
+        with gzip.open(path, mode) as handle:
+            handle.write("".join(vcf_data))
     
     def test_open_vcf(self):
         """ test obtaining a file handle for the VCF
         """
         
         vcf = self.make_minimal_vcf()
-        path = self.write_temp_vcf("temp.vcf", vcf)
+        path = os.path.join(self.temp_dir, "temp.vcf")
+        self.write_temp_vcf(path, vcf)
         
         # check that plain VCF files can be loaded
         handle = open_vcf(path)
@@ -125,13 +114,14 @@ class TestLoadVCFsPy(unittest.TestCase):
         handle.close()
         
         # check that gzipped vcf files are handled correctly
-        path = self.write_gzipped_vcf("temp.vcf.gz", vcf)
+        path = os.path.join(self.temp_dir, "temp.vcf.gz")
+        self.write_gzipped_vcf(path, vcf)
         
         handle = open_vcf(path)
-        if IS_PYTHON2:
-            self.assertEqual(type(handle), gzip.GzipFile)
-        elif IS_PYTHON3:
+        if IS_PYTHON3:
             self.assertEqual(type(handle), io.TextIOWrapper)
+        else:
+            self.assertEqual(type(handle), gzip.GzipFile)
         handle.close()
         
         # make sure files that don't exists raise an error
@@ -140,7 +130,8 @@ class TestLoadVCFsPy(unittest.TestCase):
             open_vcf(path)
         
         # check that files with unknown extensions raise errors
-        path = self.write_temp_vcf("temp.zzz", vcf)
+        path = os.path.join(self.temp_dir, "temp.zzz")
+        self.write_temp_vcf(path, vcf)
         with self.assertRaises(OSError):
             open_vcf(path)
     
@@ -149,7 +140,8 @@ class TestLoadVCFsPy(unittest.TestCase):
         """
         
         vcf = self.make_minimal_vcf()
-        path = self.write_temp_vcf("temp.vcf", vcf)
+        path = os.path.join(self.temp_dir, "temp.vcf")
+        self.write_temp_vcf(path, vcf)
         
         header = get_vcf_header(path)
         
@@ -165,21 +157,24 @@ class TestLoadVCFsPy(unittest.TestCase):
         # make sure we drop the header, and only the header from the file
         # check this by reading the file, and making sure the first line
         # is the line we expect from the VCF
-        path = self.write_temp_vcf("temp.vcf", vcf)
+        path = os.path.join(self.temp_dir, "temp.vcf")
+        self.write_temp_vcf(path, vcf)
         handler = open(path, "r")
         exclude_header(handler)
         self.assertEqual(handler.readline(), vcf[4])
         handler.close()
         
         # also check for gzipped VCF files.
-        path = self.write_gzipped_vcf("temp.vcf.gz", vcf)
-        if IS_PYTHON2:
-            handler = gzip.open(path, "r")
-        elif IS_PYTHON3:
-            handler = gzip.open(path, "rt")
-        exclude_header(handler)
-        self.assertEqual(handler.readline(), vcf[4])
-        handler.close()
+        path = os.path.join(self.temp_dir, "temp.vcf.gz")
+        self.write_gzipped_vcf(path, vcf)
+        
+        mode = 'r'
+        if IS_PYTHON3:
+            mode = 'rt'
+        
+        with gzip.open(path, mode) as handler:
+            exclude_header(handler)
+            self.assertEqual(handler.readline(), vcf[4])
     
     def test_add_single_variant(self):
         """ test that add_single_variant() works correctly
@@ -212,6 +207,16 @@ class TestLoadVCFsPy(unittest.TestCase):
         """ test that get_vcf_provenance() works correctly
         """
         
+        path = os.path.join(self.temp_dir, "temp.vcf")
+        gz_path = os.path.join(self.temp_dir, "temp.vcf.gz")
+        date_path = os.path.join(self.temp_dir, "temp.process.2014-02-20.vcf")
+        
+        family = Family('famid')
+        family.add_child('child_id', path, '2', 'F')
+        family.add_mother('mom_id', gz_path, '1', 'F')
+        family.add_father('mom_id', date_path, '1', 'M')
+        family.set_child()
+        
         vcf = self.make_minimal_vcf()
         vcf_string = "".join(vcf)
         if IS_PYTHON3:
@@ -219,30 +224,35 @@ class TestLoadVCFsPy(unittest.TestCase):
         ungzipped_hash = hashlib.sha1(vcf_string).hexdigest()
         header = vcf[:4]
         
-        path = self.write_temp_vcf("temp.vcf", vcf)
+        self.write_temp_vcf(path, vcf)
         
         # check that the file defs return correctly
-        (checksum, basename, date) = get_vcf_provenance(path)
+        (checksum, basename, date) = get_vcf_provenance(family.child)
         
         self.assertEqual(checksum, ungzipped_hash)
         self.assertEqual(basename, "temp.vcf")
         self.assertEqual(date, "2014-01-01")
         
         # now write a gzip file, and check that we get the correct hash
-        path = self.write_gzipped_vcf("test.vcf.gz", vcf)
-        handle = open(path, "rb")
+        self.write_gzipped_vcf(gz_path, vcf)
+        handle = open(gz_path, "rb")
         gzipped_hash = hashlib.sha1(handle.read()).hexdigest()
         handle.close()
         
-        (checksum, basename, date) = get_vcf_provenance(path)
+        (checksum, basename, date) = get_vcf_provenance(family.mother)
         self.assertEqual(checksum, gzipped_hash)
         
-        # check that when a fileDate isn't available in the VCf, we can pick
+        # check that when a fileDate isn't available in the VCF, we can pick
         # the date from the path
         vcf.pop(1)
-        path = self.write_temp_vcf("temp.file_process.2014-02-20.vcf", vcf)
-        (checksum, basename, date) = get_vcf_provenance(path)
+        self.write_temp_vcf(date_path, vcf)
+        (checksum, basename, date) = get_vcf_provenance(family.father)
         self.assertEqual(date, "2014-02-20")
+        
+        # and check we get null values if the family member is not present
+        family.father = None
+        provenance = get_vcf_provenance(family.father)
+        self.assertEqual(provenance, ('NA', 'NA', 'NA'))
     
     def test_construct_variant(self):
         """ test that construct_variant() works correctly
@@ -371,6 +381,3 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         # check that the debug filter function got set correctly
         self.assertEqual(SNV.passes_filters, SNV.passes_filters_with_debug)
-        
-        
-        
