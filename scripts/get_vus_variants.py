@@ -1,14 +1,14 @@
 """ prioritise VUS variants from DDG2P/non-DDG2P variant lists.
 
-Uses variants filtered by clinical filtering script. As some background, 
-variants in DDG2P genes are prioritised for clinical review. The clinical 
+Uses variants filtered by clinical filtering script. As some background,
+variants in DDG2P genes are prioritised for clinical review. The clinical
 filtering script can also output variants from all genes (not just DDG2P genes).
-The caveat with the all-genes output is that we don't know the likely mode of 
-inheritance. We prioritise variants from the all-gene analysis by only 
+The caveat with the all-genes output is that we don't know the likely mode of
+inheritance. We prioritise variants from the all-gene analysis by only
 including:
     - validated functional de novo variants
-    - rare loss-of-function homozygous, compound heterozygous and hemizygous 
-      variants. 
+    - rare loss-of-function homozygous, compound heterozygous and hemizygous
+      variants.
 
 """
 
@@ -78,6 +78,9 @@ def is_compound_het_lof(key, variants, lof_consequences):
     
     lof_compound_hets = 0
     for alt_key in variants:
+        if alt_key == 'sex':
+            continue
+        
         alt_sample_id = alt_key[0]
         alt_chrom = alt_key[1]
         
@@ -112,6 +115,9 @@ def get_lof_recessive_variants(variants, lof_consequences):
     lof_variants = []
     for person_id in variants:
         for key in variants[person_id]:
+            if key == 'sex':
+                continue
+            
             line = variants[person_id][key]
             consequence = line[8].split(",")[0]
             inheritance = line[11]
@@ -143,6 +149,9 @@ def get_maternal_chrx_lof_in_males(variants, lof_consequences):
             continue
         
         for key in variants[person_id]:
+            if key == 'sex':
+                continue
+            
             chrom = key[1]
             if chrom not in ['X', '23', 'chrX', 'chr23']:
                 continue
@@ -167,7 +176,7 @@ def write_output(filename, variants):
         "\ttrio_genotype\tmom_aff\tdad_aff\tresult\tomim_match\n"
     f.write(header)
     
-    f.write(variants)
+    f.writelines(variants)
     
     f.close()
 
@@ -190,7 +199,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-    
