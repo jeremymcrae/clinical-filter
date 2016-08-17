@@ -241,8 +241,6 @@ class LoadVCFs(object):
                 print("failed as heterozygous genotype in male on chrX")
             pass
     
-    
-    
     def include_variant(self, line, child_variants, gender):
         """ check if we want to include the variant or not
         
