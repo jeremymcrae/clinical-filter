@@ -33,7 +33,8 @@ from clinicalfilter.variant.snv import SNV
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 from clinicalfilter.match_cnvs import MatchCNVs
-from clinicalfilter.load_vcfs import LoadVCFs
+from clinicalfilter.load_vcfs import LoadVCFs, open_vcf, get_vcf_header, \
+    exclude_header, construct_variant
 from clinicalfilter.ped import Family
 
 IS_PYTHON2 = sys.version_info[0] == 2
@@ -49,11 +50,11 @@ class TestLoadVCFsPy(unittest.TestCase):
         """
         
         total_trios = 1
-        known_genes = {"ATRX": {"inheritance": {"Hemizygous": \
+        self.known_genes = {"ATRX": {"inheritance": {"Hemizygous": \
             {"Loss of function"}}, "start": 1, "chrom": "1", \
             "confirmed_status": {"Confirmed DD Gene"}, "end": 20000000}}
         
-        self.vcf_loader = LoadVCFs(total_trios, known_genes, set(), None, None, )
+        self.vcf_loader = LoadVCFs(total_trios, self.known_genes, set(), None, None, )
         
         # make a temp directory for the cache file
         self.temp_dir = tempfile.mkdtemp()
@@ -111,7 +112,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         return full_path
     
-    def test_open_vcf_file(self):
+    def test_open_vcf(self):
         """ test obtaining a file handle for the VCF
         """
         
@@ -119,14 +120,14 @@ class TestLoadVCFsPy(unittest.TestCase):
         path = self.write_temp_vcf("temp.vcf", vcf)
         
         # check that plain VCF files can be loaded
-        handle = self.vcf_loader.open_vcf_file(path)
+        handle = open_vcf(path)
         self.assertEqual(type(handle), io.TextIOWrapper)
         handle.close()
         
         # check that gzipped vcf files are handled correctly
         path = self.write_gzipped_vcf("temp.vcf.gz", vcf)
         
-        handle = self.vcf_loader.open_vcf_file(path)
+        handle = open_vcf(path)
         if IS_PYTHON2:
             self.assertEqual(type(handle), gzip.GzipFile)
         elif IS_PYTHON3:
@@ -136,12 +137,12 @@ class TestLoadVCFsPy(unittest.TestCase):
         # make sure files that don't exists raise an error
         path = os.path.join(self.temp_dir, "zzz.txt")
         with self.assertRaises(OSError):
-            self.vcf_loader.open_vcf_file(path)
+            open_vcf(path)
         
         # check that files with unknown extensions raise errors
         path = self.write_temp_vcf("temp.zzz", vcf)
         with self.assertRaises(OSError):
-            self.vcf_loader.open_vcf_file(path)
+            open_vcf(path)
     
     def test_get_vcf_header(self):
         """ test that get_vcf_header() works correctly
@@ -150,7 +151,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         vcf = self.make_minimal_vcf()
         path = self.write_temp_vcf("temp.vcf", vcf)
         
-        header = self.vcf_loader.get_vcf_header(path)
+        header = get_vcf_header(path)
         
         # check that the header is returned correctly
         self.assertEqual(header, vcf[:4])
@@ -166,7 +167,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         # is the line we expect from the VCF
         path = self.write_temp_vcf("temp.vcf", vcf)
         handler = open(path, "r")
-        self.vcf_loader.exclude_header(handler)
+        exclude_header(handler)
         self.assertEqual(handler.readline(), vcf[4])
         handler.close()
         
@@ -176,7 +177,7 @@ class TestLoadVCFsPy(unittest.TestCase):
             handler = gzip.open(path, "r")
         elif IS_PYTHON3:
             handler = gzip.open(path, "rt")
-        self.vcf_loader.exclude_header(handler)
+        exclude_header(handler)
         self.assertEqual(handler.readline(), vcf[4])
         handler.close()
     
@@ -252,7 +253,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         gender = "M"
         test_var = SNV(*line[:6])
         
-        variant = self.vcf_loader.construct_variant(line, gender)
+        variant = construct_variant(line, gender, self.known_genes)
         
         self.assertEqual(variant.get_key(), test_var.get_key())
         # initally constructing a SNV shouldn't affect the format variable
@@ -264,7 +265,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         test_var = CNV(*line[:6])
         test_var.add_info(line[7])
         
-        variant = self.vcf_loader.construct_variant(line, gender)
+        variant = construct_variant(line, gender, self.known_genes)
         
         self.assertEqual(variant.get_key(), test_var.get_key())
         self.assertNotEqual(variant.format, None)
