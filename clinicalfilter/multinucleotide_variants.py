@@ -75,12 +75,12 @@ def get_mnv_candidates(path):
     
     pattern = re.compile('[ACGT]')
     
-    candidates = []
+    candidates = {}
     for pair in pairs:
         var1, var2 = list(get_matches(vcf, pair))
         cq = check_mnv_consequence(var1, var2, pattern)
-        candidates.append((pair[0], cq))
-        candidates.append((pair[1], cq))
+        candidates[pair[0]] = cq
+        candidates[pair[1]] = cq
     
     return candidates
 
