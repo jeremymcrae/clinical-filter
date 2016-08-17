@@ -134,20 +134,58 @@ def construct_variant(line, gender, known_genes):
         returns a Variant object
     """
     
+    chrom, pos, var_id, ref, alt, qual, filter_val, info = line[:8]
+    
     # CNVs are found by their alt_allele values, as either <DUP>, or <DEL>
     if line[4] == "<DUP>" or line[4] == "<DEL>":
-        var = CNV(line[0], line[1], line[2], line[3], line[4], line[6])
-        var.add_info(line[7])
+        var = CNV(chrom, pos, var_id, ref, alt, filter_val)
+        var.add_info(info)
         # CNVs require the format values for filtering
         var.set_gender(gender)
         var.add_format(line[8], line[9])
         if known_genes is not None:
             var.fix_gene_IDs()
     else:
-        var = SNV(line[0], line[1], line[2], line[3], line[4], line[6])
-        var.add_info(line[7])
+        var = SNV(chrom, pos, var_id, ref, alt, filter_val)
+        var.add_info(info)
     
     return var
+
+def get_vcf_provenance(path):
+    """ get provenance information for a vcf path
+    
+    Args:
+        path: path to VCF file
+    
+    Returns:
+        returns a tuple of sha1 VCF file hash, name of VCF file (without
+        directory), and date the VCF file was generated
+    """
+    
+    # get the SHA1 hash of the VCF file (in a memory efficient manner)
+    BLOCKSIZE=65536
+    vcf_checksum = hashlib.sha1()
+    with open(path, "rb") as handle:
+        buf = handle.read(BLOCKSIZE)
+        while len(buf) > 0:
+            vcf_checksum.update(buf)
+            buf = handle.read(BLOCKSIZE)
+    
+    vcf_checksum = vcf_checksum.hexdigest()
+    vcf_basename = os.path.basename(path)
+    
+    vcf_date = None
+    for line in get_vcf_header(path):
+        if line.startswith("##fileDate"):
+            vcf_date = line.strip().split("=")[1]
+            break
+    
+    # some VCF files lack the fileDate in the header, get it from the path
+    if vcf_date is None:
+        vcf_date = os.path.splitext(vcf_basename)[0]
+        vcf_date = vcf_date.split(".")[2]
+    
+    return (vcf_checksum, vcf_basename, vcf_date)
 
 class LoadVCFs(object):
     """ load VCF files for a trio
@@ -392,7 +430,7 @@ class LoadVCFs(object):
         
         # if the variant is a CNV, the corresponding variant might not match
         # the start site, so we look a variant that overlaps
-        if isinstance(var, CNV) and matcher.has_match(var):
+        if var.is_cnv() and matcher.has_match(var):
             key = matcher.get_overlap_key(key)
             
         for parental in parental_vars:
@@ -401,7 +439,7 @@ class LoadVCFs(object):
         
         # if the childs variant does not exist in the parents VCF, then we
         # create a default variant for the parent
-        if isinstance(var, CNV):
+        if var.is_cnv():
             parental = CNV(var.chrom, var.position, var.variant_id, var.ref_allele, var.alt_allele, var.filter)
         else:
             parental = SNV(var.chrom, var.position, var.variant_id, var.ref_allele, var.alt_allele, var.filter)
@@ -411,55 +449,17 @@ class LoadVCFs(object):
         
         return parental
     
-    def get_vcf_provenance(self, path):
-        """ get provenance information for a vcf path
-        
-        Args:
-            path: path to VCF file
-        
-        Returns:
-            returns a tuple of sha1 VCF file hash, name of VCF file (without
-            directory), and date the VCF file was generated
-        """
-        
-        # get the SHA1 hash of the VCF file (in a memory efficient manner)
-        BLOCKSIZE=65536
-        vcf_checksum = hashlib.sha1()
-        with open(path, "rb") as handle:
-            buf = handle.read(BLOCKSIZE)
-            while len(buf) > 0:
-                vcf_checksum.update(buf)
-                buf = handle.read(BLOCKSIZE)
-        vcf_checksum = vcf_checksum.hexdigest()
-        
-        vcf_basename = os.path.basename(path)
-        
-        header = get_vcf_header(path)
-        
-        vcf_date = None
-        for line in header:
-            if line.startswith("##fileDate"):
-                vcf_date = line.strip().split("=")[1]
-                break
-        
-        # some VCF files lack the fileDate in the header, get it from the path
-        if vcf_date is None:
-            vcf_date = os.path.splitext(vcf_basename)[0]
-            vcf_date = vcf_date.split(".")[2]
-        
-        return (vcf_checksum, vcf_basename, vcf_date)
-    
     def get_trio_provenance(self):
         """ returns provenance of VCFs for individuals in a trio
         """
         
-        child_defs = self.get_vcf_provenance(self.family.child.get_path())
+        child_defs = get_vcf_provenance(self.family.child.get_path())
         
         mother_defs = ("NA", "NA", "NA")
         father_defs = ("NA", "NA", "NA")
         if self.family.has_parents():
-            mother_defs = self.get_vcf_provenance(self.family.mother.get_path())
-            father_defs = self.get_vcf_provenance(self.family.father.get_path())
+            mother_defs = get_vcf_provenance(self.family.mother.get_path())
+            father_defs = get_vcf_provenance(self.family.father.get_path())
         
         return child_defs, mother_defs, father_defs
     
