@@ -39,6 +39,7 @@ setup(
     packages=["clinicalfilter"],
     install_requires=['pytabix >= 0.0.2',
     ],
+    url='https://github.com/jeremymcrae/clinical-filter',
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
