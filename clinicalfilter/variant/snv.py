@@ -29,6 +29,17 @@ class SNV(Variant, VariantInfo):
     whether the individual is male or female.
     """
     
+    debug_chrom = None
+    debug_pos = None
+    
+    @classmethod
+    def set_debug(cls_obj, chrom, pos):
+        cls_obj.debug_chrom = chrom
+        cls_obj.debug_pos = pos
+        
+        if cls_obj.debug_chrom is not None:
+            cls_obj.passes_filters = cls_obj.passes_filters_with_debug
+    
     def is_cnv(self):
         """ checks whether the variant is for a CNV
         """

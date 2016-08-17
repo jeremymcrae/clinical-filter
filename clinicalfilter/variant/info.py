@@ -59,12 +59,17 @@ class VariantInfo(object):
     populations = set(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF", \
         "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"])
     
-    # create static variables (which will be set externally before any class
-    # objects are created)
+    # create static variables (set before creating any class instances)
     known_genes = None
-    debug_chrom = None
-    debug_pos = None
     last_base = set([])
+    
+    @classmethod
+    def set_known_genes(cls_obj, known_genes):
+        cls_obj.known_genes = known_genes
+    
+    @classmethod
+    def set_last_base_sites(cls_obj, sites):
+        cls_obj.last_base = sites
     
     def add_info(self, info_values):
         """Parses the INFO column from VCF files.

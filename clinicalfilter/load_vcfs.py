@@ -61,18 +61,12 @@ class LoadVCFs(object):
         
         # define several parameters of the variant classes, before we have
         # initialised any class objects
-        SNV.debug_chrom = debug_chrom
-        SNV.debug_pos = debug_pos
-        CNV.debug_chrom = debug_chrom
-        CNV.debug_pos = debug_pos
+        SNV.set_known_genes(known_genes)
+        SNV.set_debug(debug_chrom, debug_pos)
+        SNV.set_last_base_sites(last_base)
         
-        SNV.known_genes = known_genes
-        CNV.known_genes = known_genes
-        
-        SNV.last_base = last_base
-        
-        if debug_chrom is not None:
-            SNV.passes_filters = SNV.passes_filters_with_debug
+        CNV.set_known_genes(known_genes)
+        CNV.set_debug(debug_chrom, debug_pos)
     
     def get_trio_variants(self, family, pp_filter):
         """ loads the variants for a trio
