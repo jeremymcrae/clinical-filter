@@ -34,6 +34,120 @@ from clinicalfilter.match_cnvs import MatchCNVs
 IS_PYTHON2 = sys.version_info[0] == 2
 IS_PYTHON3 = sys.version_info[0] == 3
 
+def open_vcf(path):
+    """ Gets a file object for an individual's VCF file.
+    
+    Args:
+        path: path to VCF file (gzipped or text format).
+        
+    Returns:
+        A file handle for the VCF file.
+    """
+    
+    if not os.path.exists(path):
+        raise OSError("VCF file not found at: " + path)
+    
+    extension = os.path.splitext(path)[1]
+    
+    if extension == ".gz":
+        # python2 gzip opens in text, but same mode in python3 opens as
+        # bytes, avoid with platform specific code
+        if IS_PYTHON2:
+            handle = gzip.open(path, "r")
+        elif IS_PYTHON3:
+            handle = gzip.open(path, "rt")
+    elif extension in [".vcf", ".txt"]:
+        handle = io.open(path, "r", encoding="latin_1")
+    else:
+        raise OSError("unsupported filetype: " + path)
+    
+    return handle
+
+def get_vcf_header(path):
+    """ Get the header lines from a VCF file.
+    
+    Args:
+        path: path to VCF file, or file handle.
+    
+    Returns:
+        a list of lines that start with "#", which are the header lines.
+    """
+    
+    is_handle = False
+    try:
+        vcf = open_vcf(path)
+    except TypeError:
+        vcf = path
+        is_handle = True
+    
+    current_pos = vcf.tell()
+    vcf.seek(0)
+    
+    header = []
+    for line in vcf:
+        if not line.startswith("#"):
+            break
+        
+        header.append(line)
+    
+    vcf.seek(current_pos)
+    
+    # this is a bit awkward, but if we've passed in a path, we want to close
+    # the is_handle, otherwise we leave an opened file in unit tests.
+    if not is_handle:
+        vcf.close()
+    
+    return header
+
+def exclude_header(vcf):
+    """ removes the header from a VCF file object
+    
+    We remove the header from the VCF file, since the header is ~200 lines
+    long, and an exome VCF file is 100,000 lines long, so it's better to
+    remove the header once, rather than continually check if lines are part
+    of the header as we traverse the VCF. We simply run through the VCF
+    until we find a non-header line, then seek back to the start of that
+    line.
+    
+    Args:
+        f: handler for a VCF file
+    """
+    
+    current_pos = vcf.tell()
+    
+    while vcf.readline().startswith("#"):
+        current_pos = vcf.tell()
+    
+    vcf.seek(current_pos)
+
+def construct_variant(line, gender, known_genes):
+    """ constructs a Variant object for a VCF line, specific to the variant type
+    
+    Args:
+        line: list of elements of a single sample VCF line:
+            [chrom, position, snp_id, ref_allele, alt_allele, quality,
+            filter_value, info, format_keys, format_values]
+        gender: gender of the individual to whom the variant line belongs
+            (eg "1" or "M" for male, "2", or "F" for female).
+    
+    Returns:
+        returns a Variant object
+    """
+    
+    # CNVs are found by their alt_allele values, as either <DUP>, or <DEL>
+    if line[4] == "<DUP>" or line[4] == "<DEL>":
+        var = CNV(line[0], line[1], line[2], line[3], line[4], line[6])
+        var.add_info(line[7])
+        # CNVs require the format values for filtering
+        var.set_gender(gender)
+        var.add_format(line[8], line[9])
+        if known_genes is not None:
+            var.fix_gene_IDs()
+    else:
+        var = SNV(line[0], line[1], line[2], line[3], line[4], line[6])
+        var.add_info(line[7])
+    
+    return var
 
 class LoadVCFs(object):
     """ load VCF files for a trio
@@ -101,92 +215,6 @@ class LoadVCFs(object):
         
         return variants
     
-    def open_vcf_file(self, path):
-        """ Gets a file object for an individual's VCF file.
-        
-        Args:
-            path: path to VCF file (gzipped or text format).
-            
-        Returns:
-            A file handle for the VCF file.
-        """
-        
-        if not os.path.exists(path):
-            raise OSError("VCF file not found at: " + path)
-        
-        extension = os.path.splitext(path)[1]
-        
-        if extension == ".gz":
-            # python2 gzip opens in text, but same mode in python3 opens as
-            # bytes, avoid with platform specific code
-            if IS_PYTHON2:
-                handle = gzip.open(path, "r")
-            elif IS_PYTHON3:
-                handle = gzip.open(path, "rt")
-        elif extension in [".vcf", ".txt"]:
-            handle = io.open(path, "r", encoding="latin_1")
-        else:
-            raise OSError("unsupported filetype: " + path)
-        
-        return handle
-
-    def get_vcf_header(self, path):
-        """ Get the header lines from a VCF file.
-        
-        Args:
-            path: path to VCF file, or file handle.
-        
-        Returns:
-            a list of lines that start with "#", which are the header lines.
-        """
-        
-        is_handle = False
-        try:
-            vcf = self.open_vcf_file(path)
-        except TypeError:
-            vcf = path
-            is_handle = True
-        
-        current_pos = vcf.tell()
-        vcf.seek(0)
-        
-        header = []
-        for line in vcf:
-            if not line.startswith("#"):
-                break
-            
-            header.append(line)
-        
-        vcf.seek(current_pos)
-        
-        # this is a bit awkward, but if we've passed in a path, we want to close
-        # the is_handle, otherwise we leave an opened file in unit tests.
-        if not is_handle:
-            vcf.close()
-        
-        return header
-    
-    def exclude_header(self, vcf):
-        """ removes the header from a VCF file object
-        
-        We remove the header from the VCF file, since the header is ~200 lines
-        long, and an exome VCF file is 100,000 lines long, so it's better to
-        remove the header once, rather than continually check if lines are part
-        of the header as we traverse the VCF. We simply run through the VCF
-        until we find a non-header line, then seek back to the start of that
-        line.
-        
-        Args:
-            f: handler for a VCF file
-        """
-        
-        current_pos = vcf.tell()
-        
-        while vcf.readline().startswith("#"):
-            current_pos = vcf.tell()
-        
-        vcf.seek(current_pos)
-    
     def add_single_variant(self, variants, var, gender, line):
         """ adds a single variant to a vcf dictionary indexed by position key
         
@@ -213,34 +241,7 @@ class LoadVCFs(object):
                 print("failed as heterozygous genotype in male on chrX")
             pass
     
-    def construct_variant(self, line, gender):
-        """ constructs a Variant object for a VCF line, specific to the variant type
-        
-        Args:
-            line: list of elements of a single sample VCF line:
-                [chrom, position, snp_id, ref_allele, alt_allele, quality,
-                filter_value, info, format_keys, format_values]
-            gender: gender of the individual to whom the variant line belongs
-                (eg "1" or "M" for male, "2", or "F" for female).
-        
-        Returns:
-            returns a Variant object
-        """
-        
-        # CNVs are found by their alt_allele values, as either <DUP>, or <DEL>
-        if line[4] == "<DUP>" or line[4] == "<DEL>":
-            var = CNV(line[0], line[1], line[2], line[3], line[4], line[6])
-            var.add_info(line[7])
-            # CNVs require the format values for filtering
-            var.set_gender(gender)
-            var.add_format(line[8], line[9])
-            if self.known_genes is not None:
-                var.fix_gene_IDs()
-        else:
-            var = SNV(line[0], line[1], line[2], line[3], line[4], line[6])
-            var.add_info(line[7])
-        
-        return var
+    
     
     def include_variant(self, line, child_variants, gender):
         """ check if we want to include the variant or not
@@ -262,11 +263,11 @@ class LoadVCFs(object):
             if key in self.child_keys:
                 use_variant = True
             elif line[4] == "<DUP>" or line[4] == "<DEL>":
-                var = self.construct_variant(line, gender)
+                var = construct_variant(line, gender, self.known_genes)
                 if self.cnv_matcher.has_match(var):
                     use_variant = True
         else:
-            var = self.construct_variant(line, gender)
+            var = construct_variant(line, gender, self.known_genes)
             if var.passes_filters():
                 use_variant = True
             
@@ -294,7 +295,7 @@ class LoadVCFs(object):
         
         # open the vcf, and adjust the position in the file to immediately after
         # the header, so we can run through the variants
-        vcf = self.open_vcf_file(path)
+        vcf = self.open_vcf(path)
         self.exclude_header(vcf)
         
         variants = []
@@ -303,7 +304,7 @@ class LoadVCFs(object):
             
             # check if we want to include the variant or not
             if self.include_variant(line, child_variants, gender):
-                var = self.construct_variant(line, gender)
+                var = construct_variant(line, gender, self.known_genes)
                 self.add_single_variant(variants, var, gender, line)
         
         return variants
@@ -435,7 +436,7 @@ class LoadVCFs(object):
         
         vcf_basename = os.path.basename(path)
         
-        header = self.get_vcf_header(path)
+        header = get_vcf_header(path)
         
         vcf_date = None
         for line in header:
