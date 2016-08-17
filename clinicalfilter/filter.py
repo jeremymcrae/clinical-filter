@@ -27,6 +27,7 @@ from clinicalfilter.inheritance import Allosomal, Autosomal, CNVInheritance
 from clinicalfilter.post_inheritance_filter import PostInheritanceFilter
 from clinicalfilter.reporting import Report
 from clinicalfilter.load_options import LoadOptions
+from clinicalfilter.utils import get_vcf_provenance
 
 
 class Filter(LoadOptions):
@@ -59,7 +60,7 @@ class Filter(LoadOptions):
             while self.family.child is not None:
                 if self.family.child.is_affected():
                     variants = self.vcf_loader.get_trio_variants(self.family, self.pp_filter)
-                    self.vcf_provenance = self.vcf_loader.get_trio_provenance()
+                    self.vcf_provenance = [ get_vcf_provenance(x) for x in self.family ]
                     self.analyse_trio(variants)
                 
                 self.family.set_child_examined()

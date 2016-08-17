@@ -140,6 +140,10 @@ class Family(object):
         self.mother = None
         self.child = None
     
+    def __iter__(self):
+        for member in [self.child, self.mother, self.father]:
+            yield member
+    
     def has_parents(self):
         """ returns True/False for whether the family includes parental info
         

@@ -76,8 +76,7 @@ class LoadVCFs(object):
         self.counter += 1
         
         try:
-            (child_vars, mother_vars, father_vars) = self.load_trio()
-            variants = self.combine_trio_variants(child_vars, mother_vars, father_vars)
+            variants = self.load_trio()
             variants = self.filter_de_novos(variants, pp_filter)
         except OSError as error:
             if self.family.has_parents():
@@ -217,7 +216,7 @@ class LoadVCFs(object):
             logging.info(" fathers path: " + self.family.father.get_path())
             father_vars = self.open_individual(self.family.father, child_variants=True)
         
-        return (child_vars, mother_vars, father_vars)
+        return combine_trio_variants(child_vars, mother_vars, father_vars)
     
     def combine_trio_variants(self, child_vars, mother_vars, father_vars):
         """ for each variant, combine the trio's genotypes into TrioGenotypes
@@ -289,20 +288,6 @@ class LoadVCFs(object):
         parental.set_default_genotype()
         
         return parental
-    
-    def get_trio_provenance(self):
-        """ returns provenance of VCFs for individuals in a trio
-        """
-        
-        child_defs = get_vcf_provenance(self.family.child.get_path())
-        
-        mother_defs = ("NA", "NA", "NA")
-        father_defs = ("NA", "NA", "NA")
-        if self.family.has_parents():
-            mother_defs = get_vcf_provenance(self.family.mother.get_path())
-            father_defs = get_vcf_provenance(self.family.father.get_path())
-        
-        return child_defs, mother_defs, father_defs
     
     def filter_de_novos(self, variants, pp_filter):
         """ filter the de novos variants in the VCF files
