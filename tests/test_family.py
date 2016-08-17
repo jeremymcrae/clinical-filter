@@ -20,7 +20,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
 import unittest
-from clinicalfilter.ped import Family
+from clinicalfilter.ped import Family, Person
 
 
 class TestFamily(unittest.TestCase):
@@ -34,6 +34,20 @@ class TestFamily(unittest.TestCase):
         ID = "fam_ID"
         
         self.family = Family(ID)
+    
+    def test__iter__(self):
+        ''' test that __iter__() works correctly
+        '''
+        
+        person_id, path, status, gender = 'child', 'child.vcf', '2', 'M'
+        child = Person(person_id, path, status, gender)
+        
+        self.family.add_child(person_id, path, status, gender)
+        self.family.set_child()
+        
+        # check the Family iterates by getting a list of the Family object
+        members = list(self.family)
+        self.assertEqual(members, [child, None, None])
     
     def test_add_father(self):
         """ test that add_father() works correctly
@@ -147,7 +161,3 @@ class TestFamily(unittest.TestCase):
         self.family.set_child()
         self.family.set_child_examined()
         self.assertIsNone(self.family.child)
-
-
-if __name__ == '__main__':
-    unittest.main()
