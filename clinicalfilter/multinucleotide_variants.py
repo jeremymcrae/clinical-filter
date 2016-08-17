@@ -24,7 +24,7 @@ from collections import namedtuple
 
 import tabix
 
-from clinicalfilter.load_vcfs import LoadVCFs
+from clinicalfilter.utils import open_vcf, exclude_header,get_vcf_header
 
 coding_cq = set(["transcript_ablation", "splice_donor_variant",
     "splice_acceptor_variant", "stop_gained", "frameshift_variant",
@@ -62,11 +62,9 @@ def get_mnv_candidates(path):
         list of (variant, mnv_consequence) tuples, where variant is (chrom, pos)
     '''
     
-    loader = LoadVCFs(total_trios=0, known_genes=None, last_base=None,
-        debug_chrom=None, debug_pos=None)
-    with loader.open_vcf_file(path) as vcf:
-        loader.exclude_header(vcf)
-        header = loader.get_vcf_header(vcf)
+    with open_vcf(path) as vcf:
+        exclude_header(vcf)
+        header = get_vcf_header(vcf)
         pairs = find_nearby_variants(vcf)
     
     # ensure variants are not indels, are coding, and pairs alter the same amino acid
