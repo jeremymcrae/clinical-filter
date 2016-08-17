@@ -164,28 +164,28 @@ def get_vcf_provenance(path):
     
     # get the SHA1 hash of the VCF file (in a memory efficient manner)
     BLOCKSIZE=65536
-    vcf_checksum = hashlib.sha1()
+    checksum = hashlib.sha1()
     with open(path, "rb") as handle:
         buf = handle.read(BLOCKSIZE)
         while len(buf) > 0:
-            vcf_checksum.update(buf)
+            checksum.update(buf)
             buf = handle.read(BLOCKSIZE)
     
-    vcf_checksum = vcf_checksum.hexdigest()
-    vcf_basename = os.path.basename(path)
+    checksum = checksum.hexdigest()
+    basename = os.path.basename(path)
     
-    vcf_date = None
+    date = None
     for line in get_vcf_header(path):
         if line.startswith("##fileDate"):
-            vcf_date = line.strip().split("=")[1]
+            date = line.strip().split("=")[1]
             break
     
     # some VCF files lack the fileDate in the header, get it from the path
-    if vcf_date is None:
-        vcf_date = os.path.splitext(vcf_basename)[0]
-        vcf_date = vcf_date.split(".")[2]
+    if date is None:
+        date = os.path.splitext(basename)[0]
+        date = date.split(".")[2]
     
-    return (vcf_checksum, vcf_basename, vcf_date)
+    return (checksum, basename, date)
 
 class LoadVCFs(object):
     """ load VCF files for a trio
@@ -482,9 +482,4 @@ class LoadVCFs(object):
         
         # run through the variants in the child, and remove de novos that fail
         # denovogear filtering criteria
-        passed_variants = []
-        for var in variants:
-            if var.passes_de_novo_checks(pp_filter):
-                passed_variants.append(var)
-        
-        return passed_variants
+        return [ x for x in variants if x.passes_de_novo_checks(pp_filter) ]
