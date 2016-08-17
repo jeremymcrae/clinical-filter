@@ -31,6 +31,14 @@ class CNV(Variant, VariantInfo):
     ref_genotypes = set(["REF"])
     alt_genotypes = set(["DEL", "DUP"])
     
+    debug_chrom = None
+    debug_pos = None
+    
+    @classmethod
+    def set_debug(cls_obj, chrom, pos):
+        cls_obj.debug_chrom = chrom
+        cls_obj.debug_pos = pos
+    
     def is_cnv(self):
         """ checks whether the variant is for a CNV
         """
