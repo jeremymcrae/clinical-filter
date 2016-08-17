@@ -34,7 +34,7 @@ from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 from clinicalfilter.match_cnvs import MatchCNVs
 from clinicalfilter.load_vcfs import LoadVCFs, open_vcf, get_vcf_header, \
-    exclude_header, construct_variant
+    exclude_header, construct_variant, get_vcf_provenance
 from clinicalfilter.ped import Family
 
 IS_PYTHON2 = sys.version_info[0] == 2
@@ -222,7 +222,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         path = self.write_temp_vcf("temp.vcf", vcf)
         
         # check that the file defs return correctly
-        (checksum, basename, date) = self.vcf_loader.get_vcf_provenance(path)
+        (checksum, basename, date) = get_vcf_provenance(path)
         
         self.assertEqual(checksum, ungzipped_hash)
         self.assertEqual(basename, "temp.vcf")
@@ -234,14 +234,14 @@ class TestLoadVCFsPy(unittest.TestCase):
         gzipped_hash = hashlib.sha1(handle.read()).hexdigest()
         handle.close()
         
-        (checksum, basename, date) = self.vcf_loader.get_vcf_provenance(path)
+        (checksum, basename, date) = get_vcf_provenance(path)
         self.assertEqual(checksum, gzipped_hash)
         
         # check that when a fileDate isn't available in the VCf, we can pick
         # the date from the path
         vcf.pop(1)
         path = self.write_temp_vcf("temp.file_process.2014-02-20.vcf", vcf)
-        (checksum, basename, date) = self.vcf_loader.get_vcf_provenance(path)
+        (checksum, basename, date) = get_vcf_provenance(path)
         self.assertEqual(date, "2014-02-20")
     
     def test_construct_variant(self):
