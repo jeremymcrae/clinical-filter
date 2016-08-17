@@ -36,7 +36,7 @@ setup(
         "Written by Jeremy McRae (jm33@sanger.ac.uk), derived from code by "
         "Saeed Al Turki and Jeff Barrett."),
     license = "MIT",
-    packages=["clinicalfilter"],
+    packages=["clinicalfilter", 'clinicalfilter.variant'],
     install_requires=['pytabix >= 0.0.2',
     ],
     url='https://github.com/jeremymcrae/clinical-filter',
