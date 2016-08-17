@@ -122,25 +122,39 @@ class LoadVCFs(object):
         """ Get the header lines from a VCF file.
         
         Args:
-            path: path to VCF file
+            path: path to VCF file, or file handle.
         
         Returns:
             a list of lines that start with "#", which are the header lines.
         """
         
-        f = self.open_vcf_file(path)
+        is_handle = False
+        try:
+            vcf = self.open_vcf_file(path)
+        except TypeError:
+            vcf = path
+            is_handle = True
+        
+        current_pos = vcf.tell()
+        vcf.seek(0)
         
         header = []
-        for line in f:
+        for line in vcf:
             if not line.startswith("#"):
                 break
+            
             header.append(line)
         
-        f.close()
+        vcf.seek(current_pos)
+        
+        # this is a bit awkward, but if we've passed in a path, we want to close
+        # the is_handle, otherwise we leave an opened file in unit tests.
+        if not is_handle:
+            vcf.close()
         
         return header
     
-    def exclude_header(self, f):
+    def exclude_header(self, vcf):
         """ removes the header from a VCF file object
         
         We remove the header from the VCF file, since the header is ~200 lines
@@ -154,18 +168,12 @@ class LoadVCFs(object):
             f: handler for a VCF file
         """
         
-        file_pos = f.tell()
-        in_header = True
-        while in_header:
-            line = f.readline()
-            if not line.startswith("#"):
-                in_header = False
-                break
-            file_pos = f.tell()
+        current_pos = vcf.tell()
         
-        # jump back to the start of the last line, which should be the first
-        # line following the header
-        f.seek(file_pos)
+        while vcf.readline().startswith("#"):
+            current_pos = vcf.tell()
+        
+        vcf.seek(current_pos)
     
     def add_single_variant(self, variants, var, gender, line):
         """ adds a single variant to a vcf dictionary indexed by position key
