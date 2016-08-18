@@ -75,6 +75,7 @@ class LoadVCFs(object):
         
         self.family = family
         self.counter += 1
+        logging.info("opening trio {} of {}".format(self.counter, self.total_trios))
         
         try:
             variants = self.load_trio()
@@ -87,7 +88,7 @@ class LoadVCFs(object):
                 mother_id = "no mother"
                 father_id = "no father"
             
-            logging.error("trio with missing file - child: " + self.family.child.get_id() \
+            logging.error("trio with missing file - child: " + family.child.get_id() \
                 + ", mother: " + mother_id + ", father: " + father_id + ". " + str(error))
             
             raise(error)
@@ -168,6 +169,7 @@ class LoadVCFs(object):
         """
         
         path = individual.get_path()
+        logging.info("sample path: {}".format(path))
         gender = individual.get_gender()
         
         # open the vcf, and adjust the position in the file to immediately after
@@ -195,12 +197,7 @@ class LoadVCFs(object):
         happens.
         """
         
-        # load the VCF file for each member of the trio
-        logging.info("opening trio " + str(self.counter) + " of " + \
-            str(self.total_trios) + ". child path: " + \
-            self.family.child.get_path())
-        
-        mnv_candidates = get_mnv_candidates(self.family.child.get_path())
+        mnvs = get_mnv_candidates(family.child.get_path())
         
         # open the childs VCF file, and get the variant keys, to check if they
         # are in the parents VCF

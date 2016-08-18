@@ -99,9 +99,10 @@ class PostInheritanceFilter(object):
             if not var.is_cnv():
                 passed_vars.append((var, check, inh, hgnc))
             else:
-                logging.debug(str(var) + " dropped from excess CNVs in proband")
+                log_str = "{}\t{} dropped from excess CNVs in proband".format(self.family.child.get_id(), var)
+                logging.info(log_str)
                 if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
-                    print(str(var) + " dropped from excess CNVs in proband")
+                    print(log_str)
         
         return  passed_vars
     
@@ -133,9 +134,11 @@ class PostInheritanceFilter(object):
                 elif max_maf <= 0.0001 and not self.family.has_parents():
                     passed_vars.append((var, check, inh, hgnc))
                 else:
-                    logging.debug(str(var) + " dropped from low MAF in non-biallelic variant")
+                    log_str = "{}\t{} dropped from low MAF in non-biallelic" \
+                        "variant".format(self.family.child.get_id(), var)
+                    logging.info(log_str)
                     if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
-                        print(str(var) + " dropped from low MAF in non-biallelic variant")
+                        print(log_str)
         
         return passed_vars
     
@@ -210,9 +213,10 @@ class PostInheritanceFilter(object):
             if passes and not benign_match:
                 passed_vars.append((var, check, inh, hgnc))
             else:
-                logging.debug(str(var) + " dropped from polyphen prediction")
+                log_str = "{}\t{} dropped from polyphen prediction".format(self.family.child.get_id(), var)
+                logging.info(log_str)
                 if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
-                    print(str(var) + " dropped from polyphen prediction")
+                    print(log_str)
         
         return passed_vars
     
@@ -296,9 +300,10 @@ class PostInheritanceFilter(object):
                 inh.remove("X-linked dominant")
             
             if inh == []:
-                logging.debug("{} dropped from ExAC frequency count".format(var))
+                log_str = "{}\t{} dropped from ExAC frequency count".format(self.family.child.get_id(), var)
+                logging.info(log_str)
                 if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
-                    print("{} dropped from ExAC frequency count".format(var))
+                    print(log_str)
             
             if inh != []:
                 passed_vars.append((var, check, inh, hgnc))
