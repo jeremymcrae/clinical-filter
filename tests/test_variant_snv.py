@@ -99,14 +99,6 @@ class TestVariantSnvPy(unittest.TestCase):
         self.assertEqual(self.var.convert_genotype("12|34"), 1)
         self.assertEqual(self.var.convert_genotype("99|99"), 2)
     
-    def test_set_default_genotype(self):
-        """ test that set_default_genotype() operates correctly on the autosomes
-        """
-        
-        self.var.set_gender("male")
-        self.var.set_default_genotype()
-        self.assertEqual(self.var.get_genotype(), 0)
-    
     def test_set_genotype_autosomal(self):
         """ test that set_genotype() operates correctly
         """
@@ -125,7 +117,7 @@ class TestVariantSnvPy(unittest.TestCase):
             self.assertEqual(self.var.get_genotype(), result)
         
         # remove the format attribute, so we can raise an error
-        del self.var.format
+        self.var.format = None
         with self.assertRaises(ValueError):
             self.var.set_genotype()
     
