@@ -78,15 +78,13 @@ class LoadVCFs(object):
         logging.info("opening trio {} of {}".format(self.counter, self.total_trios))
         
         try:
-            variants = self.load_trio()
+            variants = self.load_trio(family)
             variants = self.filter_de_novos(variants, pp_filter)
         except OSError as error:
-            if self.family.has_parents():
-                mother_id = self.family.mother.get_id()
-                father_id = self.family.father.get_id()
-            else:
-                mother_id = "no mother"
-                father_id = "no father"
+            mother_id, father_id = "no mother", "no father"
+            if family.has_parents():
+                mother_id = family.mother.get_id()
+                father_id = family.father.get_id()
             
             logging.error("trio with missing file - child: " + family.child.get_id() \
                 + ", mother: " + mother_id + ", father: " + father_id + ". " + str(error))
@@ -188,7 +186,7 @@ class LoadVCFs(object):
         
         return variants
     
-    def load_trio(self):
+    def load_trio(self, family):
         """ opens and parses the VCF files for members of the family trio.
         
         We need to load the VCF data for each of the members of the trio. As a
@@ -201,24 +199,18 @@ class LoadVCFs(object):
         
         # open the childs VCF file, and get the variant keys, to check if they
         # are in the parents VCF
-        child_vars = self.open_individual(self.family.child)
-        self.child_keys = set([var.get_key() for var in child_vars])
+        child = self.open_individual(family.child, mnvs=mnvs)
+        self.child_keys = set([var.get_key() for var in child])
         
-        self.child_header = self.get_vcf_header(self.family.child.get_path())
-        self.cnv_matcher = MatchCNVs(child_vars)
+        self.child_header = get_vcf_header(family.child.get_path())
+        self.cnv_matcher = MatchCNVs(child)
         
-        mother_vars = []
-        father_vars = []
-        if self.family.has_parents():
-            logging.info(" mothers path: " + self.family.mother.get_path())
-            mother_vars = self.open_individual(self.family.mother, child_variants=True)
-            
-            logging.info(" fathers path: " + self.family.father.get_path())
-            father_vars = self.open_individual(self.family.father, child_variants=True)
+        mother = self.open_individual(family.mother, child_variants=True)
+        father = self.open_individual(family.father, child_variants=True)
         
-        return combine_trio_variants(child_vars, mother_vars, father_vars)
+        return self.combine_trio_variants(family, child, mother, father)
     
-    def combine_trio_variants(self, child_vars, mother_vars, father_vars):
+    def combine_trio_variants(self, family, child_vars, mother_vars, father_vars):
         """ for each variant, combine the trio's genotypes into TrioGenotypes
         
         Args:
@@ -301,11 +293,4 @@ class LoadVCFs(object):
             de novo filter.
         """
         
-        # ignore situations when we haven't loaded any parents, which would all
-        # look like de novos, since we insert "0" for missing parental genotypes
-        if self.family.has_parents() == False:
-            return variants
-        
-        # run through the variants in the child, and remove de novos that fail
-        # denovogear filtering criteria
         return [ x for x in variants if x.passes_de_novo_checks(pp_filter) ]
