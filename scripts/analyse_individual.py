@@ -16,7 +16,7 @@ import glob
 home_folder = "/nfs/users/nfs_j/jm33/"
 app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
-filter_code = os.path.join(app_folder, "src", "main", "python", "clinical_filter.py")
+filter_code = os.path.join(app_folder, "bin", "clinical_filter.py")
 
 datafreeze = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2015-04-13"
 known_genes = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2015-04-13/DDG2P/dd_genes_for_clinical_filter"
