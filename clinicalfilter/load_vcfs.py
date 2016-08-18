@@ -257,6 +257,7 @@ class LoadVCFs(object):
         """
         
         key = var.get_key()
+        default_ref = '0/0'
         
         # if the variant is a CNV, the corresponding variant might not match
         # the start site, so we look a variant that overlaps
@@ -271,11 +272,13 @@ class LoadVCFs(object):
         # create a default variant for the parent
         if var.is_cnv():
             parental = CNV(var.chrom, var.position, var.variant_id, var.ref_allele, var.alt_allele, var.filter)
+            default_ref = 'REF'
         else:
             parental = SNV(var.chrom, var.position, var.variant_id, var.ref_allele, var.alt_allele, var.filter)
         
+        parental.add_format('GT', default_ref)
         parental.set_gender(gender)
-        parental.set_default_genotype()
+        parental.set_genotype()
         
         return parental
     
