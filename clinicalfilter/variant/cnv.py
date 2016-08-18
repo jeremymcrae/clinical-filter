@@ -104,12 +104,6 @@ class CNV(Variant):
         else:
             raise ValueError("unknown CNV allele code")
     
-    def set_default_genotype(self):
-        """ set a default genotype for individuals without one
-        """
-        
-        self.genotype = "REF"
-    
     def get_key(self):
         """ return a tuple to identify the variant
         """

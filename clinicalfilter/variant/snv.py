@@ -87,15 +87,6 @@ class SNV(Variant):
         self.set_reference_genotypes()
         self.convert_genotype_code_to_alleles()
     
-    def set_default_genotype(self):
-        """ for variants lacking genotypes, set a default genotype
-        """
-        
-        self.genotype = 0
-        
-        self.set_reference_genotypes()
-        self.convert_genotype_code_to_alleles()
-    
     def convert_genotype(self, genotype):
         """Maps genotypes from two character format to single character.
         
