@@ -134,7 +134,7 @@ class PostInheritanceFilter(object):
                 elif max_maf <= 0.0001 and not self.family.has_parents():
                     passed_vars.append((var, check, inh, hgnc))
                 else:
-                    log_str = "{}\t{} dropped from low MAF in non-biallelic" \
+                    log_str = "{}\t{} dropped from low MAF in non-biallelic " \
                         "variant".format(self.family.child.get_id(), var)
                     logging.info(log_str)
                     if var.get_chrom() == self.debug_chrom and var.get_position() == self.debug_pos:
