@@ -255,7 +255,7 @@ class PostInheritanceFilter(object):
         # since those will have the same trio genotypes by virtue of having
         # "NA" values for the parental genotypes.
         genotypes = set([ x.get_trio_genotype() for x in not_benign ])
-        if "NA" in var.get_trio_genotype():
+        if None in var.get_trio_genotype():
             genotypes = [ x.get_trio_genotype() for x in not_benign ]
         
         return len(genotypes) <= 1
