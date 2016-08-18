@@ -67,9 +67,10 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
             mom_var = self.create_cnv(chrom)
             dad_var = self.create_cnv(chrom)
         
-        var = TrioGenotypes(child_var)
-        var.add_mother_variant(mom_var)
-        var.add_father_variant(dad_var)
+        var = TrioGenotypes()
+        var.add_child(child_var)
+        var.add_mother(mom_var)
+        var.add_father(dad_var)
         
         return var
     
@@ -410,10 +411,10 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         snv_1.position = 1000
         snv_2.position = 2000
         
-        del snv_1.mother
-        del snv_1.father
-        del snv_2.mother
-        del snv_2.father
+        snv_1.mother = None
+        snv_1.father = None
+        snv_2.mother = None
+        snv_2.father = None
         
         variants = [(snv_1, ["compound_het"], ["Biallelic"], ["ATRX"]), \
             (snv_2, ["compound_het"], ["Biallelic"], ["ATRX"])]

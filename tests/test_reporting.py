@@ -53,9 +53,10 @@ class TestReportPy(unittest.TestCase):
         mom_var = self.create_snv("F", "0/0")
         dad_var = self.create_snv("M", "0/0")
         
-        var = TrioGenotypes(child_var)
-        var.add_mother_variant(mom_var)
-        var.add_father_variant(dad_var)
+        var = TrioGenotypes()
+        var.add_child(child_var)
+        var.add_mother(mom_var)
+        var.add_father(dad_var)
         self.variants = [var]
         
         self.report = Report(None, None, None, None)

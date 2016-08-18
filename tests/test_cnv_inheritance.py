@@ -83,9 +83,10 @@ class TestCNVInheritancePy(unittest.TestCase):
         mom_var = self.create_cnv("F", "unknown", "uncertain", chrom, position)
         dad_var = self.create_cnv("M", "unknown", "uncertain", chrom, position)
         
-        var = TrioGenotypes(child_var)
-        var.add_mother_variant(mom_var)
-        var.add_father_variant(dad_var)
+        var = TrioGenotypes()
+        var.add_child(child_var)
+        var.add_mother(mom_var)
+        var.add_father(dad_var)
         
         return var
     

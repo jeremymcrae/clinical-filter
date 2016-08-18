@@ -48,9 +48,10 @@ class TestTrioGenotypesPy(unittest.TestCase):
         mom_var = self.create_snv("F", "0/0")
         dad_var = self.create_snv("M", "0/0")
         
-        self.var = TrioGenotypes(child_var)
-        self.var.add_mother_variant(mom_var)
-        self.var.add_father_variant(dad_var)
+        self.var = TrioGenotypes(child_var.get_chrom(), child_var.get_position())
+        self.var.add_child(child_var)
+        self.var.add_mother(mom_var)
+        self.var.add_father(dad_var)
     
     def create_snv(self, gender, genotype):
         """ create a default variant
@@ -172,9 +173,9 @@ class TestTrioGenotypesPy(unittest.TestCase):
         self.assertEqual(self.var.get_trio_genotype(), (1,2,0))
         
         # check that probands only give NA genotypes for parents
-        del self.var.mother
-        del self.var.father
-        self.assertEqual(self.var.get_trio_genotype(), (1,"NA","NA"))
+        self.var.mother = None
+        self.var.father = None
+        self.assertEqual(self.var.get_trio_genotype(), (1, None, None))
     
     def test_chrom_to_int(self):
         """ test that chrom_to_int() works correctly

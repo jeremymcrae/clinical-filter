@@ -47,9 +47,10 @@ class TestAutosomalPy(unittest.TestCase):
         mom_var = self.create_snv("F", "0/0")
         dad_var = self.create_snv("M", "0/0")
         
-        var = TrioGenotypes(child_var)
-        var.add_mother_variant(mom_var)
-        var.add_father_variant(dad_var)
+        var = TrioGenotypes()
+        var.add_child(child_var)
+        var.add_mother(mom_var)
+        var.add_father(dad_var)
         self.variants = [var]
         
         # make sure we've got known genes data
@@ -329,9 +330,10 @@ class TestAutosomalPy(unittest.TestCase):
         mom_var = self.create_cnv("F", "unknown", chrom, position)
         dad_var = self.create_cnv("M", "unknown", chrom, position)
         
-        cnv_var = TrioGenotypes(child_var)
-        cnv_var.add_mother_variant(mom_var)
-        cnv_var.add_father_variant(dad_var)
+        cnv_var = TrioGenotypes()
+        cnv_var.add_child(child_var)
+        cnv_var.add_mother(mom_var)
+        cnv_var.add_father(dad_var)
         
         var = self.variants[0]
         

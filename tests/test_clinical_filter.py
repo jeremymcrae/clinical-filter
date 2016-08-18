@@ -85,9 +85,10 @@ class TestClinicalFilterPy(unittest.TestCase):
         mom_var = self.create_snv("F", "0/0", cq, hgnc, chrom)
         dad_var = self.create_snv("M", "0/0", cq, hgnc, chrom)
         
-        var = TrioGenotypes(child_var)
-        var.add_mother_variant(mom_var)
-        var.add_father_variant(dad_var)
+        var = TrioGenotypes()
+        var.add_child(child_var)
+        var.add_mother(mom_var)
+        var.add_father(dad_var)
         
         return var
     
