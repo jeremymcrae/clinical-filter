@@ -381,6 +381,12 @@ class Info(object):
         
         cq = self.get_per_gene_consequence(hgnc_symbol)
         
+        if self.mnv_code is not None:
+            if self.mnv_code == 'masked_stop_gain_mnv':
+                cq = [ x for x in cq if cq != 'stop_gained' ]
+            elif self.mnv_code == 'modified_stop_gained_mnv':
+                cq.append('stop_gained')
+        
         return len(set(cq) & self.lof_consequences) > 0
     
     def is_missense(self, hgnc_symbol=None):
@@ -395,6 +401,12 @@ class Info(object):
             return False
         
         cq = self.get_per_gene_consequence(hgnc_symbol)
+        
+        if self.mnv_code is not None:
+            if self.mnv_code == 'modified_synonymous_mnv':
+                cq = []
+            elif self.mnv_code == 'modified_protein_altering_mnv':
+                cq.append('missense_variant')
         
         return len(set(cq) & self.missense_consequences) > 0
     

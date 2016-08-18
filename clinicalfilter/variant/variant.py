@@ -34,7 +34,7 @@ class Variant(Info):
     y_pseudoautosomal_regions = [(10001, 2649520), (59034050, 59363566)]
     
     def __init__(self, chrom, position, id, ref, alts, filter, info=None,
-            format=None, sample=None, gender=None):
+            format=None, sample=None, gender=None, mnv_code=None):
         """ initialise the object with the definition values
         """
         
@@ -48,6 +48,7 @@ class Variant(Info):
         self.ref_allele = ref
         self.alt_allele = alts
         
+        self.mnv_code = mnv_code
         self.filter = filter
         
         # intialise variables that will be set later

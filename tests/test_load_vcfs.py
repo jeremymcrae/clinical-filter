@@ -286,26 +286,27 @@ class TestLoadVCFsPy(unittest.TestCase):
         """ check that include_variant() works correctly
         """
         
+        mnvs = {}
         child_variants = False
         gender = "M"
         # make a child var which passes the filters
         line = ["1", "100", ".", "T", "A", "1000", "PASS", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender))
+        self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
         
         # make a child var that fails the filters, which should return False
         line = ["1", "100", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender))
+        self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
         
         # now check for parents variants
         child_variants = True
         # check a parents var, where we have a matching child var
         self.vcf_loader.child_keys = set([("1", 100), ("X", 200)])
         line = ["1", "100", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender))
+        self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
         
         # check a parents var, where we don't have a matching child var
         line = ["1", "200", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender))
+        self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
         
         # and check parental CNVs
         line = ["1", "100", ".", "T", "<DEL>", "1000", "PASS", "END=200", "GT", "0/1"]
@@ -316,13 +317,13 @@ class TestLoadVCFsPy(unittest.TestCase):
         # in this function we look for overlap in CNVs. Set up a child CNV
         # that the parents CNV must match.
         self.vcf_loader.cnv_matcher = MatchCNVs([test_var])
-        self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender))
+        self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
         
         # check that a parental CNV without any overlap to any childs CNVs,
         # fails to pass
         line = ["1", "300", ".", "T", "<DEL>", "1000", "PASS", "END=400", "GT", "0/1"]
         gender = "M"
-        self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender))
+        self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
     
     def test_filter_de_novos(self):
         """ check that filter_de_novos() works correctly

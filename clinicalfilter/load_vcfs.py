@@ -119,7 +119,7 @@ class LoadVCFs(object):
                 print("failed as heterozygous genotype in male on chrX")
             pass
     
-    def include_variant(self, line, child_variants, gender):
+    def include_variant(self, line, child_variants, gender, mnvs):
         """ check if we want to include the variant or not
         
         Args:
@@ -143,7 +143,7 @@ class LoadVCFs(object):
                 if self.cnv_matcher.has_match(var):
                     use_variant = True
         else:
-            var = construct_variant(line, gender, self.known_genes)
+            var = construct_variant(line, gender, self.known_genes, mnvs)
             if var.passes_filters():
                 use_variant = True
             
@@ -183,8 +183,8 @@ class LoadVCFs(object):
             line = line.strip().split("\t")
             
             # check if we want to include the variant or not
-            if self.include_variant(line, child_variants, gender):
-                var = construct_variant(line, gender, self.known_genes)
+            if self.include_variant(line, child_variants, gender, mnvs):
+                var = construct_variant(line, gender, self.known_genes, mnvs)
                 self.add_single_variant(variants, var, gender, line)
         
         return variants

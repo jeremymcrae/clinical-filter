@@ -116,7 +116,7 @@ def exclude_header(vcf):
     
     vcf.seek(current_pos)
 
-def construct_variant(line, gender, known_genes):
+def construct_variant(line, gender, known_genes, mnvs=None):
     """ constructs a Variant object for a VCF line, specific to the variant type
     
     Args:
@@ -137,7 +137,11 @@ def construct_variant(line, gender, known_genes):
     if alt in ["<DUP>", "<DEL>"]:
         Var = CNV
     
-    var = Var(chrom, pos, var_id, ref, alt, filter_val)
+    mnv_code = None
+    if mnvs is not None and (chrom, pos) in mnvs:
+        mnv_code = mnvs[(chrom, pos)]
+    
+    var = Var(chrom, pos, var_id, ref, alt, filter_val, mnv_code=mnv_code)
     var.add_info(info)
     
     if var.is_cnv():
