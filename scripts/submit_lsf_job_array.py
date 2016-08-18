@@ -16,7 +16,7 @@ import argparse
 USER_DIR = "~/"
 APP_FOLDER = os.path.join(USER_DIR, "apps", "clinical-filter")
 
-FILTER_CODE = os.path.join(APP_FOLDER, "src", "main", "python", "clinical_filter.py")
+FILTER_CODE = os.path.join(APP_FOLDER, "bin", "clinical_filter.py")
 
 DATAFREEZE = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2015-04-13"
 KNOWN_GENES_PATH = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2015-04-13/DDG2P/dd_genes_for_clinical_filter"
