@@ -19,10 +19,9 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
-from clinicalfilter.variant.info import VariantInfo
 from clinicalfilter.variant.variant import Variant
 
-class SNV(Variant, VariantInfo):
+class SNV(Variant):
     """ a class to take a SNV genotype for an individual, and be able to perform
     simple functions, like reporting whether it is heterozygous, homozygous, or
     neither, depending on whether the variant is on the X chromosome, and if so,
@@ -40,6 +39,30 @@ class SNV(Variant, VariantInfo):
         if cls_obj.debug_chrom is not None:
             cls_obj.passes_filters = cls_obj.passes_filters_with_debug
     
+    def __repr__(self):
+        
+        # reprocess the format dictionary back to the original text strings
+        keys, sample = None, None
+        if self.format is not None:
+            keys = ':'.join(sorted(self.format))
+            sample = ':'.join([ self.format[x] for x in keys.split(':') ])
+            keys = '"{}"'.format(keys)
+            sample = '"{}"'.format(sample)
+        
+        info = None
+        if self.info is not None:
+            info = ';'.join([ '{}={}'.format(x, self.info[x]) for x in self.info ])
+            info = '"{}"'.format(info)
+        
+        gender = self.gender
+        if gender is not None:
+            gender = '"{}"'.format(gender)
+        
+        return 'SNV(chrom="{}", position={}, id="{}", ref="{}", alts="{}", ' \
+            'filter="{}", info={}, format={}, sample={}, gender={})'.format(self.chrom,
+            self.position, self.variant_id, self.ref_allele, self.alt_allele,
+            self.filter, info, keys, sample, gender)
+    
     def is_cnv(self):
         """ checks whether the variant is for a CNV
         """
@@ -56,7 +79,7 @@ class SNV(Variant, VariantInfo):
         """ sets the genotype of the variant using the format entry
         """
         
-        if hasattr(self, "format"):
+        if self.format is not None:
             self.genotype = self.convert_genotype(self.format["GT"])
         else:
             raise ValueError("cannot find a genotype")

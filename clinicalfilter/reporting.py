@@ -137,6 +137,7 @@ class Report(object):
         
         alleles = var.child.ref_allele + "/" + var.child.alt_allele
         trio_genotype = "{0}/{1}/{2}".format(*var.get_trio_genotype())
+        trio_genotype = trio_genotype.replace('None', 'NA')
         
         max_maf = var.child.find_max_allele_frequency()
         if max_maf is None:
@@ -334,6 +335,7 @@ class Report(object):
             
             if not var.is_cnv():
                 trio_genotype = "{0},{1},{2}".format(*var.get_trio_genotype())
+                trio_genotype = trio_genotype.replace('None', 'NA')
                 vcf_line[8] += ":INHERITANCE_GENOTYPE"
                 vcf_line[9] += ":" + trio_genotype
             
