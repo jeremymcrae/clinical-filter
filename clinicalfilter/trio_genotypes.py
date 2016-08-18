@@ -78,15 +78,15 @@ class TrioGenotypes(object):
               (self.chrom_to_int(other.get_chrom()), int(other.get_position()))
     
     def __repr__(self):
-        return self.__str__()
-        
+        return 'TrioGenotypes(chrom="{}", pos={}, child={}, mother={},' \
+            'father={})'.format(self.get_chrom(), self.get_position(),
+            self.child, self.mother, self.father)
+    
     def __str__(self):
+        genotype = '{}/{}/{}'.format(*self.get_trio_genotype())
+        genotype = genotype.replace('None', 'NA')
         
-        chrom = self.get_chrom()
-        position = self.get_position()
-        (child, mother, father) = self.get_trio_genotype()
-        
-        return "chr{0}: {1} - {2}{3}{4}".format(chrom, position, child, mother, father)
+        return '{}:{} - {}'.format(self.get_chrom(), self.get_position(), genotype)
     
     def __hash__(self):
         return hash(self.__repr__())
@@ -101,19 +101,16 @@ class TrioGenotypes(object):
         return self.inheritance_type
     
     def get_trio_genotype(self):
-        child_geno = self.child.get_genotype()
+        child = self.child.get_genotype()
         
-        if hasattr(self, "mother"):
-            mother_geno = self.mother.get_genotype()
-        else:
-            mother_geno = "NA"
+        mother, father = None, None
+        if self.mother is not None:
+            mother = self.mother.get_genotype()
         
-        if hasattr(self, "father"):
-            father_geno = self.father.get_genotype()
-        else:
-            father_geno = "NA"
+        if self.father is not None:
+            father = self.father.get_genotype()
         
-        return (child_geno, mother_geno, father_geno)
+        return (child, mother, father)
     
     def get_de_novo_genotype(self):
         """ get the de novo genotype combination for the chromosome/sex

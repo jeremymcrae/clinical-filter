@@ -19,12 +19,11 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
-from clinicalfilter.variant.info import VariantInfo
 from clinicalfilter.variant.variant import Variant
 from clinicalfilter.variant.cnv_acgh_filter import ACGH_CNV
 from clinicalfilter.variant.cnv_exome_filter import ExomeCNV
 
-class CNV(Variant, VariantInfo):
+class CNV(Variant):
     """  class for holding copy number information for a single individual
     """
     
@@ -44,6 +43,26 @@ class CNV(Variant, VariantInfo):
         """
         
         return True
+    
+    def __repr__(self):
+        # reprocess the format dictionary back to the original text strings
+        keys, sample = None, None
+        if self.format is not None:
+            keys = ':'.join(sorted(self.format))
+            sample = ':'.join([ self.format[x] for x in keys.split(':') ])
+        
+        info = None
+        if self.info is not None:
+            info = ';'.join([ '{}={}'.format(x, self.info[x]) for x in self.info ])
+        
+        gender = self.gender
+        if gender is not None:
+            gender = '"{}"'.format(gender)
+        
+        return 'CNV(chrom="{}", position={}, id="{}", ref="{}", alts="{}", ' \
+            'filter="{}", info={}, format={}, sample={}, gender={})'.format(self.chrom,
+            self.position, self.variant_id, self.ref_allele, self.alt_allele,
+            self.filter, info, keys, sample, gender)
     
     def set_genotype(self):
         """ sets the genotype of the variant

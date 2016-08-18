@@ -19,7 +19,9 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
-class Variant(object):
+from clinicalfilter.variant.info import Info
+
+class Variant(Info):
     """ generic functions for variants
     """
     
@@ -31,31 +33,44 @@ class Variant(object):
         (88456802, 92375509)]
     y_pseudoautosomal_regions = [(10001, 2649520), (59034050, 59363566)]
     
-    def __init__(self, chrom, position, variant_id, ref_allele, alt_allele, filt):
+    def __init__(self, chrom, position, id, ref, alts, filter, info=None,
+            format=None, sample=None, gender=None):
         """ initialise the object with the definition values
         """
         
         self.chrom = chrom
         self.position = int(position)
         
-        self.variant_id = variant_id
+        self.variant_id = id
         self.mutation_id = "NA"
-        self.set_mutation_id(variant_id)
+        self.set_mutation_id(self.variant_id)
         
-        self.ref_allele = ref_allele
-        self.alt_allele = alt_allele
+        self.ref_allele = ref
+        self.alt_allele = alts
         
-        self.filter = filt
+        self.filter = filter
         
         # intialise variables that will be set later
-        self.gender = None
-        self.vcf_line = None
-        self.format = None
-        self.inheritance_type = None
-        self.info = {}
         self.genes = None
         self.consequence = None
+        self.inheritance_type = None
+        
+        self.gender = None
+        if gender is not None:
+            self.set_gender(gender)
+        
+        self.vcf_line = None
+        self.info = {}
+        if info is not None:
+            self.add_info(info)
+        
+        self.format = None
+        if format is not None and sample is not None:
+            self.add_format(format, sample)
+        
         self.genotype = None
+        if self.format is not None and self.gender is not None:
+            self.set_genotype()
         
     def set_gender(self, gender):
         """ sets the gender of the individual for the variant
@@ -112,11 +127,6 @@ class Variant(object):
         """
         
         return self.get_gender() in self.female_codes
-    
-    def __str__(self):
-        
-        return "{0} chr{1}: {2} {3} in {4}".format(str(self.__class__.__name__), \
-                  self.chrom, self.position, self.genotype, self.genes)
     
     def add_format(self, keys, values):
         """Parses the FORMAT column from VCF files.
