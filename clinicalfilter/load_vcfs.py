@@ -149,7 +149,7 @@ class LoadVCFs(object):
             
         return use_variant
         
-    def open_individual(self, individual, child_variants=False):
+    def open_individual(self, individual, child_variants=False, mnvs=None):
         """ Convert VCF to TSV format. Use for single sample VCF file.
         
         Obtains the VCF data for a single sample. This function optionally
@@ -166,14 +166,17 @@ class LoadVCFs(object):
             A list of variants for the individual.
         """
         
+        if individual is None:
+            return []
+        
         path = individual.get_path()
         logging.info("sample path: {}".format(path))
         gender = individual.get_gender()
         
         # open the vcf, and adjust the position in the file to immediately after
         # the header, so we can run through the variants
-        vcf = self.open_vcf(path)
-        self.exclude_header(vcf)
+        vcf = open_vcf(path)
+        exclude_header(vcf)
         
         variants = []
         for line in vcf:
