@@ -161,7 +161,8 @@ class Filter(LoadOptions):
         if variants == []:
             return []
         
-        logging.debug("{} {} {} {}".format(self.family.child.get_id(), gene, variants, gene_inh))
+        logging.info("{}\t{}\tvariants: {}\trequired_mode: {}".format(self.family.child.get_id(), gene,
+            [str(x) for x in variants], gene_inh))
         chrom_inheritance = variants[0].get_inheritance_type()
         
         if chrom_inheritance == "autosomal":
