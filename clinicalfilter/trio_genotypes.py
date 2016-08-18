@@ -24,25 +24,31 @@ class TrioGenotypes(object):
     get genotype data for a single variant from all the family members.
     """
     
-    def __init__(self, child_variant, debug_chrom=None, debug_pos=None):
+    def __init__(self, chrom=None, pos=None, child=None, mother=None,
+            father=None, debug_chrom=None, debug_pos=None):
         """ initiate the class with the childs variant
         
         Args:
             child_variant: Variant object
         """
         
-        self.child = child_variant
+        self.chrom = chrom
+        self.pos = pos
         
-        self.get_chrom = self.child.get_chrom
-        self.get_position = self.child.get_position
-        self.get_genes = self.child.get_genes
-        self.get_range = self.child.get_range
-        self.is_cnv = self.child.is_cnv
+        self.child = child
+        self.mother = mother
+        self.father = father
         
-        self.inheritance_type = self.child.inheritance_type
+        self.inheritance_type = None
         
         self.debug_chrom = debug_chrom
         self.debug_pos = debug_pos
+    
+    def get_chrom(self): return self.chrom
+    def get_position(self): return self.pos
+    def get_genes(self): return None
+    def get_range(self): return None
+    def is_cnv(self): return None
     
     def chrom_to_int(self, chrom):
         """ converts a chromosome string to an int (if possible) for sorting.
@@ -66,12 +72,7 @@ class TrioGenotypes(object):
         return chrom
     
     def __eq__(self, other):
-        return (self.chrom_to_int(self.get_chrom()), int(self.get_position())) == \
-              (self.chrom_to_int(other.get_chrom()), int(other.get_position()))
-    
-    def __ne__(self, other):
-        return (self.chrom_to_int(self.get_chrom()), int(self.get_position())) != \
-              (self.chrom_to_int(other.get_chrom()), int(other.get_position()))
+        return self.__hash__() == other.__hash__()
     
     def __lt__(self, other):
         return (self.chrom_to_int(self.get_chrom()), int(self.get_position())) < \
@@ -91,11 +92,23 @@ class TrioGenotypes(object):
     def __hash__(self):
         return hash(self.__repr__())
     
-    def add_father_variant(self, father_variant):
-        self.father = father_variant
+    def add_child(self, variant):
+        self.child = variant
+        
+        # use functions from the child variant
+        self.get_chrom = self.child.get_chrom
+        self.get_position = self.child.get_position
+        self.get_genes = self.child.get_genes
+        self.get_range = self.child.get_range
+        self.is_cnv = self.child.is_cnv
+        
+        self.inheritance_type = self.child.inheritance_type
     
-    def add_mother_variant(self, mother_variant):
-        self.mother = mother_variant
+    def add_father(self, variant):
+        self.father = variant
+    
+    def add_mother(self, variant):
+        self.mother = variant
     
     def get_inheritance_type(self):
         return self.inheritance_type

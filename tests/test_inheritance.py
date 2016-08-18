@@ -118,9 +118,10 @@ class TestInheritancePy(unittest.TestCase):
         mom_var = self.create_snv("F", "0/0", chrom, position, cq)
         dad_var = self.create_snv("M", "0/0", chrom, position, cq)
         
-        var = TrioGenotypes(child_var)
-        var.add_mother_variant(mom_var)
-        var.add_father_variant(dad_var)
+        var = TrioGenotypes()
+        var.add_child(child_var)
+        var.add_mother(mom_var)
+        var.add_father(dad_var)
         
         return var
     
@@ -231,9 +232,10 @@ class TestInheritancePy(unittest.TestCase):
         mom_var = self.create_cnv("F", "unknown", chrom, position)
         dad_var = self.create_cnv("M", "unknown", chrom, position)
         
-        cnv_var = TrioGenotypes(child_var)
-        cnv_var.add_mother_variant(mom_var)
-        cnv_var.add_father_variant(dad_var)
+        cnv_var = TrioGenotypes()
+        cnv_var.add_child(child_var)
+        cnv_var.add_mother(mom_var)
+        cnv_var.add_father(dad_var)
         
         # check that all variants=SNV returns False
         self.assertFalse(self.inh.check_if_any_variant_is_cnv())
@@ -398,9 +400,10 @@ class TestInheritancePy(unittest.TestCase):
         mom_var = self.create_cnv("F", "unknown", chrom, position)
         dad_var = self.create_cnv("M", "unknown", chrom, position)
         
-        cnv = TrioGenotypes(child_var)
-        cnv.add_mother_variant(mom_var)
-        cnv.add_father_variant(dad_var)
+        cnv = TrioGenotypes()
+        cnv.add_child(child_var)
+        cnv.add_mother(mom_var)
+        cnv.add_father(dad_var)
         
         # set some variants, so we can alter them later
         snv = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
@@ -427,9 +430,10 @@ class TestInheritancePy(unittest.TestCase):
         mom_var = self.create_cnv("F", "unknown", chrom, position)
         dad_var = self.create_cnv("M", "unknown", chrom, position)
         
-        cnv = TrioGenotypes(child_var)
-        cnv.add_mother_variant(mom_var)
-        cnv.add_father_variant(dad_var)
+        cnv = TrioGenotypes()
+        cnv.add_child(child_var)
+        cnv.add_mother(mom_var)
+        cnv.add_father(dad_var)
         
         # set some variants, so we can alter them later
         snv = self.create_variant("F", chrom="1", position="150", cq="stop_gained")

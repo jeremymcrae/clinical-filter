@@ -222,23 +222,21 @@ class LoadVCFs(object):
             list of TrioGenotypes objects for the family
         """
         
-        mother_cnv_matcher = MatchCNVs(mother_vars)
-        father_cnv_matcher = MatchCNVs(father_vars)
+        mom_cnvs = MatchCNVs(mother_vars)
+        dad_cnvs = MatchCNVs(father_vars)
         
         variants = []
-        for var in child_vars:
-            trio = TrioGenotypes(var, SNV.debug_chrom, SNV.debug_pos)
+        for child in child_vars:
             
-            # if we only have the child, then just add the variant to the list
-            if self.family.has_parents() == False:
-                variants.append(trio)
-                continue
+            mother, father = None, None
+            if family.has_parents():
+                mother = self.get_parental_var(child, mother_vars, family.mother.get_gender(), mom_cnvs)
+                father = self.get_parental_var(child, father_vars, family.father.get_gender(), dad_cnvs)
             
-            mother_var = self.get_parental_var(var, mother_vars, self.family.mother.get_gender(), mother_cnv_matcher)
-            trio.add_mother_variant(mother_var)
-            
-            father_var = self.get_parental_var(var, father_vars, self.family.father.get_gender(), father_cnv_matcher)
-            trio.add_father_variant(father_var)
+            trio = TrioGenotypes(child.get_chrom(), child.get_position(), SNV.debug_chrom, SNV.debug_pos)
+            trio.add_child(child)
+            trio.add_mother(mother)
+            trio.add_father(father)
             
             variants.append(trio)
         
