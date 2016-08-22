@@ -274,8 +274,9 @@ class LoadVCFs(object):
         # if the childs variant does not exist in the parents VCF, then we
         # create a default variant for the parent
         if var.is_cnv():
-            parental = CNV(var.chrom, var.position, var.variant_id, var.ref_allele, var.alt_allele, var.filter)
+            parental = CNV(var.chrom, var.position, var.variant_id, var.ref_allele, '<REF>', var.filter)
             default_ref = 'REF'
+            parental.add_info('END=1000000000')
         else:
             parental = SNV(var.chrom, var.position, var.variant_id, var.ref_allele, var.alt_allele, var.filter)
         
