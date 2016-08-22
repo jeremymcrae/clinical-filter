@@ -67,6 +67,8 @@ def get_mnv_candidates(path):
         header = get_vcf_header(vcf)
         pairs = find_nearby_variants(vcf)
     
+    print(('19', 10407167) in pairs)
+    
     # ensure variants are not indels, are coding, and pairs alter the same amino acid
     vcf = tabix.open(path)
     pairs = screen_pairs(vcf, pairs, is_not_indel)
@@ -78,9 +80,12 @@ def get_mnv_candidates(path):
     candidates = {}
     for pair in pairs:
         var1, var2 = list(get_matches(vcf, pair))
-        cq = check_mnv_consequence(var1, var2, pattern)
-        candidates[pair[0]] = cq
-        candidates[pair[1]] = cq
+        try:
+            cq = check_mnv_consequence(var1, var2, pattern)
+            candidates[pair[0]] = cq
+            candidates[pair[1]] = cq
+        except AssertionError:
+            print('{0}:{1} and {0}:{2} in {3} have multiple alternative transcripts'.format(var1.chrom, var1.pos, var2.pos, path))
     
     return candidates
 
@@ -115,7 +120,7 @@ def find_nearby_variants(vcf, threshold=2):
         delta = abs(previous[1] - pos)
         # make sure the match isn't for the same variant, which avoids a bug
         # with duplicate lines
-        if delta < threshold and previous[1] != pos:
+        if delta <= threshold and previous[1] != pos:
             nearby.append([previous, (chrom, pos)])
         
         previous = (chrom, pos)
@@ -217,7 +222,11 @@ def screen_pairs(vcf, pairs, func):
     for pair in pairs:
         checks = [ func(x) for x in get_matches(vcf, pair) ]
         
-        assert len(checks) == 2
+        try:
+            assert len(checks) == 2
+        except AssertionError:
+            print('>2 MNV candidates: {}, found in {}'.format(pair, str(vcf).strip('<>"').split(' fn="')[1]))
+            checks = [False]
         
         if all(checks):
             cleaned.append(pair)
@@ -282,8 +291,8 @@ def get_codons(var1, var2, pattern):
     codons2 = set(var2.info['Codons'].split(',')[0].split('|')) - set(['.'])
     
     # check we only have a single codon/transcript entry per variant
-    assert len(codons) == 1
-    assert len(codons2) == 1
+    assert len(codons) == 1, '{} has more than one codon: {}'.format(var1, codons)
+    assert len(codons2) == 1, '{} has more than one codon: {}'.format(var2, codons2)
     
     codons = list(codons)[0].split('/')
     codons2 = list(codons2)[0].split('/')
@@ -341,7 +350,7 @@ def check_mnv_consequence(var1, var2, pattern):
     snv2 = translate(codons['snv2'])
     mnv = translate(codons['mnv'])
     
-    if set([ref, snv1, snv2, mnv]) == set([ref]):
+    if len(set([ref, snv1, snv2, mnv])) == 1:
         change = 'unmodified_synonymous_mnv'
     elif mnv in [snv1, snv2]:
         change = 'unmodified_protein_altering_mnv'
