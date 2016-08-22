@@ -67,7 +67,8 @@ def get_mnv_candidates(path):
         header = get_vcf_header(vcf)
         pairs = find_nearby_variants(vcf)
     
-    # ensure variants are not indels, are coding, and pairs alter the same amino acid
+    # ensure variants are not indels, are coding, and pairs alter the same amino
+    # acid position
     vcf = tabix.open(path)
     pairs = screen_pairs(vcf, pairs, is_not_indel)
     pairs = screen_pairs(vcf, pairs, is_coding)
@@ -235,6 +236,13 @@ def screen_pairs(vcf, pairs, func):
 
 def same_aa(vcf, pairs):
     ''' exclude proximal pairs where the partners are not in the same amino acid
+    
+    Args:
+        vcf: pytabix for VCF
+        pairs: list of chromosome pairs (each member as a (chrom, pos) tuple)
+    
+    Returns:
+        list of chromosome pairs, where some have been excluded
     '''
     
     cleaned = []
