@@ -131,7 +131,7 @@ class Report(object):
         if "SIFT" in var.child.info:
             consequence += ",SIFT=" + str(var.child.info["SIFT"])
         if var.child.mnv_code is not None:
-            consequence[7] += 'CANDIDATE_MNV={}'.format(var.child.mnv_code)
+            consequence += ',CANDIDATE_MNV={}'.format(var.child.mnv_code)
         
         transcript = "NA"
         if "ENST" in var.child.info:
