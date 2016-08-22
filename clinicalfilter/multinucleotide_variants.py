@@ -83,7 +83,9 @@ def get_mnv_candidates(path):
             candidates[pair[0]] = cq
             candidates[pair[1]] = cq
         except AssertionError:
-            print('{0}:{1} and {0}:{2} in {3} have multiple alternative transcripts'.format(var1.chrom, var1.pos, var2.pos, path))
+            print('{0}:{1} and {0}:{2} in {3} have multiple alternative ' \
+                'transcripts or odd codon sequences'.format(var1.chrom,
+                var1.pos, var2.pos, path))
     
     return candidates
 
@@ -285,20 +287,27 @@ def get_codons(var1, var2, pattern):
     # missing codon sequences (coded as '.'). Trim these out by removing the '.'
     # value from the codon sequences set. This won't allow different transcripts
     # with differing codon positions, but that shouldn't happen.
-    codons = set(var1.info['Codons'].split(',')[0].split('|')) - set(['.'])
-    codons2 = set(var2.info['Codons'].split(',')[0].split('|')) - set(['.'])
+    codons_1 = set(var1.info['Codons'].split(',')[0].split('|')) - set(['.'])
+    codons_2 = set(var2.info['Codons'].split(',')[0].split('|')) - set(['.'])
     
     # check we only have a single codon/transcript entry per variant
-    assert len(codons) == 1, '{} has more than one codon: {}'.format(var1, codons)
-    assert len(codons2) == 1, '{} has more than one codon: {}'.format(var2, codons2)
+    assert len(codons_1) == 1, '{} has more than one codon: {}'.format(var1, codons_1)
+    assert len(codons_2) == 1, '{} has more than one codon: {}'.format(var2, codons_2)
     
-    codons = list(codons)[0].split('/')
-    codons2 = list(codons2)[0].split('/')
+    codons_1 = list(codons_1)[0].split('/')
+    codons_2 = list(codons_2)[0].split('/')
+    
+    # the reference codons must match. I have encountered one mismatch for two
+    # MNV-like variants, where one partner was annotated as being on one
+    # transcript, and the other was annotated on a different transcript for the
+    # same gene. In that case they were both annotated as being in the same
+    # numeric codon, but the actual codons referred to different CDS sequences.
+    assert codons_1[0].upper() == codons_2[0].upper(), '{} or {} has an odd codon'.format(var1, var2)
     
     # get the individual variant codons
-    reference = codons[0]
-    var1 = codons[1]
-    var2 = codons2[1]
+    reference = codons_1[0]
+    var1 = codons_1[1]
+    var2 = codons_2[1]
     
     # get the positions of the modified bases, which is shown by the capitalised
     # base in the codon sequence e.g. 'tGt' or 'Agg'.
