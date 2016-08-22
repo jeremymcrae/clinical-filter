@@ -94,13 +94,15 @@ class CNV(Variant):
         if "CALLSOURCE" in self.info and self.info["CALLSOURCE"] == "EXOME":
             self.add_cns_state()
         
-        if self.get_inheritance_type() == "YChrFemale":
+        if self.get_inheritance_type() == "YChrFemale" and self.alt_allele != '<REF>':
             raise ValueError("cannot have CNV on female Y chromosome")
         
         if self.alt_allele == "<DUP>":
             self.genotype = "DUP"
         elif self.alt_allele == "<DEL>":
             self.genotype = "DEL"
+        elif self.alt_allele == "<REF>":
+            self.genotype = "REF"
         else:
             raise ValueError("unknown CNV allele code")
     
