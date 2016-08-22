@@ -138,8 +138,8 @@ def construct_variant(line, gender, known_genes, mnvs=None):
         Var = CNV
     
     mnv_code = None
-    if mnvs is not None and (chrom, pos) in mnvs:
-        mnv_code = mnvs[(chrom, pos)]
+    if mnvs is not None and (chrom, int(pos)) in mnvs:
+        mnv_code = mnvs[(chrom, int(pos))]
     
     var = Var(chrom, pos, var_id, ref, alt, filter_val, mnv_code=mnv_code)
     var.add_info(info)
