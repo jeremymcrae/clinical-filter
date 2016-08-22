@@ -58,10 +58,15 @@ class SNV(Variant):
         if gender is not None:
             gender = '"{}"'.format(gender)
         
+        mnv_code = self.mnv_code
+        if mnv_code is not None:
+            mnv_code = '"{}"'.format(mnv_code)
+        
         return 'SNV(chrom="{}", position={}, id="{}", ref="{}", alts="{}", ' \
-            'filter="{}", info={}, format={}, sample={}, gender={})'.format(self.chrom,
-            self.position, self.variant_id, self.ref_allele, self.alt_allele,
-            self.filter, info, keys, sample, gender)
+            'filter="{}", info={}, format={}, sample={}, gender={}, ' \
+            'mnv_code={})'.format(self.chrom, self.position, self.variant_id,
+            self.ref_allele, self.alt_allele, self.filter, info, keys, sample,
+            gender, mnv_code)
     
     def is_cnv(self):
         """ checks whether the variant is for a CNV
