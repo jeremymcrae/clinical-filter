@@ -67,8 +67,6 @@ def get_mnv_candidates(path):
         header = get_vcf_header(vcf)
         pairs = find_nearby_variants(vcf)
     
-    print(('19', 10407167) in pairs)
-    
     # ensure variants are not indels, are coding, and pairs alter the same amino acid
     vcf = tabix.open(path)
     pairs = screen_pairs(vcf, pairs, is_not_indel)
