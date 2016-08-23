@@ -9,5 +9,6 @@ install:
  - pip install coveralls
 script:
  - python setup.py test
+ - python -m coverage run --source=./clinicalfilter -m unittest discover
 after_success:
  - coveralls
