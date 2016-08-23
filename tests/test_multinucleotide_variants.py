@@ -604,7 +604,7 @@ class TestMNVChecksPy(unittest.TestCase):
         self.assertEqual(check_mnv_consequence(var1, var2, self.pattern),
             'modified_stop_gained_mnv')
     
-    def test_check_mnv_consequence_modified_stop_gained(self):
+    def test_check_mnv_consequence_masked_stop_gained(self):
         ''' test that get_mnv_consequence() works correctly
         '''
         
@@ -617,7 +617,7 @@ class TestMNVChecksPy(unittest.TestCase):
         self.assertEqual(check_mnv_consequence(var1, var2, self.pattern),
             'masked_stop_gain_mnv')
     
-    def test_check_mnv_consequence_modified_stop_gained(self):
+    def test_check_mnv_consequence_alternate_residue(self):
         ''' test that get_mnv_consequence() works correctly
         '''
         
