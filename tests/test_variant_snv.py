@@ -364,7 +364,7 @@ class TestVariantSnvPy(unittest.TestCase):
         
         # check that the message about why the variant failed filtering is correct
         self.assertEqual(output, "failed MAF: 0.05")
+        
+        # reset the standard out, so that we can observe other print statements
+        sys.stdout = sys.__stdout__
     
-
-if __name__ == '__main__':
-    unittest.main()
