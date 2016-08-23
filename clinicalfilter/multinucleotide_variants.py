@@ -94,7 +94,7 @@ def find_nearby_variants(vcf, threshold=2):
     ''' find variants in close proximity, regardless of allele or consequence
     
     Args:
-        vcf: pysam.VariantFile object, for the current VCF.
+        vcf: file handle for VCF
         threshold: distance in base-pairs for variants to be nearby.
     
     Returns:
