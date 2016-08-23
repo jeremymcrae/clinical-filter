@@ -9,6 +9,6 @@ install:
  - pip install coveralls
 script:
  - python setup.py test
- - python -m coverage run setup.py test
+ - python -m coverage run --source=./clinicalfilter setup.py test
 after_success:
  - coveralls
