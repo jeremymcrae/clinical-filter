@@ -268,7 +268,7 @@ class SNV(Variant):
         
         # exclude variants with high minor allele frequencies in any population
         max_maf = self.find_max_allele_frequency()
-        if max_maf is not None and max_maf > 0.01:
+        if max_maf is not None and max_maf > 0.005:
             return (False, "MAF")
         
         # exclude variants outside genes known to be involved in genetic

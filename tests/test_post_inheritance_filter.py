@@ -235,7 +235,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # check that a variant with an allele frequency below the without-parents
         # frequency still passes.
-        snv.child.info["AFR_AF"] = 0.0001
+        snv.child.info["AFR_AF"] = 0.00005
         variants = [(snv, ["single_variant"], ["Monoallelic"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_by_maf(variants), variants)
     

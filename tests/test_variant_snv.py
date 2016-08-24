@@ -282,11 +282,11 @@ class TestVariantSnvPy(unittest.TestCase):
         
         # check that low MAF values pass the filters
         for pop in self.pops:
-            self.var.info[pop] = "0.005"
+            self.var.info[pop] = "0.001"
             self.assertTrue(self.var.passes_filters())
             
             # and check that MAF on the threshold still pass
-            self.var.info[pop] = "0.01"
+            self.var.info[pop] = "0.005"
             self.assertTrue(self.var.passes_filters())
     
     def test_out_of_range_maf(self):
