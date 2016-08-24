@@ -42,42 +42,38 @@ def get_header_positions(file_handle, columns):
     
     return positions
 
-def add_gene_to_known_genes(line, header, known_genes):
+def parse_gene_line(line, header):
     """ adds a gene to the known genes dictionary by parsing the data line
     
     Args:
         line: list of columns for gene line
         header: dictionary of column positions indexed by column name
-        known_genes: dictionary of known genes
     
     Returns:
-        known genes, with new gene added
+        HGNC symbol and dictionary entry for gene
     """
     
-    gene = line[header["gene"]]
+    symbol = line[header["gene"]]
     status = line[header["type"]]
     inheritance = line[header["mode"]]
     mechanism = line[header["mech"]]
     
-    known_genes[gene]["inh"][inheritance].add(mechanism)
-    known_genes[gene]["status"].add(status)
-    known_genes[gene]["start"] = int(line[header["start"]])
-    known_genes[gene]["end"] = int(line[header["stop"]])
-    known_genes[gene]["chrom"] = line[header["chr"]]
+    gene = {}
+    gene['inh'] = {inheritance: set([mechanism])}
+    gene["status"] = set([status])
+    gene["start"] = int(line[header["start"]])
+    gene["end"] = int(line[header["stop"]])
+    gene["chrom"] = line[header["chr"]]
     
     # some genes are listed with an inheritance mode of "Both", which means
     # the gene has been observed in disorders with both monoallelic and
     # biallelic inheritance. Make sure the monoallelic and biallelic modes
     # are shown for the gene.
     if inheritance == "Both":
-        if "Monoallelic" not in known_genes[gene]["inh"]:
-            known_genes[gene]["inh"]["Monoallelic"] = set()
-        if "Biallelic" not in known_genes[gene]["inh"]:
-            known_genes[gene]["inh"]["Biallelic"] = set()
-        known_genes[gene]["inh"]["Monoallelic"].add(mechanism)
-        known_genes[gene]["inh"]["Biallelic"].add(mechanism)
+        gene["inh"]["Monoallelic"] = set([mechanism])
+        gene["inh"]["Biallelic"] = set([mechanism])
     
-    return known_genes
+    return symbol, gene
 
 def open_known_genes(path="DDGP-reportable.txt"):
     """Loads list of known disease causative genes.
@@ -98,7 +94,7 @@ def open_known_genes(path="DDGP-reportable.txt"):
     # only include genes with sufficient DDG2P status
     allowed = set(["Confirmed DD Gene", "Probable DD gene", "Both DD and IF"])
     
-    known_genes = {}
+    known = {}
     with io.open(path, "r", encoding="latin_1") as handle:
         # get the positions of the columns in the list of header labels
         columns = ["gene", "type", "mode", "mech", "start", "stop", "chr"]
@@ -106,27 +102,26 @@ def open_known_genes(path="DDGP-reportable.txt"):
         
         for line in handle:
             line = line.strip().split("\t")
-            gene = line[header["gene"]]
-            status = line[header["type"]]
-            inheritance = line[header["mode"]]
-            mechanism = line[header["mech"]]
+            symbol, gene = parse_gene_line(line, header)
             
-            # ignore genes with insufficient evidence
-            if status not in allowed:
+            if len(gene['status'] & allowed) == 0:
                 continue
             
-            if gene not in known_genes:
-                known_genes[gene] = {"inh": {}, "status": set()}
-            
-            if inheritance not in known_genes[gene]["inh"]:
-                known_genes[gene]["inh"][inheritance] = set()
-            
-            known_genes = add_gene_to_known_genes(line, header, known_genes)
+            if symbol not in known:
+                known[symbol] = gene
+            else:
+                for mode in gene['inh']:
+                    if mode not in known[symbol]['inh']:
+                        known[symbol]['inh'][mode] = set()
+                    known[symbol]['inh'][mode] |= gene['inh'][mode]
+                
+                # merge entries for genes with multiple modes or mechanisms
+                known[symbol]['status'] |= gene['status']
     
-    if len(known_genes) == 0:
+    if len(known) == 0:
         raise ValueError("No genes found in the file, check the line endings")
     
-    return known_genes
+    return known
 
 def create_person_ID_mapper(path):
     """creates a dictionary of IDs to map between different ID systems.
@@ -150,7 +145,7 @@ def create_person_ID_mapper(path):
             if ":mat" in line or ":pat" in line:
                 continue
             
-            line = line.split("\t")
+            line = line.strip().split("\t")
             person_id = line[0]
             alternate_id = line[1]
             
