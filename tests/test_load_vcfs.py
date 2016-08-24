@@ -36,12 +36,12 @@ from clinicalfilter.match_cnvs import MatchCNVs
 from clinicalfilter.load_vcfs import LoadVCFs
 from clinicalfilter.utils import open_vcf, get_vcf_header, exclude_header, \
     construct_variant, get_vcf_provenance
-from clinicalfilter.ped import Family
+from clinicalfilter.ped import Family, Person
 
 IS_PYTHON3 = sys.version_info.major == 3
 
 class TestLoadVCFsPy(unittest.TestCase):
-    """
+    """ test that the LoadVCFs methods work as expected
     """
     
     def setUp(self):
@@ -64,23 +64,48 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         shutil.rmtree(self.temp_dir)
     
+    def make_vcf_header(self):
+    
+        # generate a test VCF
+        lines = ['##fileformat=VCFv4.1\n',
+            "##fileDate=2014-01-01\n",
+            "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n",
+            '#CHROM\tPOS\t ID\tREF\t ALT\t QUAL\tFILTER\tINFO\tFORMAT\tsample\n']
+        
+        return lines
+    
+    def make_vcf_line(self, chrom=1, pos=1, ref='G', alts='T',
+            cq='missense_variant', extra=None):
+        ''' generate a VCF line suitable for the unit tests
+        
+        Args:
+            chrom: chromosome as string
+            pos: nucleotide position of the variant
+            ref: reference allele
+            alts: comma-separated alternate alleles
+            cq: vep consequence string. Can be '|' separated (for multiple
+                genes) and/or ',' separated (for multiple alt alleles).
+        
+        Returns:
+            string for VCF line
+        '''
+        
+        info = 'CQ={}'.format(cq)
+        if extra is not None:
+             info += ';' + extra
+        
+        return '{}\t{}\t.\t{}\t{}\t1000\tPASS\t{}\tGT:DP\t0/1:50\n'.format(chrom,
+            pos, ref, alts, info)
+    
     def make_minimal_vcf(self):
         """ construct the bare minimum of lines for a VCF file
         """
         
-        header = []
-        header.append("##fileformat=VCFv4.1\n")
-        header.append("##fileDate=2014-01-01\n")
-        header.append("##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n")
-        header.append("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsample_id\n")
-        
         variants = []
-        variants.append("1\t100\t.\tT\tA\t1000\tPASS\t.\tGT\t0/1\n")
-        variants.append("1\t200\t.\tT\tA\t1000\tPASS\t.\tGT\t0/1\n")
+        variants.append(self.make_vcf_line(pos=100))
+        variants.append(self.make_vcf_line(pos=200))
         
-        vcf = header + variants
-        
-        return vcf
+        return self.make_vcf_header() + variants
     
     def write_temp_vcf(self, path, vcf_data):
         """ writes data to a file
@@ -324,6 +349,37 @@ class TestLoadVCFsPy(unittest.TestCase):
         line = ["1", "300", ".", "T", "<DEL>", "1000", "PASS", "END=400", "GT", "0/1"]
         gender = "M"
         self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
+    
+    def test_open_individual(self):
+        ''' test that open_individual() works correctly
+        '''
+        
+        # missing individual returns empty list
+        self.assertEqual(self.vcf_loader.open_individual(None), [])
+        
+        vcf = self.make_vcf_header()
+        vcf.append(self.make_vcf_line(pos=1, extra='HGNC=TEST;MAX_AF=0.0001'))
+        vcf.append(self.make_vcf_line(pos=2, extra='HGNC=ATRX;MAX_AF=0.0001'))
+        
+        path = os.path.join(self.temp_dir, "temp.vcf")
+        self.write_temp_vcf(path, vcf)
+        
+        person = Person('sample', path, '2', 'F')
+        
+        var1 = SNV(chrom="1", position=1, id=".", ref="G", alts="T",
+            filter="PASS", info="CQ=missense_variant;HGNC=TEST;MAX_AF=0.0001",
+            format="DP:GT", sample="50:0/1", gender="female", mnv_code=None)
+        var2 = SNV(chrom="1", position=2, id=".", ref="G", alts="T",
+            filter="PASS", info="CQ=missense_variant;HGNC=ATRX;MAX_AF=0.0001",
+            format="DP:GT", sample="50:0/1", gender="female", mnv_code=None)
+        
+        self.assertEqual(self.vcf_loader.open_individual(person), [var2])
+        
+        # define a set of variants to automatically pass, and check that these
+        # variants pass.
+        self.vcf_loader.child_keys = set([('1', 1), ('1', 2)])
+        self.assertEqual(self.vcf_loader.open_individual(person,
+            child_variants=True), [var1, var2])
     
     def test_filter_de_novos(self):
         """ check that filter_de_novos() works correctly
