@@ -72,7 +72,13 @@ class Variant(Info):
         self.genotype = None
         if self.format is not None and self.gender is not None:
             self.set_genotype()
-        
+    
+    def __hash__(self):
+        return hash(str(self))
+    
+    def __eq__(self, other):
+        return hash(self) == hash(other)
+    
     def set_gender(self, gender):
         """ sets the gender of the individual for the variant
         """
