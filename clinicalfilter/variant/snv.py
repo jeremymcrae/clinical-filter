@@ -51,7 +51,7 @@ class SNV(Variant):
         
         info = None
         if self.info is not None:
-            info = ';'.join([ '{}={}'.format(x, self.info[x]) for x in self.info ])
+            info = ';'.join([ '{}={}'.format(x, self.info[x]) for x in sorted(self.info) ])
             info = '"{}"'.format(info)
         
         gender = self.gender
