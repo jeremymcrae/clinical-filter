@@ -187,6 +187,8 @@ class LoadVCFs(object):
                 var = construct_variant(line, gender, self.known_genes, mnvs)
                 self.add_single_variant(variants, var, gender, line)
         
+        vcf.close()
+        
         return variants
     
     def load_trio(self, family):
