@@ -135,6 +135,9 @@ def main():
     initial = initial[~initial['proband'].isnull()]
     current = current[~current['proband'].isnull()]
     
+    current = current[current['proband'].isin(initial['proband'])]
+    initial = initial[initial['proband'].isin(current['proband'])]
+    
     initial_only = get_difference(initial, current)
     current_only = get_difference(current, initial)
     
