@@ -163,15 +163,16 @@ class Report(object):
         
         # include an alternate ID for the affected child, if it exists
         alt_id = 'no_alternate_ID'
-        if self.ID_mapper is not None:
-            try:
-                alt_id = self.ID_mapper[self.family.child.get_id()]
-            except KeyError:
-                alt_id = 'no_alternate_ID'
+        if self.ID_mapper is not None and self.family.child.get_id() in self.ID_mapper:
+            alt_id = self.ID_mapper[self.family.child.get_id()]
         
         for var in sorted(variants):
             output_line = self._get_output_line(var, dad_aff, mom_aff, alt_id)
             self.output.write(output_line)
+        
+        # leave a gap between individuals, as per previous reporting system
+        if len(variants) > 0:
+            self.output.write("\n")
     
     def _get_provenance(self, provenance, member):
         """ gets the VCF filename, checksum and VCF date for family members
