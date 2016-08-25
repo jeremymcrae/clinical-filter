@@ -204,8 +204,8 @@ class TestAllosomalPy(unittest.TestCase):
         # check for biallelic inheritance
         self.assertEqual(self.inh.check_heterozygous("Hemizygous"), "single_variant")
         
-        with self.assertRaises(ValueError):
-            self.inh.check_heterozygous("X-linked over-dominance")
+        # check for X-linked over dominance
+        self.assertEqual(self.inh.check_heterozygous("X-linked over-dominance"), 'single_variant')
         
         for geno in ["102", "110", "112", "122"]:
             self.set_trio_genos(var, geno)
@@ -298,9 +298,8 @@ class TestAllosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.check_homozygous("X-linked dominant"), "nothing")
         self.assertEqual(self.inh.log_string, "variant not compatible with being causal")
         
-        # check that non-standard inheritance modes raise errors
-        with self.assertRaises(ValueError):
-            self.inh.check_homozygous("X-linked over-dominance")
+        # check that homozygous X-linked over-dominance doesn't pass
+        self.assertEqual(self.inh.check_homozygous("X-linked over-dominance"), 'nothing')
     
     def test_check_homozygous_female(self):
         """ test that check_homozygous() works correctly for females
