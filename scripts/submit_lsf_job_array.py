@@ -96,6 +96,9 @@ def check_for_singletons_missing_parents(family):
         else:
             parents.append(sample)
     
+    if len(children) == 0:
+        return False
+    
     # get the IDs for the mother and father (these are the same for all children
     # in the family).
     dad_id = children[0][2]
