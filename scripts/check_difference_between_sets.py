@@ -113,6 +113,10 @@ def get_difference(table_1, table_2):
     table1 = table_1.copy()
     table2 = table_2.copy()
     
+    # code the positions as integers (some floats can get in otherwise)
+    table1['position'] = table1['position'].astype(int)
+    table2['position'] = table2['position'].astype(int)
+    
     table1['key'] = table1["proband"] + '-' + table1["chrom"] + '-' + \
         table1['position'].map(str) + '-' + table1['sex']
     
@@ -123,10 +127,13 @@ def get_difference(table_1, table_2):
 
 def main():
     initial_path = os.path.join(HOME, "clinical_reporting.2016-08-24.unmodified.txt")
-    current_path = os.path.join(HOME, "clinical_reporting.2016-08-24.lower_maf.txt")
+    current_path = os.path.join(HOME, "clinical_reporting.2016-08-25.overdominance.txt")
     
     initial = pandas.read_table(initial_path)
     current = pandas.read_table(current_path)
+    
+    initial = initial[~initial['proband'].isnull()]
+    current = current[~current['proband'].isnull()]
     
     initial_only = get_difference(initial, current)
     current_only = get_difference(current, initial)
