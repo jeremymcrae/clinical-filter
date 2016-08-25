@@ -31,6 +31,7 @@ def get_options():
     
     parser = argparse.ArgumentParser(description="Submit analysis job for single individual")
     parser.add_argument('-i', '--individual', dest='proband_ID', required=True, help='ID of proband to be analysed')
+    parser.add_argument('--ped', default=ped_file, help='pedigree file to use')
     parser.add_argument('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
     parser.add_argument('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
     parser.add_argument('--debug-chrom', dest='debug_chrom', help='chromosome of variant to debug.')
@@ -92,7 +93,7 @@ def main():
     proband_ID = options.proband_ID
     logging_option = ["--log", options.loglevel]
     
-    new_ped = load_ped(ped_file, proband_ID, options.without_parents)
+    new_ped = load_ped(options.ped, proband_ID, options.without_parents)
     
     # remove the temp files from the previous run
     tmp_name = "tmp_run."
