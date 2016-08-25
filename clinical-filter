@@ -1,5 +1,5 @@
 #!/bin/bash
 
-export PYTHONPATH="src/main/python:src/test/python:$PYTHONPATH"
+export PYTHONPATH="clinicalfilter:$PYTHONPATH"
 
-python3 src/main/python/clinical_filter.py $@ 
+python3 bin/clinical_filter.py $@
