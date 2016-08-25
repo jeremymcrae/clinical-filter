@@ -131,7 +131,7 @@ class PostInheritanceFilter(object):
             else:
                 if max_maf <= 0.0005 and self.family.has_parents():
                     passed_vars.append((var, check, inh, hgnc))
-                elif max_maf <= 0.00005 and not self.family.has_parents():
+                elif max_maf <= 0.0001 and not self.family.has_parents():
                     passed_vars.append((var, check, inh, hgnc))
                 else:
                     log_str = "{}\t{} dropped from low MAF in non-biallelic " \
