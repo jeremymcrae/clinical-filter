@@ -171,8 +171,17 @@ class VariantInfo(object):
             # for the missing symbol positions, if the current list of symbols
             # contains a value, swap that value into the gene list.
             for x in blanks:
-                if symbols[x] != "":
-                    genes[x] = symbols[x]
+                try:
+                    if symbols[x] != "":
+                        genes[x] = symbols[x]
+                except IndexError as error:
+                    # very occasionally we get a variant that raises this error.
+                    # The one example I've seen had ENSR=,.|ENSR00000215586.
+                    # This is first split by ',' (giving ['', '.|ENSR00000215586']),
+                    # then an entry is selected and split by '|'. The issue is
+                    # that only the seond entry contains '|', so the lengths are
+                    # discrepant
+                    continue
         
         if genes is not None:
             genes = [ x if x not in ["", "."] else None for x in genes ]
