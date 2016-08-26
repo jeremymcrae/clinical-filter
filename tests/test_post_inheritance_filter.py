@@ -49,7 +49,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         self.post_filter = PostInheritanceFilter(variants, family)
         
-    def create_var(self, chrom, snv=True, geno=["0/1", "0/1", "0/1"]):
+    def create_var(self, chrom, snv=True, geno=["0/1", "0/1", "0/1"], info=None, **kwargs):
         """ define a family and variant, and start the Inheritance class
         
         Args:
@@ -59,13 +59,13 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # generate a test variant
         if snv:
-            child_var = self.create_snv(chrom, geno[0])
-            mom_var = self.create_snv(chrom, geno[1])
-            dad_var = self.create_snv(chrom, geno[2])
+            child_var = self.create_snv(chrom, geno[0], info, **kwargs)
+            mom_var = self.create_snv(chrom, geno[1], info, **kwargs)
+            dad_var = self.create_snv(chrom, geno[2], info, **kwargs)
         else:
-            child_var = self.create_cnv(chrom)
-            mom_var = self.create_cnv(chrom)
-            dad_var = self.create_cnv(chrom)
+            child_var = self.create_cnv(chrom, info, **kwargs)
+            mom_var = self.create_cnv(chrom, info, **kwargs)
+            dad_var = self.create_cnv(chrom, info, **kwargs)
         
         var = TrioGenotypes()
         var.add_child(child_var)
@@ -74,32 +74,36 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         return var
     
-    def create_snv(self, chrom, geno="0/1", pos='15000000', snp_id='.', ref='A',
-            alt='G', filt='PASS'):
+    def create_snv(self, chrom, geno="0/1", info=None, pos='15000000',
+            snp_id='.', ref='A', alt='G', filt='PASS', **kwargs):
         
-        var = SNV(chrom, pos, snp_id, ref, alt, filt)
+        var = SNV(chrom, pos, snp_id, ref, alt, filt, **kwargs)
         
-        info = "HGNC=ATRX;CQ=missense_variant;random_tag;AF_AFR=0.0001"
+        if info is None:
+            info = "HGNC=ATRX;CQ=missense_variant;random_tag;AF_AFR=0.0001"
+        
         keys = "GT:DP:TEAM29_FILTER:PP_DNM"
         values = "{0}:50:PASS:0.99".format(geno)
         
-        return self.add_info(var, info, keys, values)
+        return self.build_var(var, info, keys, values)
     
-    def create_cnv(self, chrom, pos='15000000', snp_id='.', ref='A',
-            alt='<DUP>', filt='PASS'):
+    def create_cnv(self, chrom, info=None, pos='15000000', snp_id='.', ref='A',
+            alt='<DUP>', filt='PASS', **kwargs):
         
-        var = CNV(chrom, pos, snp_id, ref, alt, filt)
+        var = CNV(chrom, pos, snp_id, ref, alt, filt, **kwargs)
         
-        info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;CNSOLIDATE;' \
-            'WSCORE=0.5;CALLP=0.000;COMMONFORWARDS=0.000;MEANLR2=0.5;' \
-            'MADL2R=0.02;END=16000000;SVLEN=1000000"
+        if info is None:
+            info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;CNSOLIDATE;' \
+                'WSCORE=0.5;CALLP=0.000;COMMONFORWARDS=0.000;MEANLR2=0.5;' \
+                'MADL2R=0.02;END=16000000;SVLEN=1000000"
+        
         keys = "inheritance:DP"
         values = "deNovo:50"
         
-        return self.add_info(var, info, keys, values)
+        return self.build_var(var, info, keys, values)
     
-    def add_info(self, var, info, keys, values):
-        ''' quickly add the info and format values to a variant
+    def build_var(self, var, info, keys, values):
+        ''' add info and format values to a variant
         '''
         
         var.add_info(info)
@@ -116,15 +120,18 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         the called functions are themselves tested elsewhere
         """
         
-        variants = [(self.create_var("1", snv=False), ["single_variant"], ["Biallelic"], ["ATRX"])]
-        variants.append((self.create_var("2", snv=False), ["single_variant"], ["Biallelic"], ["ATRX"]))
+        variants = [(self.create_var("1", snv=False), ["single_variant"],
+            ["Biallelic"], ["ATRX"])]
+        variants.append((self.create_var("2", snv=False), ["single_variant"],
+            ["Biallelic"], ["ATRX"]))
         
         # check that if we have CNVs on two chroms pass the filter
-        # self.post_filter.variants = variants
-        # self.assertEqual(self.post_filter.filter_variants(), variants)
+        self.post_filter.variants = variants
+        self.assertEqual(self.post_filter.filter_variants(), variants)
         
         # check that CNVs on three different chroms get filtered out
-        variants.append((self.create_var("3", snv=False), ["single_variant"], ["Biallelic"], ["ATRX"]))
+        variants.append((self.create_var("3", snv=False), ["single_variant"],
+            ["Biallelic"], ["ATRX"]))
         self.post_filter.variants = variants
         self.assertEqual(self.post_filter.filter_variants(), [])
     
@@ -232,54 +239,80 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         """ test that get_polyphen_for_genes works correctly
         """
         
-        snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"])
-        snv_1.child.genes = ["ATRX", "TEST"]
-        snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)|benign(0.01)"
+        var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
+            info='HGNC=ATRX|TEST;PolyPhen=probably_damaging(0.99)|benign(0.01)')
         
         # pulling the prediction for a single gene gets the correct prediction
-        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["ATRX"]),
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["ATRX"]),
             ["probably_damaging"])
         # pulling the prediction for a different gene gets the correct prediction
-        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["TEST"]),
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["TEST"]),
             ["benign"])
         # pulling the prediction for multiple genes gets the correct predictions
-        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["TEST", "ATRX"]),
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["TEST", "ATRX"]),
             ["probably_damaging", "benign"])
         # the genes order doesn't affect the polyphen prediction order
-        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["ATRX", "TEST"]),
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["ATRX", "TEST"]),
             ["probably_damaging", "benign"])
         
         # check that only having one polyphen prediction works corectly
-        snv_1.child.genes = ["ATRX"]
-        snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)"
+        var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
+            info='HGNC=ATRX;PolyPhen=probably_damaging(0.99)')
         # extracting the polyphen works as expected
-        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["ATRX"]),
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["ATRX"]),
             ["probably_damaging"])
         # predcitions for a nonexistent gene should return a blank list
-        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["TEST"]),
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["TEST"]),
             [])
         
         # expect a blank list if the variant lacks a polyphen prediction
-        del snv_1.child.info["PolyPhen"]
-        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["ATRX"]),
+        var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
+            info='HGNC=ATRX')
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["ATRX"]),
             [])
         
         # gene symbols of None shouldn't break the code.
-        snv_1.child.genes = [None, "TEST"]
-        snv_1.child.info["PolyPhen"] = "probably_damaging(0.99)|benign(0.01)"
-        self.assertEqual(self.post_filter.get_polyphen_for_genes(snv_1, ["TEST"]),
+        var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
+            info='HGNC=.|TEST;PolyPhen=probably_damaging(0.99)|benign(0.01)')
+        var.child.genes = [None, "TEST"]
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["TEST"]),
             ["benign"])
+    
+    def test_get_polyphen_for_genes_with_mnv(self):
+        ''' test that get_polyphen_for_genes() works when variants are MNVs
+        '''
+        
+        # a non-MNV variant returns 'benign'
+        var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
+            info='HGNC=TEST;PolyPhen=benign(0.01)')
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["TEST"]),
+            ["benign"])
+        
+        unmodified = ['unmodified_synonymous_mnv' 'unmodified_protein_altering_mnv']
+        modified = ['modified_protein_altering_mnv', 'modified_synonymous_mnv',
+            'modified_stop_gained_mnv', 'masked_stop_gain_mnv', 'alternate_residue_mnv']
+        
+        # variants with an altering MNV code returns a 'MNV' code
+        for code in modified:
+            var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
+                info='HGNC=TEST;PolyPhen=benign(0.01)', mnv_code=code)
+            self.assertEqual(self.post_filter.get_polyphen_for_genes(var,
+                ["TEST"]), ["mnv_candidate"])
+        
+        # a variant with a MNV code returns 'benign'
+        for code in unmodified:
+            var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
+                info='HGNC=TEST;PolyPhen=benign(0.01)', mnv_code=code)
+            self.assertEqual(self.post_filter.get_polyphen_for_genes(var,
+                ["TEST"]), ["benign"])
     
     def test_filter_polyphen(self):
         """ check that filter_polyphen() works correctly
         """
         
-        snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"])
-        snv_2 = self.create_var("1", snv=True, geno=["0/1", "1/0", "0/1"])
-        snv_3 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/0"])
-        snv_1.position = 1000
-        snv_2.position = 2000
-        snv_3.position = 3000
+        snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"], pos=1000)
+        snv_2 = self.create_var("1", snv=True, geno=["0/1", "1/0", "0/1"], pos=2000)
+        snv_3 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/0"], pos=3000)
         
         variants = [(snv_1, ["single_variant"], ["Biallelic"], ["ATRX"]), \
             (snv_2, ["single_variant"], ["Biallelic"], ["ATRX"])]
@@ -346,12 +379,9 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         """ check that has_compound_match() works correctly
         """
         
-        snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"])
-        snv_2 = self.create_var("1", snv=True, geno=["0/1", "1/0", "0/1"])
-        snv_3 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/0"])
-        snv_1.position = 1000
-        snv_2.position = 2000
-        snv_3.position = 3000
+        snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"], pos=1000)
+        snv_2 = self.create_var("1", snv=True, geno=["0/1", "1/0", "0/1"], pos=2000)
+        snv_3 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/0"], pos=3000)
         
         variants = [(snv_1, ["compound_het"], ["Biallelic"], ["ATRX"]), \
             (snv_2, ["compound_het"], ["Biallelic"], ["ATRX"])]
