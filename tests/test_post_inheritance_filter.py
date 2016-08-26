@@ -425,10 +425,8 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         """ check that has_compound_match() works correctly without parents
         """
         
-        snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"])
-        snv_2 = self.create_var("1", snv=True, geno=["0/1", "1/0", "0/1"])
-        snv_1.position = 1000
-        snv_2.position = 2000
+        snv_1 = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"], pos=1000)
+        snv_2 = self.create_var("1", snv=True, geno=["0/1", "1/0", "0/1"], pos=2000)
         
         snv_1.mother = None
         snv_1.father = None
