@@ -44,6 +44,14 @@ class TestLoadVCFsPy(unittest.TestCase):
     """ test that the LoadVCFs methods work as expected
     """
     
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = tempfile.mkdtemp()
+    
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.temp_dir)
+    
     def setUp(self):
         """ define a default LoadVCFs object
         """
@@ -54,15 +62,6 @@ class TestLoadVCFsPy(unittest.TestCase):
             "confirmed_status": {"Confirmed DD Gene"}, "end": 20000000}}
         
         self.vcf_loader = LoadVCFs(total_trios, self.known_genes, set(), None, None, )
-        
-        # make a temp directory for the cache file
-        self.temp_dir = tempfile.mkdtemp()
-    
-    def tearDown(self):
-        """ remove the temp directory once a test completes
-        """
-        
-        shutil.rmtree(self.temp_dir)
     
     def make_vcf_header(self):
     
