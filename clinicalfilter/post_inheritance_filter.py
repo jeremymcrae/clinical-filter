@@ -161,7 +161,7 @@ class PostInheritanceFilter(object):
         
         mnv_code = var.child.mnv_code
         if mnv_code is not None and not mnv_code.startswith('unmodified'):
-            return 'mnv_candidate'
+            return ['mnv_candidate']
         
         # find the HGNC symbol positions in the partner variant that match the
         # HGNC symbols
