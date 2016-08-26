@@ -31,7 +31,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
     """
     
     def setUp(self):
-        """ define a default VcfInfo object
+        """ define a default variant object
         """
         
         family = Family("FamID")
@@ -74,48 +74,37 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         return var
     
-    def create_snv(self, chrom, geno="0/1"):
-        """ create a default variant
-        """
+    def create_snv(self, chrom, geno="0/1", pos='15000000', snp_id='.', ref='A',
+            alt='G', filt='PASS'):
         
-        pos = "15000000"
-        snp_id = "."
-        ref = "A"
-        alt = "G"
-        filt = "PASS"
-        
-        # set up a SNV object, since SNV inherits VcfInfo
         var = SNV(chrom, pos, snp_id, ref, alt, filt)
         
-        default_info = "HGNC=ATRX;CQ=missense_variant;random_tag;AF_AFR=0.0001"
+        info = "HGNC=ATRX;CQ=missense_variant;random_tag;AF_AFR=0.0001"
         keys = "GT:DP:TEAM29_FILTER:PP_DNM"
         values = "{0}:50:PASS:0.99".format(geno)
         
-        var.add_info(default_info)
-        var.add_format(keys, values)
-        var.set_gender("male")
-        var.set_genotype()
-        
-        return var
+        return self.add_info(var, info, keys, values)
     
-    def create_cnv(self, chrom):
+    def create_cnv(self, chrom, pos='15000000', snp_id='.', ref='A',
+            alt='<DUP>', filt='PASS'):
         
-        pos = "15000000"
-        snp_id = "."
-        ref = "A"
-        alt = "<DUP>"
-        filt = "PASS"
-        
-        # set up a SNV object, since SNV inherits VcfInfo
         var = CNV(chrom, pos, snp_id, ref, alt, filt)
         
-        info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;CNSOLIDATE;WSCORE=0.5;CALLP=0.000;COMMONFORWARDS=0.000;MEANLR2=0.5;MADL2R=0.02;END=16000000;SVLEN=1000000"
-        format_keys = "inheritance:DP"
-        sample_values = "deNovo:50"
+        info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;CNSOLIDATE;' \
+            'WSCORE=0.5;CALLP=0.000;COMMONFORWARDS=0.000;MEANLR2=0.5;' \
+            'MADL2R=0.02;END=16000000;SVLEN=1000000"
+        keys = "inheritance:DP"
+        values = "deNovo:50"
+        
+        return self.add_info(var, info, keys, values)
+    
+    def add_info(self, var, info, keys, values):
+        ''' quickly add the info and format values to a variant
+        '''
         
         var.add_info(info)
-        var.add_format(format_keys, sample_values)
-        var.set_gender("F")
+        var.add_format(keys, values)
+        var.set_gender("male")
         var.set_genotype()
         
         return var
