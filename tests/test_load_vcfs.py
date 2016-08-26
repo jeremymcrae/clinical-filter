@@ -430,11 +430,15 @@ class TestLoadVCFsPy(unittest.TestCase):
         """ test whether we can set up the class with the debug option
         """
         
-        counter = 0
         total_trios = 1
         known_genes = {}
         
-        self.vcf_loader = LoadVCFs(total_trios, known_genes, set(), "1", "10000")
+        # if the debug info isn't available, then the SNV object doesn't use the
+        # debug filter function
+        self.vcf_loader = LoadVCFs(total_trios, known_genes, set(), None, None)
+        self.assertNotEqual(SNV.passes_filters, SNV.passes_filters_with_debug)
         
-        # check that the debug filter function got set correctly
+        # if the debug info is passed in, check that the debug filter function
+        # got set correctly
+        self.vcf_loader = LoadVCFs(total_trios, known_genes, set(), "1", "10000")
         self.assertEqual(SNV.passes_filters, SNV.passes_filters_with_debug)
