@@ -3,7 +3,7 @@ python:
   - 3.3
   - 2.7
 before_install:
- - sudo apt-get install tabix
+ - sudo apt-get -qq update
  - sudo apt-get install -y tabix
 install:
  - pip install coveralls
