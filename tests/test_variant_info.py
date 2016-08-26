@@ -38,21 +38,17 @@ class TestVariantInfoPy(unittest.TestCase):
         alt = "G"
         filt = "PASS"
         
-        # set up a SNV object, since SNV inherits VcfInfo
-        self.var = SNV(chrom, pos, snp_id, ref, alt, filt)
-        self.var.debug_chrom = "1"
-        self.var.debug_pos = 15000000
-        
-        self.default_info = "HGNC=ATRX;CQ=missense_variant;random_tag"
-        
         # here are the default filtering criteria, as loaded into python
-        known_genes = {"ATRX": {"inheritance": {"Hemizygous": \
+        known = {"ATRX": {"inheritance": {"Hemizygous": \
             {"Loss of function"}}, "start": "10000000", "chrom": "1", \
             "confirmed_status": {"Confirmed DD Gene"}, "end": "20000000"}}
         
-        self.var.known_genes = known_genes
+        SNV.set_debug('1', 15000000)
+        SNV.set_known_genes(known)
         
-        self.var.add_info(self.default_info)
+        # set up a SNV object, since SNV inherits Info
+        info = "HGNC=ATRX;CQ=missense_variant;random_tag"
+        self.var = SNV(chrom, pos, snp_id, ref, alt, filt, info=info)
     
     def test_set_consequence(self):
         """ test that set_consequence works correctly
