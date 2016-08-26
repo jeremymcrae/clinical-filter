@@ -308,9 +308,3 @@ class TestVariantInfoPy(unittest.TestCase):
         for pop in pops:
             self.var.info[pop] = "0.05"
             self.assertEqual(self.var.find_max_allele_frequency(), 0.05)
-    
-    
-
-
-if __name__ == '__main__':
-    unittest.main()
