@@ -24,6 +24,7 @@ import gzip
 import os
 import sys
 import io
+import copy
 import shutil
 import tempfile
 import random
@@ -383,6 +384,76 @@ class TestLoadVCFsPy(unittest.TestCase):
         self.vcf_loader.child_keys = set([('1', 1), ('1', 2)])
         self.assertEqual(self.vcf_loader.open_individual(person,
             child_variants=True), [var1, var2])
+    
+    def test_open_individual_with_mnvs(self):
+        ''' test that open_individual works with MNVs
+        '''
+        
+        vcf = self.make_vcf_header()
+        vcf.append(self.make_vcf_line(pos=1, cq='splice_region_variant',
+            extra='HGNC=ATRX;MAX_AF=0.0001'))
+        vcf.append(self.make_vcf_line(pos=2, cq='missense_variant',
+            extra='HGNC=ATRX;MAX_AF=0.0001'))
+        
+        path = os.path.join(self.temp_dir, "temp.vcf.gz")
+        self.write_gzipped_vcf(path, vcf)
+        
+        person = Person('sample', path, '2', 'F')
+        
+        args = {'chrom': "1", 'position': 1, 'id': ".", 'ref': "G", 'alts': "T",
+            'filter': "PASS", 'info': "CQ=splice_region_variant;HGNC=ATRX;MAX_AF=0.0001",
+            'format': "DP:GT", 'sample': "50:0/1", 'gender': "female",
+            'mnv_code': 'modified_protein_altering_mnv'}
+        var1 = SNV(**args)
+        
+        args['position'] = 2
+        args['mnv_code'] = None
+        args['info'] = "CQ=missense_variant;HGNC=ATRX;MAX_AF=0.0001"
+        var2 = SNV(**args)
+        
+        # by default only one variant passes
+        self.assertEqual(self.vcf_loader.open_individual(person), [var2])
+        
+        # if we include MNVs, then the passing variants swap
+        self.assertEqual(self.vcf_loader.open_individual(person,
+            mnvs={('1', 1): 'modified_protein_altering_mnv',
+            ('1', 2): 'modified_synonymous_mnv'}), [var1])
+    
+    def test_load_trio(self):
+        ''' test that load_trio() works correctly
+        '''
+        
+        def make_vcf(person):
+            # make a VCF, where one line would pass the default filtering
+            vcf = self.make_vcf_header()
+            vcf.append(self.make_vcf_line(pos=1, extra='HGNC=TEST;MAX_AF=0.0001'))
+            vcf.append(self.make_vcf_line(pos=2, extra='HGNC=ATRX;MAX_AF=0.0001'))
+            
+            path = os.path.join(self.temp_dir, "{}.vcf.gz".format(person))
+            self.write_gzipped_vcf(path, vcf)
+            return path
+        
+        child_path = make_vcf('child')
+        mother_path = make_vcf('mother')
+        father_path = make_vcf('father')
+        
+        family = Family('fam_id')
+        family.add_child('child_id', child_path, '2', 'female')
+        family.add_mother('mother_id', mother_path, '1', 'female')
+        family.add_father('father_id', father_path, '1', 'male')
+        family.set_child()
+        
+        # define the parameters and values for the SNV class
+        args = {'chrom': "1", 'position': 2, 'id': ".", 'ref': "G", 'alts': "T",
+            'filter': "PASS", 'info': "CQ=missense_variant;HGNC=ATRX;MAX_AF=0.0001",
+            'format': "DP:GT", 'sample': "50:0/1", 'gender': "female",
+            'mnv_code': None}
+        dad_args = copy.deepcopy(args)
+        dad_args['gender'] = 'male'
+        
+        self.assertEqual(self.vcf_loader.load_trio(family),
+            [TrioGenotypes(chrom="1", pos=2, child=SNV(**args),
+                mother=SNV(**args), father=SNV(**dad_args)) ])
     
     def test_filter_de_novos(self):
         """ check that filter_de_novos() works correctly
