@@ -74,7 +74,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         return lines
     
     def make_vcf_line(self, chrom=1, pos=1, ref='G', alts='T',
-            cq='missense_variant', extra=None):
+            cq='missense_variant', genotype='0/1', extra=None):
         ''' generate a VCF line suitable for the unit tests
         
         Args:
@@ -93,8 +93,8 @@ class TestLoadVCFsPy(unittest.TestCase):
         if extra is not None:
              info += ';' + extra
         
-        return '{}\t{}\t.\t{}\t{}\t1000\tPASS\t{}\tGT:DP\t0/1:50\n'.format(chrom,
-            pos, ref, alts, info)
+        return '{}\t{}\t.\t{}\t{}\t1000\tPASS\t{}\tGT:DP\t{}:50\n'.format(chrom,
+            pos, ref, alts, info, genotype)
     
     def make_minimal_vcf(self):
         """ construct the bare minimum of lines for a VCF file
