@@ -28,6 +28,7 @@ import shutil
 import tempfile
 import random
 import hashlib
+import subprocess
 
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.variant.cnv import CNV
@@ -111,18 +112,21 @@ class TestLoadVCFsPy(unittest.TestCase):
         """
         
         with open(path, 'w') as handle:
-            handle.write("".join(vcf_data))
+            handle.writelines(vcf_data)
     
-    def write_gzipped_vcf(self, path, vcf_data):
-        """ writes data to a gzip file
-        """
-        
-        mode = 'wb'
-        if IS_PYTHON3:
-            mode = 'wt'
-        
-        with gzip.open(path, mode) as handle:
-            handle.write("".join(vcf_data))
+    def write_gzipped_vcf(self, path, lines):
+        ''' write, compress, and index lines for a VCF
+        '''
+    
+        with tempfile.NamedTemporaryFile(dir=self.temp_dir) as handle:
+            for x in lines:
+                handle.write(x.encode('utf8'))
+            handle.flush()
+    
+            # assume bgzip and tabix binaries are available, this should be
+            # handled by travis-ci setup.
+            subprocess.call(['bgzip', '-c', handle.name], stdout=open(path, 'w'))
+            subprocess.call(['tabix', '-f', '-p', 'vcf', path])
     
     def test_open_vcf(self):
         """ test obtaining a file handle for the VCF
