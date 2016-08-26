@@ -308,7 +308,6 @@ class TestAllosomalPy(unittest.TestCase):
         # check we raise errors with unknown inheritance modes
         with self.assertRaises(ValueError):
             self.inh.check_homozygous("Digenic")
-            
     
     def test_check_homozygous_female(self):
         """ test that check_homozygous() works correctly for females
