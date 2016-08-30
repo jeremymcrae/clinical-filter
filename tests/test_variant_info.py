@@ -135,6 +135,10 @@ class TestVariantInfoPy(unittest.TestCase):
         self.var.info['HGNC'] = 'ATRX'
         self.assertEqual(self.var.get_genes_for_allele(0), ['ATRX'])
         
+        # check simple case with missing symbols
+        self.var.info['HGNC'] = '.'
+        self.assertEqual(self.var.get_genes_for_allele(0), [None])
+        
         # check with multiple HGNC symbols
         self.var.info['HGNC'] = 'ATRX|TEST'
         self.assertEqual(self.var.get_genes_for_allele(0), ['ATRX', 'TEST'])
@@ -172,10 +176,10 @@ class TestVariantInfoPy(unittest.TestCase):
         self.assertEqual(self.var.get_genes_for_allele(0), ['TEST'])
         
         # check that we avoid an error if the fields are not the same lengths
-        self.var.info['HGNC'] = 'TEST|TEST2'
+        self.var.info['HGNC'] = 'TEST|.'
         self.var.info['ENSR'] = 'TEST'
         del self.var.info['SYMBOL']
-        self.assertEqual(self.var.get_genes_for_allele(0), ['TEST', 'TEST2'])
+        self.assertEqual(self.var.get_genes_for_allele(0), ['TEST', None])
     
     def test_is_lof(self):
         """ test that is_lof() works correctly
