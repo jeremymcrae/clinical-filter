@@ -188,8 +188,6 @@ class TestVariantInfoPy(unittest.TestCase):
         
         self.var.mnv_code = 'modified_protein_altering_mnv'
         self.assertTrue(self.var.is_missense("TTN"))
-        
-        raise NotImplementedError
     
     def test_correct_multiple_alt(self):
         """ test that correct_multiple_alt works correctly
