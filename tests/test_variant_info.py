@@ -152,6 +152,13 @@ class TestVariantInfoPy(unittest.TestCase):
         with self.assertRaises(IndexError):
             self.var.get_genes_for_allele(5)
     
+    def test_get_genes_for_allele_missing_symbols(self):
+        ''' check that get_genes_for_allele() works when we lack any symbols
+        '''
+        
+        del self.var.info['HGNC']
+        self.assertEqual(self.var.get_genes_for_allele(0), None)
+        
     def test_get_genes_for_allele_priority(self):
         ''' check that get_genes_for_allele() prioritises symbols correctly
         '''
