@@ -316,6 +316,9 @@ class TestVariantInfoPy(unittest.TestCase):
         
         # multiple string values return None
         self.assertEqual(self.var.get_allele_frequency("a,b"), None)
+        
+        # multiple string values return None
+        self.assertEqual(self.var.get_allele_frequency(None), None)
     
     def test_is_number(self):
         """ tests that we can check if a value represents a number
@@ -346,3 +349,7 @@ class TestVariantInfoPy(unittest.TestCase):
         for pop in pops:
             self.var.info[pop] = "0.05"
             self.assertEqual(self.var.find_max_allele_frequency(), 0.05)
+        
+        # make sure we can handle having None values
+        self.var.info["AFR_AF"] = None
+        self.assertEqual(self.var.find_max_allele_frequency(), 0.05)
