@@ -34,10 +34,12 @@ def get_options():
     parser.add_argument('--ped', default=ped_file, help='pedigree file to use')
     parser.add_argument('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
     parser.add_argument('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
-    parser.add_argument('--debug-chrom', dest='debug_chrom', help='chromosome of variant to debug.')
-    parser.add_argument('--debug-pos', dest='debug_pos', help='position of variant to debug.')
+    parser.add_argument('--debug-chrom', help='chromosome of variant to debug.')
+    parser.add_argument('--debug-pos', help='position of variant to debug.')
     parser.add_argument('--without-parents', default=False, action="store_true",
         help='whether to remove the parents for a proband only-analysis.')
+    parser.add_argument("--tweak-lof", default=False,
+        action="store_true", help="whether to use the last base of exon rule.")
     
     args = parser.parse_args()
     
@@ -117,8 +119,10 @@ def main():
         "--alternate-ids", alternate_ids, \
         "--output", random_filename + ".output.txt", \
         "--export-vcf", os.getcwd(), \
-        "--syndrome-regions", syndrome_regions_filename,
-        "--lof-sites", LAST_BASE_PATH] + logging_option
+        "--syndrome-regions", syndrome_regions_filename] + logging_option
+    
+    if options.tweak_lof:
+        filter_command += ["--lof-sites", LAST_BASE_PATH]
     
     if not options.all_genes:
         filter_command += ["--known-genes", known_genes]
