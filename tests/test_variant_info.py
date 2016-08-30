@@ -127,6 +127,56 @@ class TestVariantInfoPy(unittest.TestCase):
         self.var.set_gene_from_info()
         self.assertEqual(self.var.genes, ["1:15000000"])
     
+    def test_get_genes_for_allele(self):
+        ''' check that get_genes_for_allele() works correctly
+        '''
+        
+        # check simple case with single HGNC symbol
+        self.var.info['HGNC'] = 'ATRX'
+        self.assertEqual(self.var.get_genes_for_allele(0), ['ATRX'])
+        
+        # check with multiple HGNC symbols
+        self.var.info['HGNC'] = 'ATRX|TEST'
+        self.assertEqual(self.var.get_genes_for_allele(0), ['ATRX', 'TEST'])
+        
+        # check with multiple HGNC symbols, across multiple alleles
+        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|TEST'
+        self.assertEqual(self.var.get_genes_for_allele(1), ['ATRX', 'TEST'])
+        
+        # check that we raise an error if we try to select a gene symbol for an
+        # allele that does not exist
+        with self.assertRaises(IndexError):
+            self.var.get_genes_for_allele(5)
+    
+    def test_get_genes_for_allele_priority(self):
+        ''' check that get_genes_for_allele() prioritises symbols correctly
+        '''
+        
+        # check alternate gene symbols, first when the HGNC field is full
+        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|TEST'
+        self.var.info['SYMBOL'] = 'AAAA|BBBB,ATRX|CHANGED'
+        self.assertEqual(self.var.get_genes_for_allele(1), ['ATRX', 'TEST'])
+        
+        # now give one of the HGNC symbols a missing code, so that the gene
+        # symbol has to be filled in from another source
+        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|.'
+        self.assertEqual(self.var.get_genes_for_allele(1), ['ATRX', 'CHANGED'])
+        
+        # and catch the other 'missing' code
+        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|'
+        self.assertEqual(self.var.get_genes_for_allele(1), ['ATRX', 'CHANGED'])
+        
+        # check without the HGNC symbol field
+        del self.var.info['HGNC']
+        self.var.info['SYMBOL'] = 'TEST'
+        self.assertEqual(self.var.get_genes_for_allele(0), ['TEST'])
+        
+        # check that we avoid an error if the fields are not the same lengths
+        self.var.info['HGNC'] = 'TEST|TEST2'
+        self.var.info['ENSR'] = 'TEST'
+        del self.var.info['SYMBOL']
+        self.assertEqual(self.var.get_genes_for_allele(0), ['TEST', 'TEST2'])
+    
     def test_is_lof(self):
         """ test that is_lof() works correctly
         """
