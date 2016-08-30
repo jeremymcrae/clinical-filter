@@ -232,6 +232,22 @@ class TestVariantInfoPy(unittest.TestCase):
         self.assertEqual(self.var.correct_multiple_alt(cq),
             (['stop_gained', 'splice_acceptor_variant'], [], None))
     
+    def test_correct_multiple_alt_enst(self):
+        ''' check the impact of correcting multiple alt cq on ENST values
+        '''
+        
+        # define the number of alleles and consequences for multiple alleles
+        self.var.info["AC"] = "1,1"
+        cq = ["missense_variant,splice_acceptor_variant"]
+        
+        # check with alts that fall in one gene
+        self.var.info["HGNC"] = "ATRX,ATRX"
+        self.var.info["ENST"] = "ENST100,ENST200"
+        self.var.set_gene_from_info()
+        
+        self.assertEqual(self.var.correct_multiple_alt(cq),
+            (['splice_acceptor_variant'], ['ATRX'], 'ENST100'))
+    
     def test_get_most_severe_consequence(self):
         """ test that get_most_severe_consequence works correctly
         """
