@@ -392,7 +392,7 @@ class Info(object):
         
         if self.mnv_code is not None:
             if self.mnv_code == 'masked_stop_gain_mnv':
-                cq = [ x for x in cq if cq != 'stop_gained' ]
+                cq = [ x for x in cq if x != 'stop_gained' ]
             elif self.mnv_code == 'modified_stop_gained_mnv':
                 cq.append('stop_gained')
         
