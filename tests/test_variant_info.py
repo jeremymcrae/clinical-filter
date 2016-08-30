@@ -150,6 +150,46 @@ class TestVariantInfoPy(unittest.TestCase):
         self.assertTrue(self.var.is_lof())
         self.assertTrue(self.var.is_lof("ATRX"))
         self.assertFalse(self.var.is_lof("TTN"))
+        
+        # check that when we have a MNV, we can lose or gain a LOF annotation
+        self.var.mnv_code = 'masked_stop_gain_mnv'
+        self.assertFalse(self.var.is_lof("ATRX"))
+        
+        self.var.mnv_code = 'modified_stop_gained_mnv'
+        self.assertTrue(self.var.is_lof("TTN"))
+    
+    def test_is_missense(self):
+        """ test that is_missense() works correctly
+        """
+        
+        # check that known missense equivalent consequence return True
+        self.var.consequence = ["missense_variant"]
+        self.assertTrue(self.var.is_missense())
+        
+        # check that known LoF equivalent consequence returns False
+        self.var.consequence = ["stop_gained"]
+        self.assertFalse(self.var.is_missense())
+        
+        # check that null values return False
+        self.var.consequence = None
+        self.assertFalse(self.var.is_missense())
+        
+        # check when the variant overlaps multiple genes (so has multiple
+        # gene symbols and consequences).
+        self.var.consequence = ["missense_variant", "synonymous_variant"]
+        self.var.genes = ["ATRX", "TTN"]
+        self.assertTrue(self.var.is_missense())
+        self.assertTrue(self.var.is_missense("ATRX"))
+        self.assertFalse(self.var.is_missense("TTN"))
+        
+        # check that when we have a MNV, we can lose or gain a LOF annotation
+        self.var.mnv_code = 'modified_synonymous_mnv'
+        self.assertFalse(self.var.is_missense("ATRX"))
+        
+        self.var.mnv_code = 'modified_protein_altering_mnv'
+        self.assertTrue(self.var.is_missense("TTN"))
+        
+        raise NotImplementedError
     
     def test_correct_multiple_alt(self):
         """ test that correct_multiple_alt works correctly
