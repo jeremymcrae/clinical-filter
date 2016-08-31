@@ -254,6 +254,8 @@ class TestVariantInfoPy(unittest.TestCase):
         """ test that correct_multiple_alt works correctly
         """
         
+        self.var.alt_alleles = ('A', 'G')
+        
         # define the number of alleles and consequences for multiple alleles
         self.var.info["AC"] = "1,1"
         cq = ["missense_variant,splice_acceptor_variant"]
@@ -298,6 +300,7 @@ class TestVariantInfoPy(unittest.TestCase):
         '''
         
         # define the number of alleles and consequences for multiple alleles
+        self.var.alt_alleles = ('A', 'G')
         self.var.info["AC"] = "1,1"
         cq = ["missense_variant,splice_acceptor_variant"]
         

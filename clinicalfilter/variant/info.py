@@ -122,14 +122,8 @@ class Info(object):
         self.genes = None
         
         if "HGNC" in self.info or "SYMBOL" in self.info:
-            try:
-                gene_num = len(self.info["HGNC"].split(","))
-            except KeyError:
-                gene_num = len(self.info["SYMBOL"].split(","))
-            
-            self.genes = []
-            for pos in range(gene_num):
-                self.genes.append(self.get_genes_for_allele(pos))
+            num = len(self.alt_alleles)
+            self.genes = [ self.get_genes_for_allele(x) for x in range(num) ]
             
             # pull out the gene list for single allele variants
             if len(self.genes) == 1:
