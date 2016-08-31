@@ -38,6 +38,11 @@ class Person(object):
         # set a flag so we can check whether the child has been analysed
         self.analysed = False
     
+    def __repr__(self):
+        return 'Person(person_id="{}", vcf_path="{}", affected_status="{}", ' \
+            'gender="{}")'.format(self.get_id(), self.get_path(),
+            self.get_affected_status(), self.get_gender())
+    
     def get_id(self):
         """returns the ID for a person.
         """
@@ -134,14 +139,22 @@ class Family(object):
     """creates a family, with VCF paths, IDs, and affected statuses
     """
     
-    def __init__(self, family_id):
+    def __init__(self, family_id, children=None, mother=None, father=None):
         """ initiates the class with the ID for the family
         """
         self.family_id = family_id
-        self.children = []
-        self.father = None
-        self.mother = None
-        self.child = None
+        self.children = children
+        if self.children is None:
+            self.children = []
+        
+        self.father = father
+        self.mother = mother
+        self.set_child()
+    
+    def __repr__(self):
+        return 'Family(family_id="{}", children={}, mother={}, ' \
+            'father={})'.format(self.family_id, self.children, self.mother,
+            self.father)
     
     def __iter__(self):
         for member in [self.child, self.mother, self.father]:
@@ -295,12 +308,12 @@ def load_families(path):
     families = {}
     
     # put all the family info into a trio class
-    for child_id, family_id in children.items():
+    for child_id, key in children.items():
         # if the family hasn't been included already, generate a new trio
-        if family_id not in families:
-            families[family_id] = Family(family_id)
+        if key not in families:
+            families[key] = Family(key)
         
-        trio = families[family_id]
+        trio = families[key]
         father = fathers[child_id]
         mother = mothers[child_id]
         
@@ -315,6 +328,6 @@ def load_families(path):
         if mother in vcfs and mother in affected:
             trio.add_mother(mother, vcfs[mother], affected[mother], sex[mother])
         
-        families[family_id] = trio
+        families[key] = trio
     
     return families
