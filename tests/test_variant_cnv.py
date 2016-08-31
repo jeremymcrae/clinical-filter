@@ -38,16 +38,16 @@ class TestVariantCnvPy(unittest.TestCase):
         alt = "<DUP>"
         filt = "PASS"
         
-        # set up a SNV object, since SNV inherits VcfInfo
-        self.var = CNV(chrom, pos, snp_id, ref, alt, filt)
+        info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;" \
+            "CNSOLIDATE;WSCORE=0.5;CALLP=0.000;COMMONFORWARDS=0.000;" \
+            "MEANLR2=0.5;MADL2R=0.02;END=16000000;SVLEN=1000000"
+        keys = "inheritance:DP"
+        values = "deNovo:50"
+        sex = "F"
         
-        info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;CNSOLIDATE;WSCORE=0.5;CALLP=0.000;COMMONFORWARDS=0.000;MEANLR2=0.5;MADL2R=0.02;END=16000000;SVLEN=1000000"
-        format_keys = "inheritance:DP"
-        sample_values = "deNovo:50"
-        
-        self.var.add_info(info)
-        self.var.add_format(format_keys, sample_values)
-        self.var.set_gender("F")
+        # set up a CNV object
+        self.var = CNV(chrom, pos, snp_id, ref, alt, filt, info=info,
+            format=keys, sample=values, gender=sex)
     
     def test_set_genotype(self):
         """ test that set_genotype() operates correctly
