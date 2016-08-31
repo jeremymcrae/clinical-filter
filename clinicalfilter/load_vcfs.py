@@ -280,7 +280,7 @@ class LoadVCFs(object):
             default_ref = 'REF'
             parental.add_info('END=1000000000')
         else:
-            parental = SNV(var.chrom, var.position, var.variant_id, var.ref_allele, var.alt_allele, var.filter)
+            parental = SNV(var.chrom, var.position, var.variant_id, var.ref_allele, ','.join(var.alt_alleles), var.filter)
         
         parental.add_format('GT', default_ref)
         parental.set_gender(gender)

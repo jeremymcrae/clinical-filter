@@ -123,7 +123,7 @@ class TestAcghCnvPy(unittest.TestCase):
         """
         
         # set the var as a duplication
-        self.var.cnv.alt_allele = "<DUP>"
+        self.var.cnv.alt_alleles = ["<DUP>"]
         self.var.cnv.set_genotype()
         
         # check that dup passes with MEANLR2 > 0.36
@@ -142,7 +142,7 @@ class TestAcghCnvPy(unittest.TestCase):
         """ test that fails_mean_lr2() works correctly on deletions
         """
         # set the var as a deletion
-        self.var.cnv.alt_allele = "<DEL>"
+        self.var.cnv.alt_alleles = ["<DEL>"]
         self.var.cnv.set_genotype()
         
         # check that del passes with MEANLR2 < -0.41

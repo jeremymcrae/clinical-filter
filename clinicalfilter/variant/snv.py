@@ -65,7 +65,7 @@ class SNV(Variant):
         return 'SNV(chrom="{}", position={}, id="{}", ref="{}", alts="{}", ' \
             'filter="{}", info={}, format={}, sample={}, gender={}, ' \
             'mnv_code={})'.format(self.chrom, self.position, self.variant_id,
-            self.ref_allele, self.alt_allele, self.filter, info, keys, sample,
+            self.ref_allele, ','.join(self.alt_alleles), self.filter, info, keys, sample,
             gender, mnv_code)
     
     def is_cnv(self):
@@ -142,10 +142,10 @@ class SNV(Variant):
         
         if self.inheritance_type == "autosomal" or self.inheritance_type == "XChrFemale":
             self.hom_ref = set([self.ref_allele, self.ref_allele])
-            self.het = set([self.ref_allele, self.alt_allele])
-            self.hom_alt = set([self.alt_allele, self.alt_allele])
+            self.het = set([self.ref_allele, self.alt_alleles])
+            self.hom_alt = set([self.alt_alleles, self.alt_alleles])
         elif self.inheritance_type == "XChrMale":
-            self.hom_alt = set([self.alt_allele])
+            self.hom_alt = set([self.alt_alleles])
             self.het = set([])
             self.hom_ref = set([self.ref_allele])
         else:
@@ -190,9 +190,9 @@ class SNV(Variant):
         if genotype == "0":
             self.alleles = set([self.ref_allele, self.ref_allele])
         elif genotype == "1":
-            self.alleles = set([self.ref_allele, self.alt_allele])
+            self.alleles = set([self.ref_allele, self.alt_alleles])
         elif genotype == "2":
-            self.alleles = set([self.alt_allele, self.alt_allele])
+            self.alleles = set([self.alt_alleles, self.alt_alleles])
         else:
             raise ValueError("unknown genotype '" + str(genotype))
         
@@ -206,7 +206,7 @@ class SNV(Variant):
             if genotype == "0":
                 self.alleles = set([self.ref_allele])
             elif genotype == "2":
-                self.alleles = set([self.alt_allele])
+                self.alleles = set([self.alt_alleles])
             elif genotype == "1":
                 raise ValueError("heterozygous X-chromomosome male")
             else:

@@ -61,7 +61,7 @@ class CNV(Variant):
         
         return 'CNV(chrom="{}", position={}, id="{}", ref="{}", alts="{}", ' \
             'filter="{}", info={}, format={}, sample={}, gender={})'.format(self.chrom,
-            self.position, self.variant_id, self.ref_allele, self.alt_allele,
+            self.position, self.variant_id, self.ref_allele, ','.join(self.alt_alleles),
             self.filter, info, keys, sample, gender)
     
     def set_genotype(self):
@@ -94,14 +94,14 @@ class CNV(Variant):
         if "CALLSOURCE" in self.info and self.info["CALLSOURCE"] == "EXOME":
             self.add_cns_state()
         
-        if self.get_inheritance_type() == "YChrFemale" and self.alt_allele != '<REF>':
+        if self.get_inheritance_type() == "YChrFemale" and '<REF>' not in self.alt_alleles:
             raise ValueError("cannot have CNV on female Y chromosome")
         
-        if self.alt_allele == "<DUP>":
+        if "<DUP>" in self.alt_alleles:
             self.genotype = "DUP"
-        elif self.alt_allele == "<DEL>":
+        elif "<DEL>" in self.alt_alleles:
             self.genotype = "DEL"
-        elif self.alt_allele == "<REF>":
+        elif "<REF>" in self.alt_alleles:
             self.genotype = "REF"
         else:
             raise ValueError("unknown CNV allele code")

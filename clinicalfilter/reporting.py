@@ -137,7 +137,7 @@ class Report(object):
         if "ENST" in var.child.info:
             transcript = var.child.info["ENST"]
         
-        alleles = var.child.ref_allele + "/" + var.child.alt_allele
+        alleles = var.child.ref_allele + "/" + ','.join(var.child.alt_alleles)
         trio_genotype = "{0}/{1}/{2}".format(*var.get_trio_genotype())
         trio_genotype = trio_genotype.replace('None', 'NA')
         

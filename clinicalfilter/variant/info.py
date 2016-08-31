@@ -148,7 +148,10 @@ class Info(object):
         # identifying an HGNC symbol. We don't need to worry about this when
         # using a set of known genes, since those should all have HGNC symbols.
         elif self.genes is None and self.known_genes is None:
-            self.genes = ["{0}:{1}".format(self.chrom, self.position)]
+            symbol = '{0}:{1}'.format(self.chrom, self.position)
+            self.genes = [symbol]
+            if len(self.alt_alleles) > 1:
+                self.genes = [[symbol] * len(self.alt_alleles)]
     
     def get_genes_for_allele(self, position):
         """ gets list of gene symbols for an allele, prioritising HGNC symbols.
@@ -232,7 +235,7 @@ class Info(object):
         if "CQ" in self.info:
             cq = self.info["CQ"].split("|")
         
-        if "," in self.alt_allele:
+        if len(self.alt_alleles) > 1:
             (cq, self.genes, enst) = self.correct_multiple_alt(cq)
             
             if "ENST" in self.info:

@@ -46,7 +46,7 @@ class Variant(Info):
         self.set_mutation_id(self.variant_id)
         
         self.ref_allele = ref
-        self.alt_allele = alts
+        self.alt_alleles = tuple(alts.split(','))
         
         self.mnv_code = mnv_code
         self.filter = filter
