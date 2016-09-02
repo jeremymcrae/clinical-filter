@@ -31,12 +31,15 @@ class TestPerson(unittest.TestCase):
         """ define a default Person object
         """
         
-        ID = "name"
+        family_id = "fam_id"
+        person_id = "name"
         path = "/home/filename.vcf"
         status = "2"
-        gender = "1"
+        sex = "1"
+        mom_id = "mom_id"
+        dad_id = "dad_id"
         
-        self.person = Person(ID, path, status, gender)
+        self.person = Person(family_id, person_id, dad_id, mom_id, sex, status, path)
     
     def test_get_id(self):
         """ test that get_id() works correctly
@@ -56,7 +59,7 @@ class TestPerson(unittest.TestCase):
         """ test that get_affected_status works correctly
         """
         
-        self.person.affected_status = "test_status"
+        self.person.status = "test_status"
         self.assertEqual(self.person.get_affected_status(), "test_status")
     
     def test_is_affected(self):
@@ -64,15 +67,15 @@ class TestPerson(unittest.TestCase):
         """
         
         # check that a status of "1" means unaffected
-        self.person.affected_status = "1"
+        self.person.status = "1"
         self.assertFalse(self.person.is_affected())
         
         # check that a status of "2" means affected
-        self.person.affected_status = "2"
+        self.person.status = "2"
         self.assertTrue(self.person.is_affected())
         
         # check that statuses other than "1" or "2" raise an error
-        self.person.affected_status = "3"
+        self.person.status = "3"
         with self.assertRaises(ValueError):
             self.assertFalse(self.person.is_affected())
     
@@ -95,7 +98,7 @@ class TestPerson(unittest.TestCase):
         """ test that get_gender() works correctly
         """
         
-        self.person.gender = "M"
+        self.person.sex = "M"
         self.assertEqual(self.person.get_gender(), "M")
     
     def test_is_male(self):
@@ -104,12 +107,12 @@ class TestPerson(unittest.TestCase):
         
         male_codes = ["1", "M", "m", "male"]
         for code in male_codes:
-            self.person.gender = code
+            self.person.sex = code
             self.assertTrue(self.person.is_male())
         
         female_codes = ["2", "f", "F", "female"]
         for code in female_codes:
-            self.person.gender = code
+            self.person.sex = code
             self.assertFalse(self.person.is_male())
     
     def test_is_female(self):
@@ -118,12 +121,12 @@ class TestPerson(unittest.TestCase):
         
         female_codes = ["2", "f", "F", "female"]
         for code in female_codes:
-            self.person.gender = code
+            self.person.sex = code
             self.assertTrue(self.person.is_female())
         
         male_codes = ["1", "M", "m", "male"]
         for code in male_codes:
-            self.person.gender = code
+            self.person.sex = code
             self.assertFalse(self.person.is_female())
     
     def test_check_gender(self):
@@ -132,7 +135,7 @@ class TestPerson(unittest.TestCase):
         
         # check that a male gender doesn't raise an error if we check that it
         # is male
-        self.person.gender = "M"
+        self.person.sex = "M"
         self.person.check_gender("1")
         
         # check that we raise an error if the gender doesn't match the expected
@@ -142,7 +145,7 @@ class TestPerson(unittest.TestCase):
         
         # check that a female gender doesn't raise an error if we check that it
         # is female
-        self.person.gender = "F"
+        self.person.sex = "F"
         self.person.check_gender("2")
         
         # check that we raise an error if the gender doesn't match the expected
@@ -151,7 +154,7 @@ class TestPerson(unittest.TestCase):
             self.person.check_gender("1")
         
         # check that we raise an error for nonstandard gender codes
-        self.person.gender = "NA"
+        self.person.sex = "NA"
         with self.assertRaises(ValueError):
             self.person.check_gender("2")
 

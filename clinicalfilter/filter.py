@@ -47,27 +47,28 @@ class Filter(LoadOptions):
         """ loads trio variants, and screens for candidate variants
         """
         
-        self.vcf_loader = LoadVCFs(len(self.families), self.known_genes, \
-            self.last_base, self.debug_chrom, self.debug_pos)
+        count = sum([ y.is_affected() for x in self.families for y in x.children ])
+        
+        self.vcf_loader = LoadVCFs(count, self.known_genes, self.last_base,
+             self.debug_chrom, self.debug_pos)
         
         # load the trio paths into the current path setup
-        for family_ID in sorted(self.families):
-            self.family = self.families[family_ID]
+        for family in self.families:
             
             # some families have more than one child in the family, so run
             # through each child.
-            self.family.set_child()
-            while self.family.child is not None:
-                if self.family.child.is_affected():
-                    variants = self.vcf_loader.get_trio_variants(self.family, self.pp_filter)
-                    self.vcf_provenance = [ get_vcf_provenance(x) for x in self.family ]
-                    self.analyse_trio(variants)
+            family.set_child()
+            while family.child is not None:
+                if family.child.is_affected():
+                    variants = self.vcf_loader.get_trio_variants(family, self.pp_filter)
+                    self.vcf_provenance = [ get_vcf_provenance(x) for x in family ]
+                    self.analyse_trio(family, variants)
                 
-                self.family.set_child_examined()
+                family.set_child_examined()
         
         sys.exit(0)
     
-    def analyse_trio(self, variants):
+    def analyse_trio(self, family, variants):
         """identify candidate variants in exome data for a single trio.
         
         takes variants that passed the initial filtering from VCF loading, and
@@ -86,18 +87,18 @@ class Filter(LoadOptions):
         found_vars = []
         for gene in genes_dict:
             gene_vars = genes_dict[gene]
-            found_vars += self.find_variants(gene_vars, gene)
+            found_vars += self.find_variants(gene_vars, gene, family)
         
         # remove any duplicate variants (which might ocur due to CNVs being
         # checked against all the genes that they encompass)
         found_vars = self.exclude_duplicates(found_vars)
         
         # apply some final filters to the flagged variants
-        post_filter = PostInheritanceFilter(found_vars, self.family, self.debug_chrom, self.debug_pos)
+        post_filter = PostInheritanceFilter(found_vars, family, self.debug_chrom, self.debug_pos)
         found_vars = post_filter.filter_variants()
         
         # export the results to either tab-separated table or VCF format
-        self.report.export_data(found_vars, self.family, \
+        self.report.export_data(found_vars, family, \
             self.vcf_loader.child_header, self.vcf_provenance)
     
     def create_gene_dict(self, variants):
@@ -123,7 +124,7 @@ class Filter(LoadOptions):
         
         return genes
         
-    def find_variants(self, variants, gene):
+    def find_variants(self, variants, gene, family):
         """ finds variants that fit inheritance models
         
         Args:
@@ -161,14 +162,14 @@ class Filter(LoadOptions):
         if variants == []:
             return []
         
-        logging.info("{}\t{}\tvariants: {}\trequired_mode: {}".format(self.family.child.get_id(), gene,
+        logging.info("{}\t{}\tvariants: {}\trequired_mode: {}".format(family.child.get_id(), gene,
             [str(x) for x in variants], gene_inh))
         chrom_inheritance = variants[0].get_inheritance_type()
         
         if chrom_inheritance == "autosomal":
-            finder = Autosomal(variants, self.family, self.known_genes, gene, self.cnv_regions)
+            finder = Autosomal(variants, family, self.known_genes, gene, self.cnv_regions)
         elif chrom_inheritance in ["XChrMale", "XChrFemale", "YChrMale"]:
-            finder = Allosomal(variants, self.family, self.known_genes, gene, self.cnv_regions)
+            finder = Allosomal(variants, family, self.known_genes, gene, self.cnv_regions)
         
         variants = finder.get_candidate_variants()
         variants = [ (x[0], list(x[1]), list(x[2]), [gene]) for x in variants ]

@@ -25,7 +25,7 @@ import json
 
 from clinicalfilter.load_files import open_known_genes, \
     create_person_ID_mapper, open_cnv_regions
-from clinicalfilter import ped
+from clinicalfilter.ped import load_families, Family
 
 
 def get_options():
@@ -130,13 +130,15 @@ class LoadOptions(object):
         """sets the paths to the VCF files for a trio, or multiple trios.
         """
         if self.options.ped is None:
-            family = ped.Family("blank_family_ID")
-            family.add_child("child", self.options.child, "2", self.options.gender)
+            fam_id = "blank_family_ID"
+            family = Family(fam_id)
+            family.add_child("child", self.options.mother,
+                self.options.father, self.options.gender, "2", self.options.child)
             if self.options.mother is not None:
-                family.add_mother("mother", self.options.mother, self.options.mom_aff, "2")
+                family.add_mother("mother", '0', '0', '2',  self.options.mom_aff, self.options.mother)
             if self.options.father is not None:
-                family.add_father("father", self.options.father, self.options.dad_aff, "1")
+                family.add_father("father",  '0', '0', '1', self.options.dad_aff, self.options.father)
             
-            self.families = {family.family_id: family}
+            self.families = [family]
         else:
-            self.families = ped.load_families(self.options.ped)
+            self.families = load_families(self.options.ped)

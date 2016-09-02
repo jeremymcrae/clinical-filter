@@ -34,10 +34,10 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         """ define a default variant object
         """
         
-        family = Family("FamID")
-        family.add_child("child_id", "/child/path", "2", "M")
-        family.add_mother("mom_id", "/mother/path", "1", "F")
-        family.add_father("dad_id", "/father/path", "2", "M")
+        family = Family('test')
+        family.add_child('child', 'mother', 'father', 'male', '2', 'child_vcf')
+        family.add_mother('mother', '0', '0', 'female', '1', 'mother_vcf')
+        family.add_father('father', '0', '0', 'male', '2', 'father_vcf')
         family.set_child()
         
         variants = []
@@ -471,7 +471,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # check that chrX females with non-zero AC_Hemi counts are not excluded
         var.child.info["AC_Hemi"] = "1"
-        self.post_filter.family.child.gender = "female"
+        self.post_filter.family.child.sex = "female"
         variants = [(var, ["single_variant"], ["Hemizygous"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), variants)
         
@@ -479,7 +479,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         # AC_Hemi annotation. Since this is not inherited, it should pass.
         var = self.create_var("X", snv=True, geno=["1/1", "0/0", "0/0"])
         var.child.info["AC_Hemi"] = "1"
-        self.post_filter.family.child.gender = "male"
+        self.post_filter.family.child.sex = "male"
         variants = [(var, ["single_variant"], ["Hemizygous"], ["ATRX"])]
         self.assertEqual(self.post_filter.filter_exac(variants), variants)
     

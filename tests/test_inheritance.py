@@ -129,10 +129,10 @@ class TestInheritancePy(unittest.TestCase):
         """ create a default family, with optional gender and parental statuses
         """
         
-        fam = Family("test")
-        fam.add_child("child", "child_vcf", "2", child_gender)
-        fam.add_mother("mother", "mother_vcf", mom_aff, "2")
-        fam.add_father("father", "father_vcf", dad_aff, "1")
+        fam = Family('test')
+        fam.add_child('child', 'mother', 'father', child_gender, '2', 'child_vcf')
+        fam.add_mother('mother', '0', '0', 'female', mom_aff, 'mother_vcf')
+        fam.add_father('father', '0', '0', 'male', dad_aff, 'father_vcf')
         fam.set_child()
         
         return fam
@@ -453,7 +453,7 @@ class TestInheritancePy(unittest.TestCase):
         """
         
         fam = Family("test")
-        fam.add_child("child", "child_vcf", "2", "F")
+        fam.add_child("child", 'dad_id', 'mom_id', 'F', '2',  "child_vcf")
         fam.set_child()
         
         # set some variants, so we can alter them later

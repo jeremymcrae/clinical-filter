@@ -94,10 +94,10 @@ class TestCNVInheritancePy(unittest.TestCase):
         """ create a default family, with optional gender and parental statuses
         """
         
-        fam = Family("test")
-        fam.add_child("child", "child_vcf", "2", child_gender)
-        fam.add_mother("mother", "mother_vcf", mom_aff, "2")
-        fam.add_father("father", "father_vcf", dad_aff, "1")
+        fam = Family('test')
+        fam.add_child('child', 'mother', 'father', child_gender, '2', 'child_vcf')
+        fam.add_mother('mother', '0', '0', 'female', mom_aff, 'mother_vcf')
+        fam.add_father('father', '0', '0', 'male', dad_aff, 'father_vcf')
         fam.set_child()
         
         return fam
@@ -109,7 +109,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         cnv = self.create_variant("female")
         
         # check that paternally inherited CNVs that have affected fathers pass
-        self.inh.trio.father.affected_status = "2"
+        self.inh.trio.father.status = "2"
         inh = ["paternal"]
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
         
@@ -128,17 +128,17 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
         
         # check that paternally inherited CNVs without an affected father fail
-        self.inh.trio.father.affected_status = "1"
+        self.inh.trio.father.status = "1"
         self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
         
         # check that maternally inherited CNVs without an affected mother fail
         inh = ["maternal"]
-        self.inh.trio.father.affected_status = "1"
+        self.inh.trio.father.status = "1"
         self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
         
         # check that maternally inherited CNVs on chrX in male probands pass
         # regardless of the affected status of the mother.
-        self.inh.trio.child.gender = "male"
+        self.inh.trio.child.sex = "male"
         cnv.child.chrom = "X"
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
     
@@ -149,20 +149,20 @@ class TestCNVInheritancePy(unittest.TestCase):
         cnv = self.create_variant("female")
         inh = ["biparental"]
         self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
-        self.inh.trio.father.affected_status = "2"
+        self.inh.trio.father.status = "2"
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
-        self.inh.trio.father.affected_status = "1"
-        self.inh.trio.mother.affected_status = "2"
+        self.inh.trio.father.status = "1"
+        self.inh.trio.mother.status = "2"
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
         
         # check that biparentally inherited CNVs pass if either parent is affected
         inh = ["inheritedDuo"]
-        self.inh.trio.mother.affected_status = "1"
+        self.inh.trio.mother.status = "1"
         self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
-        self.inh.trio.father.affected_status = "2"
+        self.inh.trio.father.status = "2"
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
         self.inh.trio.father.affected_status = "1"
-        self.inh.trio.mother.affected_status = "2"
+        self.inh.trio.mother.status = "2"
         self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
     
     def test_inheritance_matches_parental_affected_status_biparental_copy_zero(self):
@@ -593,11 +593,11 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         # check that low SVLEN combined with incorrect sex fails
         cnv.child.chrom = "X"
-        self.inh.trio.child.gender = "M"
+        self.inh.trio.child.sex = "M"
         self.assertFalse(self.inh.check_compound_inheritance(cnv))
         
         # check that low SVLEN combined with incorrect copy number fails
-        self.inh.trio.child.gender = "F"
+        self.inh.trio.child.sex = "F"
         cnv.child.info["CNS"] = "3"
         self.assertFalse(self.inh.check_compound_inheritance(cnv))
 

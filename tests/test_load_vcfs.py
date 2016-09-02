@@ -241,9 +241,9 @@ class TestLoadVCFsPy(unittest.TestCase):
         date_path = os.path.join(self.temp_dir, "temp.process.2014-02-20.vcf")
         
         family = Family('famid')
-        family.add_child('child_id', path, '2', 'F')
-        family.add_mother('mom_id', gz_path, '1', 'F')
-        family.add_father('mom_id', date_path, '1', 'M')
+        family.add_child('child_id', 'mother', 'father', 'f', '2', path)
+        family.add_mother('mom_id', '0', '0', 'female', '1', gz_path)
+        family.add_father('dad_id', '0', '0', 'male', '1', date_path)
         family.set_child()
         
         vcf = self.make_minimal_vcf()
@@ -368,7 +368,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         path = os.path.join(self.temp_dir, "temp.vcf")
         self.write_temp_vcf(path, vcf)
         
-        person = Person('sample', path, '2', 'F')
+        person = Person('fam_id', 'sample', 'dad', 'mom', 'F', '2', path)
         
         var1 = SNV(chrom="1", position=1, id=".", ref="G", alts="T",
             filter="PASS", info="CQ=missense_variant;HGNC=TEST;MAX_AF=0.0001",
@@ -398,7 +398,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         path = os.path.join(self.temp_dir, "temp.vcf.gz")
         self.write_gzipped_vcf(path, vcf)
         
-        person = Person('sample', path, '2', 'F')
+        person = Person('fam_id', 'sample', 'dad', 'mom', 'F', '2', path)
         
         args = {'chrom': "1", 'position': 1, 'id': ".", 'ref': "G", 'alts': "T",
             'filter': "PASS", 'info': "CQ=splice_region_variant;HGNC=ATRX;MAX_AF=0.0001",
@@ -438,9 +438,9 @@ class TestLoadVCFsPy(unittest.TestCase):
         father_path = make_vcf('father')
         
         family = Family('fam_id')
-        family.add_child('child_id', child_path, '2', 'female')
-        family.add_mother('mother_id', mother_path, '1', 'female')
-        family.add_father('father_id', father_path, '1', 'male')
+        family.add_child('sample', 'mother_id', 'father_id', 'female', '2', child_path)
+        family.add_mother('mother_id', '0', '0', 'female', '1', mother_path)
+        family.add_father('father_id', '0', '0', 'male', '1', father_path)
         family.set_child()
         
         # define the parameters and values for the SNV class
@@ -462,7 +462,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         # make a family without parents
         family = Family("fam_id")
         child_gender = "female"
-        family.add_child("child_id", "child_vcf_path", "2", child_gender)
+        family.add_child('child_id', 'mother_id', 'father_id', child_gender, '2', 'child_path')
         self.vcf_loader.family = family
         
         # set up an autosomal variant
@@ -484,8 +484,8 @@ class TestLoadVCFsPy(unittest.TestCase):
         self.assertEqual(self.vcf_loader.filter_de_novos(trio_variants, 0.9), trio_variants)
         
         # now add parents to the family
-        family.add_mother("mother_id", "mother_vcf_path", "1", "female")
-        family.add_father("father_id", "father_vcf_path", "1", "male")
+        family.add_mother("mother_id", '0', '0', 'female', '1', "mother_vcf_path")
+        family.add_father("father_id", '0', '0', 'male', '1', "father_vcf_path")
         self.vcf_loader.family = family
         
         # re-generate the variants list now that parents have been included

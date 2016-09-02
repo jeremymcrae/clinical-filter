@@ -39,10 +39,11 @@ class TestFamily(unittest.TestCase):
         ''' test that __iter__() works correctly
         '''
         
-        person_id, path, status, gender = 'child', 'child.vcf', '2', 'M'
-        child = Person(person_id, path, status, gender)
+        family_id, person_id, mom_id, dad_id = 'fam_ID', 'child', 'dad', 'mom',
+        path, status, sex = 'child.vcf', '2', 'M'
+        child = Person(family_id, person_id, dad_id, mom_id, sex, status, path)
         
-        self.family.add_child(person_id, path, status, gender)
+        self.family.add_child(person_id, dad_id, mom_id, sex, status, path)
         self.family.set_child()
         
         # check the Family iterates by getting a list of the Family object
@@ -53,61 +54,65 @@ class TestFamily(unittest.TestCase):
         """ test that add_father() works correctly
         """
         
-        ID = "parent_ID"
+        person_id = "parent_ID"
         path = "/home/parent.vcf"
-        affected = "1"
-        gender = "1"
+        status = "1"
+        sex = "1"
+        dad_id = "0"
+        mom_id = "0"
         
         # check that adding a male father doesn't raise an error
-        self.family.add_father(ID, path, affected, gender)
+        self.family.add_father(person_id, dad_id, mom_id, sex, status, path)
         
         # check that adding a father for a second time is fine, but adding
         # a different father raises an error
-        self.family.add_father(ID, path, affected, gender)
+        self.family.add_father(person_id, dad_id, mom_id, sex, status, path)
         with self.assertRaises(ValueError):
-            self.family.add_father("different_ID", path, affected, gender)
+            self.family.add_father("different_ID", dad_id, mom_id, sex, status, path)
         
         # check that adding a female father raises an error
         self.setUp()
-        gender = "2"
+        sex = "2"
         with self.assertRaises(ValueError):
-            self.family.add_father(ID, path, affected, gender)
+            self.family.add_father(person_id, dad_id, mom_id, sex, status, path)
         
     def test_add_mother(self):
         """ test that add_mother() works correctly
         """
         
-        ID = "parent_ID"
+        person_id = "parent_ID"
         path = "/home/parent.vcf"
-        affected = "1"
-        gender = "2"
+        status = "1"
+        sex = "2"
+        dad_id = "0"
+        mom_id = "0"
         
         # check that adding a female mother doesn't raise an error
-        self.family.add_mother(ID, path, affected, gender)
+        self.family.add_mother(person_id, dad_id, mom_id, sex, status, path)
         
         # check that adding a mother for a second time is fine, but adding
         # a different mother raises an error
-        self.family.add_mother(ID, path, affected, gender)
+        self.family.add_mother(person_id, dad_id, mom_id, sex, status, path)
         with self.assertRaises(ValueError):
-            self.family.add_mother("different_ID", path, affected, gender)
+            self.family.add_mother("different_ID", dad_id, mom_id, sex, status, path)
         
         # check that adding a male mother raises an error
         self.setUp()
-        gender = "1"
+        sex = "1"
         with self.assertRaises(ValueError):
-            self.family.add_mother(ID, path, affected, gender)
+            self.family.add_mother(person_id, dad_id, mom_id, sex, status, path)
         
     def test_add_child(self):
         """ check that add_child() works correctly
         """
         
         # check that we can add one child
-        self.family.add_child("child1", "/home/child1.vcf", "2", "1")
+        self.family.add_child("child1", 'dad', 'mom', 'male', '2', "/home/child1.vcf")
         self.assertEqual(len(self.family.children), 1)
         
         # check that adding multiple children works correctly
-        self.family.add_child("child2", "/home/child2.vcf", "2", "2")
-        self.family.add_child("child3", "/home/child3.vcf", "2", "1")
+        self.family.add_child("child2", 'dad', 'mom', 'female', '2', "/home/child2.vcf")
+        self.family.add_child("child3", 'dad', 'mom', 'male', '2', "/home/child3.vcf")
         self.assertEqual(len(self.family.children), 3)
     
     def test_set_child(self):
@@ -115,15 +120,15 @@ class TestFamily(unittest.TestCase):
         """
         
         # add one child
-        self.family.add_child("child1", "/home/child1.vcf", "2", "1")
+        self.family.add_child("child1", 'dad', 'mom', 'male', '2', "/home/child1.vcf")
         
         # check that the child can be set correctly
         self.family.set_child()
         self.assertEqual(self.family.child, self.family.children[0])
     
         # add more children
-        self.family.add_child("child2", "/home/child2.vcf", "2", "1")
-        self.family.add_child("child3", "/home/child3.vcf", "2", "2")
+        self.family.add_child("child2", 'dad', 'mom', 'male', '2', "/home/child2.vcf")
+        self.family.add_child("child3", 'dad', 'mom', 'female', '2', "/home/child3.vcf")
         
         # check that the child can be set correctly with multiple children
         self.family.set_child()
@@ -135,7 +140,7 @@ class TestFamily(unittest.TestCase):
         """
         
         # add one child
-        self.family.add_child("child1", "/home/child1.vcf", "2", "1")
+        self.family.add_child("child1", 'dad', 'mom', 'male', '2', "/home/child1.vcf")
         
         # check that the child can be set correctly, and can be set as having
         # been examined
@@ -146,13 +151,13 @@ class TestFamily(unittest.TestCase):
         
         # add another child, and check that when we set the child, we now pick
         # up this child since the other one has previously been examined
-        self.family.add_child("child2", "/home/child2.vcf", "2", "2")
+        self.family.add_child("child2", 'dad', 'mom', 'female', '2', "/home/child2.vcf")
         self.family.set_child()
         self.assertEqual(self.family.child, self.family.children[1])
         
         # make sure that set_child_examined() doesn't default to None if we
         # have children left to analyse
-        self.family.add_child("child3", "/home/child3.vcf", "2", "2")
+        self.family.add_child("child3", 'dad', 'mom', 'female', '2', "/home/child3.vcf")
         self.family.set_child()
         self.family.set_child_examined()
         self.assertIsNotNone(self.family.child)

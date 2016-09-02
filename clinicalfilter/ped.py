@@ -29,19 +29,23 @@ class Person(object):
     male_codes = set(["1", "m", "M", "male"])
     female_codes = set(["2", "f", "F", "female"])
     
-    def __init__(self, person_id, vcf_path, affected_status, gender):
+    def __init__(self, family_id, person_id, dad_id, mom_id, sex, status, path):
+        self.family_id = family_id
         self.person_id = person_id
-        self.vcf_path = vcf_path
-        self.gender = gender
-        self.affected_status = affected_status
+        self.mom_id = mom_id
+        self.dad_id = dad_id
+        self.vcf_path = path
+        self.sex = sex
+        self.status = status
         
         # set a flag so we can check whether the child has been analysed
         self.analysed = False
     
     def __repr__(self):
-        return 'Person(person_id="{}", vcf_path="{}", affected_status="{}", ' \
-            'gender="{}")'.format(self.get_id(), self.get_path(),
-            self.get_affected_status(), self.get_gender())
+        return 'Person(family_id="{}", person_id="{}", dad_id="{}", ' \
+            'mom_id="{}", sex="{}", status="{}", path="{}")'.format(self.family_id,
+            self.get_id(), self.dad_id, self.mom_id, self.get_gender(),
+             self.get_affected_status(), self.get_path())
     
     def get_id(self):
         """returns the ID for a person.
@@ -56,7 +60,7 @@ class Person(object):
     def get_affected_status(self):
         """returns the affected status for a person as a string
         """
-        return self.affected_status
+        return self.status
     
     def is_affected(self):
         """returns true or false for affected, rather than the string value
@@ -64,11 +68,11 @@ class Person(object):
         # change how the affected status is encoded. Current DDD ped files
         # encode "1" for unaffected, and "2" for affected. Change this to
         # True/False values, and catch any unknown affected statuses.
-        if self.affected_status not in set(["1", "2"]):
-            raise ValueError("unknown status: " + self.affected_status + ", \
+        if self.status not in set(["1", "2"]):
+            raise ValueError("unknown status: " + self.status + ", \
                 should be 1: unaffected, 2: affected")
         
-        return self.affected_status == "2"
+        return self.status == "2"
     
     def set_analysed(self):
         """ sets an individual as having been analysed
@@ -83,7 +87,7 @@ class Person(object):
     def get_gender(self):
         """returns the gender for a person (1, M = male, 2, F = female).
         """
-        return self.gender
+        return self.sex
     
     def is_male(self):
         """ returns True/False for whether the person is male
@@ -157,8 +161,11 @@ class Family(object):
             self.father)
     
     def __iter__(self):
-        for member in [self.child, self.mother, self.father]:
+        for member in self.children + [self.mother, self.father]:
             yield member
+    
+    def __gt__(self, other):
+        return self.family_id > other.family_id
     
     def has_parents(self):
         """ returns True/False for whether the family includes parental info
@@ -168,7 +175,7 @@ class Family(object):
         
         return self.father is not None and self.mother is not None
     
-    def add_child(self, sample_id, path, affected_status, gender):
+    def add_child(self, sample_id, dad_id, mom_id, sex, status, path):
         """ adds a child
         
         Args:
@@ -177,25 +184,25 @@ class Family(object):
             affected_status: affected status string for child
             gender: gender string for child
         """
-        child = Person(sample_id, path, affected_status, gender)
+        child = Person(self.family_id, sample_id, dad_id, mom_id, sex, status, path)
         self.children.append(child)
     
-    def add_mother(self, sample_id, path, affected_status, gender):
+    def add_mother(self, sample_id, mom_id, dad_id, sex, status, path):
         # raise an error if we try to add a different mother to the family
         if self.mother is not None:
             if sample_id != self.mother.get_id():
                 raise ValueError(self.family_id, "already has a mother")
         
-        self.mother = Person(sample_id, path, affected_status, gender)
+        self.mother = Person(self.family_id, sample_id, dad_id, mom_id, sex, status, path)
         self.mother.check_gender("2")
     
-    def add_father(self, sample_id, path, affected_status, gender):
+    def add_father(self, sample_id, mom_id, dad_id, sex, status, path):
         # raise an error if we try to add a different father to the family
         if self.father is not None:
             if sample_id != self.father.get_id():
                 raise ValueError(self.family_id, "already has a father")
         
-        self.father = Person(sample_id, path, affected_status, gender)
+        self.father = Person(self.family_id, sample_id, dad_id, mom_id, sex, status, path)
         self.father.check_gender("1")
     
     def set_child(self):
@@ -234,11 +241,11 @@ class Family(object):
         
         return hash(parts)
 
-def load_ped_file(path):
-    """Loads a PED file containing details for multiple trios.
+def open_ped(path):
+    """ opens a ped file, and groups individuals into families
     
     The PED file is in LINKAGE PED format, with the first six columns
-    specfifying the indivudual and how they are related to toher individuals. In
+    specfifying the individual and how they are related to other individuals. In
     contrast to other PED files, the genotypes are specified as a path to a VCF
     file for the individual.
     
@@ -246,88 +253,61 @@ def load_ped_file(path):
         path: path to the ped file
     
     Returns:
-        mothers: dictionary of maternal IDs, indexed by the childs ID
-        fathers: dictionary of paternal IDs, indexed by the childs ID
-        children: dictionary of family IDs, indexed by the childs ID
-        affected: dictionary of affected statuses, indexed by individual ID
-        sex: dictionary of genders, indexed by individual ID
-        vcfs: dictionary of VCF paths, indexed by individual ID
+        dictionary of lists of Person objects for individuals per family,
+        indexed by family ID.
     """
     
     if not os.path.exists(path):
         sys.exit("Path to ped file does not exist: " + path)
     
-    mothers = {}
-    fathers = {}
-    children = {}
-    affected = {}
-    sex = {}
-    vcfs = {}
+    # group the lines in the family relationships file by family
+    families = {}
+    with open(path) as handle:
+        for line in handle:
+            # parse the line as a Person object, to assist downstream organising
+            line = Person(*line.strip().split())
+            fam_id = line.family_id
+            
+            # add the Person to a list of lines for the family
+            if fam_id not in families:
+                families[fam_id] = []
+            
+            families[fam_id].append(line)
     
-    ped = open(path, "r")
-    for line in ped:
-        line = line.strip().split()
-        
-        family_id = line[0]
-        individual_id = line[1]
-        paternal_id = line[2]
-        maternal_id = line[3]
-        gender = line[4]
-        affected_status = line[5]
-        path = line[6]
-        
-        # make sure we can match individuals to their paths, and affected status
-        vcfs[individual_id] = path
-        affected[individual_id] = affected_status
-        sex[individual_id] = gender
-        
-        # track the child, maternal and paternal IDs
-        if paternal_id != "0" or maternal_id != "0":
-            children[individual_id] = family_id
-        
-        fathers[individual_id] = paternal_id
-        mothers[individual_id] = maternal_id
-    
-    ped.close()
-    
-    return mothers, fathers, children, affected, sex, vcfs
+    return families
 
 def load_families(path):
-    """Creates a dictionary of family data from a PED file.
+    """ Creates a list of family data from a PED file.
     
     Args:
         path: path to the ped file
         
     Returns:
-        families: a dictionary of Family objects, indexed by family IDs
+        list of Family objects
     """
     
-    # do an initial parse of the ped file
-    mothers, fathers, children, affected, sex, vcfs = load_ped_file(path)
+    family_lines = open_ped(path)
     
-    families = {}
-    
-    # put all the family info into a trio class
-    for child_id, key in children.items():
-        # if the family hasn't been included already, generate a new trio
-        if key not in families:
-            families[key] = Family(key)
+    families = []
+    for fam_id, lines in family_lines.items():
+        children = lines
+        parents = []
+        if len(lines) > 1:
+            children = [ x for x in lines if x.dad_id != '0' or x.mom_id != '0' ]
+            parents = [ x for x in lines if x.dad_id == '0' or x.mom_id == '0' ]
         
-        trio = families[key]
-        father = fathers[child_id]
-        mother = mothers[child_id]
+        moms = [ x for x in parents if x.get_id() == children[0].mom_id ]
+        dads = [ x for x in parents if x.get_id() == children[0].dad_id ]
         
-        # add the child to the family, and set the child to be examined
-        trio.add_child(child_id, vcfs[child_id], affected[child_id], sex[child_id])
-        trio.set_child()
+        mom = None
+        if len(moms) == 1:
+            mom = moms[0]
         
-        # add parents, but allow for children without parents listed in the ped
-        # file
-        if father in vcfs and father in affected:
-            trio.add_father(father, vcfs[father], affected[father], sex[father])
-        if mother in vcfs and mother in affected:
-            trio.add_mother(mother, vcfs[mother], affected[mother], sex[mother])
+        dad = None
+        if len(dads) == 1:
+            dad = dads[0]
         
-        families[key] = trio
+        family = Family(fam_id, children=children, mother=mom, father=dad)
+        families.append(family)
     
     return families

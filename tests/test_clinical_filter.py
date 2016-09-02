@@ -114,9 +114,9 @@ class TestClinicalFilterPy(unittest.TestCase):
         # The child also needs to be included and set, so that we can get the
         # child ID for logging purposes.
         self.finder.family = Family("famID")
-        self.finder.family.add_child("child_id", "/vcf/path", "2", "F")
-        self.finder.family.add_father("dad_id", "/vcf/path", "1", "M")
-        self.finder.family.add_mother("mom_id", "/vcf/path", "1", "F")
+        self.finder.family.add_child("child_id", 'dad_id', 'mom_id', 'f', '2', "/vcf/path")
+        self.finder.family.add_father("dad_id", '0', '0', 'm', '1', "/vcf/path")
+        self.finder.family.add_mother("mom_id", '0', '0', 'f', '1', "/vcf/path")
         self.finder.family.set_child()
         
         # create variants that cover various scenarios
@@ -131,30 +131,30 @@ class TestClinicalFilterPy(unittest.TestCase):
             "TESTX": {"inh": ["X-linked dominant"]}}
         
         # check the simplest case, a variant in a known gene
-        self.assertEqual(self.finder.find_variants([snv1], "TEST1"),
+        self.assertEqual(self.finder.find_variants([snv1], "TEST1", self.finder.family),
             [(snv1, ["single_variant"], ["Monoallelic"], ["TEST1"])])
         
         # check that a gene not in a known gene does not pass
-        self.assertEqual(self.finder.find_variants([snv1], "TEST2"), [])
+        self.assertEqual(self.finder.find_variants([snv1], "TEST2", self.finder.family), [])
         
         # check a variant where the gene is known, but the consequence for that
         # gene is not functional, does not pass
-        self.assertEqual(self.finder.find_variants([snv2], "OTHER2"), [])
+        self.assertEqual(self.finder.find_variants([snv2], "OTHER2", self.finder.family), [])
         
         # check that intergenic variants (which lack HGNC symbols) do not pass
-        self.assertEqual(self.finder.find_variants([snv3], None), [])
+        self.assertEqual(self.finder.find_variants([snv3], None, self.finder.family), [])
         
         # check that a variant on chrX passes through the allosomal instance
-        self.assertEqual(self.finder.find_variants([snv4], "TESTX"),
+        self.assertEqual(self.finder.find_variants([snv4], "TESTX", self.finder.family),
             [(snv4, ["single_variant"], ["X-linked dominant"], ["TESTX"])])
         
         # remove the known genes, so that the variants in unknown genes pass
         self.finder.known_genes = None
-        self.assertEqual(self.finder.find_variants([snv1], "TEST2"),
+        self.assertEqual(self.finder.find_variants([snv1], "TEST2", self.finder.family),
             [(snv1, ["single_variant"], ["Monoallelic"], ["TEST2"])])
         
         # but variants without gene symbols still are excluded
-        self.assertEqual(self.finder.find_variants([snv3], None), [])
+        self.assertEqual(self.finder.find_variants([snv3], None, self.finder.family), [])
     
     def test_exclude_duplicates(self):
         """ test that exclude duplicates works correctly
