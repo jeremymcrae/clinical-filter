@@ -1,4 +1,4 @@
-""" a helper script to process all the trios efficiently on the farm as a job
+"""" a helper script to process all the trios efficiently on the farm as a job
 array. Splits trios in a PED file across multiple ped files in order to run
 them in parallel.
 
@@ -13,7 +13,9 @@ import time
 import glob
 import argparse
 
-USER_DIR = "~/"
+from clinicalfilter.ped import load_families
+
+USER_DIR = os.path.expanduser('~')
 APP_FOLDER = os.path.join(USER_DIR, "apps", "clinical-filter")
 
 FILTER_CODE = os.path.join(APP_FOLDER, "bin", "clinical_filter.py")
@@ -31,32 +33,31 @@ def get_options():
     
     parser = argparse.ArgumentParser(description="Submit trio analysis to an \
         LSF cluster.")
-    parser.add_argument("--ped", dest="ped_path", default=PED_PATH, \
+    parser.add_argument("--ped", default=PED_PATH,
         help="path of the ped file (default=construct from DDD datasets)")
-    parser.add_argument("--log", dest="loglevel", \
+    parser.add_argument("--log", dest="loglevel",
         help="level of logging to use (default=all)")
-    parser.add_argument("--ddg2p", dest="ddg2p_path", default=KNOWN_GENES_PATH, \
+    parser.add_argument("--ddg2p", default=KNOWN_GENES_PATH,
         help="optional path to the ddg2p file to use (default = current DDD DDG2P file)")
-    parser.add_argument("--njobs", dest="n_jobs", default=100, \
+    parser.add_argument("--njobs", default=100,
         help="number of jobs you want to divide the run across")
-    parser.add_argument("--all-genes", dest="all_genes", default=False, \
+    parser.add_argument("--all-genes", dest="all_genes", default=False,
         action="store_true", help="Option to assess variants in all genes. \
         If unused, restricts variants to DDG2P genes.")
-    parser.add_argument("--without-parents", default=False,
-        action="store_true", help="whether to remove the parents and analyse \
-        probands only")
+    parser.add_argument("--without-parents", default=False, action="store_true",
+        help="whether to remove the parents and analyse probands only")
     parser.add_argument("--use-singletons-with-parents", default=False,
-        action="store_true", help="Some probands have parents, but genotypes \
-        from one or both parents are not yet available. The genetic data for \
-        these parents will eventually be available. Other probands lack one or \
-        both parents (and they will never be available). The singleton probands \
-        with parents can be distingushed in the ped file as probands where both \
-        parental IDs are non-zero, but lines defining either parent do not \
-        exist. We'll currently exclude the singletons with parents, as \
-        filtering of their genetic variants would provide an abundance of \
-        variants that would later be clarified with parental genotypes.")
-    parser.add_argument("--tweak-lof", dest="tweak_lof", default=False, \
-        action="store_true", help="whether to use the last base of exon rule.")
+        action="store_true", help="Some probands have parents, but genotypes"
+        "from one or both parents are not yet available. The genetic data for"
+        "these parents will eventually be available. Other probands lack one or"
+        "both parents (and they will never be available). The singleton probands"
+        "with parents can be distingushed in the ped file as probands where both"
+        "parental IDs are non-zero, but lines defining either parent do not"
+        "exist. We'll currently exclude the singletons with parents, as"
+        "filtering of their genetic variants would provide an abundance of"
+        "variants that would later be clarified with parental genotypes.")
+    parser.add_argument("--ignore-lof-tweak", default=False, action="store_true",
+        help="whether to use the last base of exon rule.")
     
     args = parser.parse_args()
     
@@ -65,51 +66,20 @@ def get_options():
     
     return args
 
-def check_for_singletons_missing_parents(family):
-    """ figure out whether a family has parents, but lack parental data
+def is_singleton_without_parents(family):
+    """ find probands who have parents recruited and currently lack parental data
     
     Args:
-        family: list of lines from ped for family members
+        family: Family object
     
     Returns:
         true/false for whether the family has a proband with defined parents,
         but the parents do not have VCFs available.
     """
     
-    # make sure we are working on a copy of the family lines, so we don't
-    # interfere with later processing
-    family = family[:]
-    
-    # make sure all of the samples are split into lists
-    for pos in range(len(family)):
-        family[pos] = family[pos].strip().split("\t")
-        
-    # identify the members in the family
-    children = []
-    parents = []
-    for sample in family:
-        dad_id = sample[2]
-        mom_id = sample[3]
-        
-        if dad_id != "0" or mom_id != "0":
-            children.append(sample)
-        else:
-            parents.append(sample)
-    
-    if len(children) == 0:
-        return False
-    
-    # get the IDs for the mother and father (these are the same for all children
-    # in the family).
-    dad_id = children[0][2]
-    mom_id = children[0][3]
-    
-    # probands who are missing one of their parents don't need to be excluded,
-    # since their missing parent will never have genetic data available.
-    if dad_id == "0" or mom_id == "0":
-        return False
-    
-    return len(parents) != 2
+    child = family.children[0]
+    return child.mom_id != '0' and child.dad_id != '0' and \
+        (family.mother is None or family.father is None)
 
 def split_pedigree_file(tempname, ped_path, number_of_jobs, exclude_parents, use_singletons_with_parents):
     """ split the ped file into multiple smaller ped files
@@ -130,75 +100,44 @@ def split_pedigree_file(tempname, ped_path, number_of_jobs, exclude_parents, use
         now be the number of jobs to run).
     """
     
-    # create a dictionary of lines by family ID
-    families = {}
-    with open(ped_path, "r") as ped:
-        for line in ped:
-            split_line = line.split("\t")
-            family_ID = split_line[0]
-            
-            # ignore header lines
-            if line.startswith("family_id"):
-                continue
-            
-            # if we want to exclude the parents, don't include lines with "0" for
-            # the parental ID, these are parental lines.
-            if exclude_parents and split_line[2] == "0":
-                continue
-            
-            if family_ID not in families:
-                families[family_ID] = []
-            
-            families[family_ID].append(line)
+    families = load_families(ped_path)
     
     if not use_singletons_with_parents:
-        for family_id in sorted(families):
-            family = families[family_id]
-            if check_for_singletons_missing_parents(family):
-                del families[family_id]
+        families = [ x for x in families if not is_singleton_without_parents(x) ]
     
-    # figure out how many families to include per file, in order to make the correct number of jobs
-    max_trios_in_ped_file = float(len(families))/float(number_of_jobs)
+    # figure out how many families to include per file, in order to make the
+    # correct number of jobs
+    max_families = float(len(families))/float(number_of_jobs)
     
-    file_counter = 1
-    family_counter = 0
-    for family_ID in sorted(families):
-        lines = families[family_ID]
-        family_counter += 1
-        if (file_counter * family_counter) > (file_counter * max_trios_in_ped_file):
-            file_counter += 1
-            family_counter = 1
-        if family_counter == 1:
-            output_file = open("{0}.{1}.txt".format(tempname, file_counter), "w")
-        output_file.writelines(lines)
+    files_n = 1
+    families_n = 0
+    for family in families:
+        families_n += 1
         
-    return file_counter
-
-def tidy_directory_before_start():
-    """ clean the folder of old job array files before we start our current run
-    """
-    
-    # clean up the directory before we start
-    files = glob.glob("tmp_ped*")
-    for filename in files:
-        os.remove(filename)
-
-def is_number(string):
-    """ check whether a string can be converted to a number
-    
-    Args:
-        string: value as a string, could be a number
+        if families_n > max_families:
+            files_n += 1
+            families_n = 1
         
-    Returns:
-        True/False for whether the value can be converted to a number
-    """
+        if families_n == 1:
+            output_file = open("{0}.{1}.txt".format(tempname, files_n), "w")
+        
+        for person in family:
+            if person is None:
+                continue
+            
+            line = '{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(person.family_id,
+                person.get_id(), person.dad_id, person.mom_id,
+                person.get_gender(), person.get_affected_status(),
+                person.get_path())
+            output_file.write(line)
     
-    try:
-        number = float(string)
-    except ValueError:
-        return False
+    return files_n
+
+def clean_folder(string):
+    ''' clean the folder of old job array files'''
     
-    return True
+    for path in glob.glob(string + "*"):
+        os.remove(path)
 
 def get_random_string():
     """ make a random string, which we can use for bsub job IDs, so that
@@ -208,18 +147,22 @@ def get_random_string():
         random 8 character string
     """
     
-    # set up a random string to associate with the run
-    hash_string = "{0:8x}".format(random.getrandbits(32))
-    hash_string = hash_string.strip()
+    def is_number(string):
+        try:
+            number = float(string)
+            return True
+        except ValueError:
+            return False
     
     # don't allow the random strings to be equivalent to a number, since
     # the LSF cluster interprets those differently from letter-containing
     # strings
-    while is_number(hash_string):
-        hash_string = "{0:8x}".format(random.getrandbits(32))
-        hash_string = hash_string.strip()
+    job_id = None
+    while job_id is None or is_number(job_id):
+        job_id = "{0:x}".format(random.getrandbits(32))
+        job_id = job_id.strip()
     
-    return hash_string
+    return job_id
 
 def submit_bsub_job(command, job_id=None, dependent_id=None, memory=None, requeue_code=None, logfile=None):
     """ construct a bsub job submission command
@@ -268,7 +211,7 @@ def submit_bsub_job(command, job_id=None, dependent_id=None, memory=None, requeu
     command = " ".join(preamble + command)
     subprocess.call(command, shell=True)
 
-def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, tweak_lof, log_options):
+def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, ignore_lof_tweak, log_options):
     """ runs clinical filtering, split across multiple compute jobs
     
     Args:
@@ -287,11 +230,11 @@ def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, tweak_lof, 
     bjob_output_name = "{0}.bjob_output".format(temp_name)
     output_name = "{0}.output".format(temp_name)
     
-    command = ["python3", FILTER_CODE, \
-        "--ped", "{0}.\$LSB_JOBINDEX\.txt".format(temp_name), \
-        "--output", "{0}.\$LSB_JOBINDEX\.txt".format(output_name), \
-        "--syndrome-regions", SYNDROMES_PATH, \
-        "--alternate-ids", ALT_IDS_PATH, \
+    command = ["python3", FILTER_CODE,
+        "--ped", "{0}.\$LSB_JOBINDEX\.txt".format(temp_name),
+        "--output", "{0}.\$LSB_JOBINDEX\.txt".format(output_name),
+        "--syndrome-regions", SYNDROMES_PATH,
+        "--alternate-ids", ALT_IDS_PATH,
         "--pp-dnm-threshold", "0"] + log_options
     
     # sometimes we don't want to restrict to the DDG2P genes, then all_genes
@@ -299,10 +242,10 @@ def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, tweak_lof, 
     if not all_genes:
         command += ["--known-genes", genes_path]
     
-    if tweak_lof:
+    if not ignore_lof_tweak:
         command += ["--lof-sites", LAST_BASE_PATH]
     
-    submit_bsub_job(command, job_id=job_id, logfile=bjob_output_name + ".%I.txt")
+    submit_bsub_job(command, job_id=job_id, logfile=bjob_output_name + ".%I.txt", memory=150)
 
 def run_cleanup(hash_string):
     """ runs a lsf job to clean up the files
@@ -315,41 +258,42 @@ def run_cleanup(hash_string):
     
     # merge the array output after the array finishes
     merge_id = "merge1_{0}".format(hash_string)
-    command = ["head", "-n", "1", output_name + ".1.txt", \
-        ">", merged_output, ";", \
-        "tail", "-q", "-n", "+2", output_name + "*", \
+    command = ["head", "-n", "1", output_name + ".1.txt",
+        ">", merged_output, ";",
+        "tail", "-q", "-n", "+2", output_name + "*",
         ">>", merged_output]
-    submit_bsub_job(command, job_id=merge_id, dependent_id=hash_string, \
+    submit_bsub_job(command, job_id=merge_id, dependent_id=hash_string,
         logfile="tmp_ped.{0}*bjob_output.var_merge.txt".format(hash_string))
     
     # merge the log files after the array finishes
     log_merge_id = "merge2_{0}".format(hash_string)
     command = ["cat", "tmp_ped.{0}*.log".format(hash_string), ">", merged_log]
-    submit_bsub_job(command, job_id=log_merge_id, dependent_id=hash_string, \
+    submit_bsub_job(command, job_id=log_merge_id, dependent_id=hash_string,
         logfile="tmp_ped.{0}*bjob_output.log_merge.txt".format(hash_string))
     
     # remove the temporary files
     command = ["rm", "tmp_ped.{0}*".format(hash_string)]
-    submit_bsub_job(command, job_id="cleanup", dependent_id=[merge_id, log_merge_id], \
+    submit_bsub_job(command, job_id="cleanup", dependent_id=[merge_id, log_merge_id],
         logfile="clinical_reporting.cleanup.txt")
 
 def main():
     
-    opts = get_options()
+    args = get_options()
     
     log_options = []
-    if opts.loglevel != None:
-        log_options = ["--log", opts.loglevel]
+    if args.loglevel != None:
+        log_options = ["--log", args.loglevel]
     
     # set up a random string to associate with the run
     hash_string = get_random_string()
     
     temp_name = "tmp_ped.{0}".format(hash_string)
     
-    tidy_directory_before_start()
-    trio_counter = split_pedigree_file(temp_name, opts.ped_path, opts.n_jobs, opts.without_parents, opts.use_singletons_with_parents)
-    run_array(hash_string, trio_counter, temp_name, opts.ddg2p_path, \
-        opts.all_genes, opts.tweak_lof, log_options)
+    clean_folder('tmp_ped')
+    trio_counter = split_pedigree_file(temp_name, args.ped, args.njobs,
+        args.without_parents, args.use_singletons_with_parents)
+    run_array(hash_string, trio_counter, temp_name, args.ddg2p, \
+        args.all_genes, args.ignore_lof_tweak, log_options)
     run_cleanup(hash_string)
 
 

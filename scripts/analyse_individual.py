@@ -12,8 +12,9 @@ import subprocess
 import random
 import glob
 
+from clinicalfilter.ped import load_families
 
-home_folder = "/nfs/users/nfs_j/jm33/"
+home_folder = os.path.expanduser('~')
 app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
 filter_code = os.path.join(app_folder, "bin", "clinical_filter.py")
@@ -30,10 +31,12 @@ def get_options():
     """
     
     parser = argparse.ArgumentParser(description="Submit analysis job for single individual")
-    parser.add_argument('-i', '--individual', dest='proband_ID', required=True, help='ID of proband to be analysed')
-    parser.add_argument('--ped', default=ped_file, help='pedigree file to use')
-    parser.add_argument('--log', dest='loglevel', default="debug", help='level of logging to use, choose from: debug, info, warning, error or critical')
-    parser.add_argument('--all-genes', dest='all_genes', default=False, action="store_true", help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
+    parser.add_argument('-i', '--individual', required=True, help='ID of proband to be analysed')
+    parser.add_argument('--ped', help='pedigree file to use')
+    parser.add_argument('--log', dest='loglevel', default="debug",
+        help='level of logging to use, choose from: debug, info, warning, error or critical')
+    parser.add_argument('--all-genes', default=False, action="store_true",
+        help='Option to assess variants in all genes. If unused, restricts variants to DDG2P genes.')
     parser.add_argument('--debug-chrom', help='chromosome of variant to debug.')
     parser.add_argument('--debug-pos', help='position of variant to debug.')
     parser.add_argument('--without-parents', default=False, action="store_true",
@@ -45,90 +48,101 @@ def get_options():
     
     return args
 
-def load_ped(ped_path, proband_ID, exclude_parents):
+def load_ped(ped_path, proband_id, exclude_parents):
     """ loads the pedigree details for a prband
     
     Args:
         ped_path: path to pedigree file for cohort
-        proband_ID: individual Id for proband of interest
+        proband_id: individual Id for proband of interest
         exclude_parents: whether to exclude the parents of the proband
     """
     
-    with open(ped_path, "r") as ped:
-        ped_read = ped.readlines()
+    families = load_families(ped_path)
+    families = [ family for family in families for person in family \
+        if person is not None and person.get_id() == proband_id ]
     
-    # find the maternal and paternal IDs for the individual
-    maternal_ID = None
-    paternal_ID = None
-    for line in ped_read:
-        line = line.split()
-        individual_ID = line[1]
+    assert len(families) == 1
+    family = families[0]
+    
+    lines = []
+    for person in family:
+        if person is None:
+            continue
         
-        if individual_ID == proband_ID:
-            family_ID = line[0]
-            paternal_ID = line[2]
-            maternal_ID = line[3]
-            break
+        line = '{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(person.family_id,
+            person.get_id(), person.dad_id, person.mom_id,
+            person.get_gender(), person.get_affected_status(),
+            person.get_path())
+        lines.append(line)
     
-    if maternal_ID is None:
-        sys.exit("Could not find sample ID in family relationships file.")
-    
-    # extract all the lines for the individual
-    new_ped_lines = []
-    for line in ped_read:
-        split_line = line.strip().split()
-        individual_ID = split_line[1]
-        
-        if individual_ID == proband_ID:
-            new_ped_lines.append(line)
-        elif not exclude_parents and (individual_ID == paternal_ID or individual_ID == maternal_ID):
-            new_ped_lines.append(line)
-    
-    return new_ped_lines
+    return lines
 
+def get_random_string():
+    """ make a random string, which we can use for bsub job IDs, so that
+    different jobs do not have the same job IDs.
+    
+    Returns:
+        random 8 character string
+    """
+    
+    def is_number(string):
+        try:
+            number = float(string)
+            return True
+        except ValueError:
+            return False
+    
+    # don't allow the random strings to be equivalent to a number, since
+    # the LSF cluster interprets those differently from letter-containing
+    # strings
+    job_id = None
+    while job_id is None or is_number(job_id):
+        job_id = "{0:x}".format(random.getrandbits(32))
+        job_id = job_id.strip()
+    
+    return job_id
+
+def clean_folder(string):
+    ''' clean the folder of old job array files'''
+    
+    for path in glob.glob(string + "*"):
+        os.remove(path)
 
 def main():
     """ analyse a single proband using bjobs
     """
     
-    options = get_options()
-    proband_ID = options.proband_ID
-    logging_option = ["--log", options.loglevel]
+    args = get_options()
+    logging_option = ["--log", args.loglevel]
     
-    new_ped = load_ped(options.ped, proband_ID, options.without_parents)
+    ped = load_ped(args.ped, args.individual, args.without_parents)
     
     # remove the temp files from the previous run
     tmp_name = "tmp_run."
-    files = glob.glob(tmp_name + "*")
-    for filename in files:
-        os.remove(filename)
+    clean_folder(tmp_name)
     
     # write the temp ped file for the family to a file, but make sure it doesn't overwrite anything
-    random_filename = tmp_name + str(random.randint(100000, 999999)) + ".ped"
-    while os.path.exists(random_filename):
-        random_filename = tmp_name + str(random.randint(100000, 999999)) + ".ped"
-    
-    random_file = open(random_filename, 'w')
-    random_file.writelines(new_ped)
-    random_file.close()
+    path = tmp_name + get_random_string() + ".ped"
+    with open(path, 'w') as handle:
+        handle.writelines(ped)
     
     # now set up the command for analysing the given pedigree file
-    bjobs_preamble = ["bsub", "-q", "normal", "-o", random_filename + ".bjob_output.txt"]
+    bjobs_preamble = ["bsub", "-q", "normal", "-o", path + ".bjob_output.txt"]
     filter_command = ["python3", filter_code, \
-        "--ped", random_filename, \
+        "--ped", path, \
         "--alternate-ids", alternate_ids, \
-        "--output", random_filename + ".output.txt", \
+        "--output", path + ".output.txt", \
         "--export-vcf", os.getcwd(), \
         "--syndrome-regions", syndrome_regions_filename] + logging_option
     
-    if options.tweak_lof:
+    if args.tweak_lof:
         filter_command += ["--lof-sites", LAST_BASE_PATH]
     
-    if not options.all_genes:
+    if not args.all_genes:
         filter_command += ["--known-genes", known_genes]
     
-    if options.debug_chrom is not None:
-        filter_command += ["--debug-chrom", options.debug_chrom, "--debug-pos", options.debug_pos]
+    if args.debug_chrom is not None:
+        filter_command += ["--debug-chrom", args.debug_chrom, "--debug-pos", args.debug_pos]
         
     full_command = " ".join(bjobs_preamble + filter_command)
     
