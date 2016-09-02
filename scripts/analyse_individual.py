@@ -41,7 +41,7 @@ def get_options():
     parser.add_argument('--debug-pos', help='position of variant to debug.')
     parser.add_argument('--without-parents', default=False, action="store_true",
         help='whether to remove the parents for a proband only-analysis.')
-    parser.add_argument("--tweak-lof", default=False,
+    parser.add_argument("--ignore-lof-tweak", default=False,
         action="store_true", help="whether to use the last base of exon rule.")
     
     args = parser.parse_args()
@@ -135,7 +135,7 @@ def main():
         "--export-vcf", os.getcwd(), \
         "--syndrome-regions", syndrome_regions_filename] + logging_option
     
-    if args.tweak_lof:
+    if not args.ignore_lof_tweak:
         filter_command += ["--lof-sites", LAST_BASE_PATH]
     
     if not args.all_genes:
