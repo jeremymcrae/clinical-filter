@@ -61,7 +61,6 @@ class Filter(object):
         """
         
         self.pp_filter = pp_filter
-        self.known_genes_date = genes_date
         
         self.debug_chrom = debug_chrom
         self.debug_pos = debug_pos
@@ -75,8 +74,7 @@ class Filter(object):
         self.loader = LoadVCFs(count, self.known_genes, self.last_base,
              self.debug_chrom, self.debug_pos)
         
-        self.reporter = Report(output_path, export_vcf, self.id_mapper,
-            self.known_genes_date)
+        self.reporter = Report(output_path, export_vcf, self.id_mapper, genes_date)
     
     def filter_trio(self, family):
         """ loads trio variants, and screens for candidate variants
