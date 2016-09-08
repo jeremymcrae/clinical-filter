@@ -19,6 +19,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
+import json
 import sys
 import logging
 
@@ -26,49 +27,78 @@ from clinicalfilter.load_vcfs import LoadVCFs
 from clinicalfilter.inheritance import Allosomal, Autosomal, CNVInheritance
 from clinicalfilter.post_inheritance_filter import PostInheritanceFilter
 from clinicalfilter.reporting import Report
-from clinicalfilter.load_options import LoadOptions
 from clinicalfilter.utils import get_vcf_provenance
+from clinicalfilter.load_files import open_known_genes, \
+    create_person_ID_mapper, open_cnv_regions, open_last_base_sites
 
-
-class Filter(LoadOptions):
+class Filter(object):
     """ filters trios for candidate variants that might contribute to a
     probands disorder.
     """
     
-    def __init__(self, opts):
-        """intialise the class with the some definitions
+    def __init__(self, count=0, known_genes=None, genes_date=None,
+            alternate_ids=None, regions=None, lof_sites=None, pp_filter=0.0,
+            output_path=None, export_vcf=None, debug_chrom=None, debug_pos=None):
+        """ initialise the class object
+        
+        Args:
+            count: number of probands to analyse, helpful for tracking progress
+                in output logs.
+            known_genes: path to table of genes genes known to be associated
+                with genetic disorders, or None.
+            genes_date: date of the known_genes file, or None if not using/unknown.
+            alternate_ids: path to table linking proband IDs to an alternate ID scheme.
+            regions: path to a table of regions for DECIPHER CNV syndromes.
+            lof_sites: path to json file of [chrom, position] coordinates in
+                genome, for modifying to a loss-of-function consequence if
+                required. Can be None if unneeded.
+            pp_filter: threshold from 0 to 1 for pp_dnm value to filter out
+                candidiate DNMs which fall below this value
+            output_path: path to write output tab-separated file to
+            export_vcf: path to file or folder to write VCFs to.
+            debug_chrom: chromosome for debugging purposes.
+            debug_pos: position for debugging variant filtering at.
         """
         
-        self.set_definitions(opts)
-        self.report = Report(self.output_path, self.export_vcf, self.ID_mapper,
+        self.pp_filter = pp_filter
+        self.known_genes_date = genes_date
+        
+        self.debug_chrom = debug_chrom
+        self.debug_pos = debug_pos
+        
+        # open reference datasets, these return None if the paths are None
+        self.known_genes = open_known_genes(known_genes)
+        self.id_mapper = create_person_ID_mapper(alternate_ids)
+        self.cnv_regions = open_cnv_regions(regions)
+        self.last_base = open_last_base_sites(lof_sites)
+        
+        self.loader = LoadVCFs(count, self.known_genes, self.last_base,
+             self.debug_chrom, self.debug_pos)
+        
+        self.reporter = Report(output_path, export_vcf, self.id_mapper,
             self.known_genes_date)
     
-    def filter_trios(self):
+    def filter_trio(self, family):
         """ loads trio variants, and screens for candidate variants
         """
         
-        count = sum([ y.is_affected() for x in self.families for y in x.children ])
-        
-        self.vcf_loader = LoadVCFs(count, self.known_genes, self.last_base,
-             self.debug_chrom, self.debug_pos)
-        
-        # load the trio paths into the current path setup
-        for family in self.families:
-            
-            # some families have more than one child in the family, so run
-            # through each child.
-            family.set_child()
-            while family.child is not None:
-                if family.child.is_affected():
-                    variants = self.vcf_loader.get_trio_variants(family, self.pp_filter)
-                    self.vcf_provenance = [ get_vcf_provenance(x) for x in family ]
-                    self.analyse_trio(family, variants)
+        # some families have more than one child in the family, so run
+        # through each child.
+        family.set_child()
+        while family.child is not None:
+            if family.child.is_affected():
+                found_vars = self.analyse_trio(family)
                 
-                family.set_child_examined()
-        
-        sys.exit(0)
+                vcf_provenance = [ get_vcf_provenance(x) for x in
+                    [family.child, family.mother, family.father] ]
+                
+                # export the results to either tab-separated table or VCF format
+                self.reporter.export_data(found_vars, family, \
+                    self.loader.child_header, vcf_provenance)
+            
+            family.set_child_examined()
     
-    def analyse_trio(self, family, variants):
+    def analyse_trio(self, family):
         """identify candidate variants in exome data for a single trio.
         
         takes variants that passed the initial filtering from VCF loading, and
@@ -80,6 +110,8 @@ class Filter(LoadOptions):
         Args:
             variants: list of TrioGenotypes objects
         """
+        
+        variants = self.loader.get_trio_variants(family, self.pp_filter)
         
         # organise variants by gene, then find variants that fit
         # different inheritance models
@@ -94,12 +126,10 @@ class Filter(LoadOptions):
         found_vars = self.exclude_duplicates(found_vars)
         
         # apply some final filters to the flagged variants
-        post_filter = PostInheritanceFilter(found_vars, family, self.debug_chrom, self.debug_pos)
-        found_vars = post_filter.filter_variants()
+        post_filter = PostInheritanceFilter(found_vars, family, self.debug_chrom,
+            self.debug_pos)
         
-        # export the results to either tab-separated table or VCF format
-        self.report.export_data(found_vars, family, \
-            self.vcf_loader.child_header, self.vcf_provenance)
+        return post_filter.filter_variants()
     
     def create_gene_dict(self, variants):
         """creates dictionary of variants indexed by gene

@@ -22,6 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 from __future__ import unicode_literals
 
 import io
+import json
 
 def get_header_positions(file_handle, columns):
     """ get a dictionary of column positions from a header line
@@ -75,7 +76,7 @@ def parse_gene_line(line, header):
     
     return symbol, gene
 
-def open_known_genes(path="DDGP-reportable.txt"):
+def open_known_genes(path):
     """Loads list of known disease causative genes.
     
     We obtain a list of genes that are known to be involved in disorders, so
@@ -90,6 +91,9 @@ def open_known_genes(path="DDGP-reportable.txt"):
         set. The dictionary is indexed by gene ID to the corresponding
         inheritance value.
     """
+    
+    if path is None:
+        return None
     
     # only include genes with sufficient DDG2P status
     allowed = set(["Confirmed DD Gene", "Probable DD gene", "Both DD and IF"])
@@ -137,6 +141,9 @@ def create_person_ID_mapper(path):
         different individuals.
     """
     
+    if path is None:
+        return None
+    
     converter = {}
     with open(path) as handle:
         for line in handle:
@@ -164,6 +171,9 @@ def open_cnv_regions(path):
         dictionary of copy number values, indexed by (chrom, start end) tuples
     """
     
+    if path is None:
+        return None
+    
     cnv_regions = {}
     with open(path) as handle:
         header = handle.readline()
@@ -179,3 +189,24 @@ def open_cnv_regions(path):
             cnv_regions[key] = copy_number
     
     return cnv_regions
+
+def open_last_base_sites(path):
+    ''' open a set of sites at the last base of an exon which can potentially
+    alter the consequence to a LoF consequence.
+    
+    Args:
+        path: path to last base sites file, or None
+    
+    Returns:
+        Set of sites as (chrom, pos) tuples. Can be empty set if path is None.
+    '''
+    
+    if path is None:
+        return set([])
+    
+    with open(path) as handle:
+        last_base = json.load(handle)
+        # convert everything to tuples, which are hashable into a set
+        last_base = set([ (x[0], int(x[1])) for x in last_base ])
+    
+    return last_base

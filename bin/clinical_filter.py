@@ -23,24 +23,51 @@ import logging
 
 from clinicalfilter.load_options import get_options
 from clinicalfilter.filter import Filter
+from clinicalfilter.ped import load_families, Family
+
+def get_families(args):
+    """ loads a list of Family objects for multiple families, or a single trio
+    """
+    
+    if args.ped is None:
+        fam_id = 'blank_family_ID'
+        family = Family(fam_id)
+        family.add_child('child', args.mother, args.father, args.gender, '2', args.child)
+        if args.mother is not None:
+            family.add_mother('mother', '0', '0', '2',  args.mom_aff, args.mother)
+        if args.father is not None:
+            family.add_father('father',  '0', '0', '1', args.dad_aff, args.father)
+        
+        families = [family]
+    else:
+        families = load_families(args.ped)
+    
+    return families
 
 def main():
     """ run the clinical filtering analyses
     """
     
-    options = get_options()
+    args = get_options()
     
     # set the level of logging to generate
-    numeric_level = getattr(logging, options.loglevel.upper(), None)
+    numeric_level = getattr(logging, args.loglevel.upper(), None)
     
     log_filename = "clinical-filter.log"
-    if options.ped is not None:
-        log_filename = options.ped + ".log"
+    if args.ped is not None:
+        log_filename = args.ped + ".log"
     
     logging.basicConfig(level=numeric_level, filename=log_filename)
     
-    finder = Filter(options)
-    finder.filter_trios()
+    families = get_families(args)
+    count = sum([ y.is_affected() for x in families for y in x.children ])
+    
+    finder = Filter(count, args.known_genes, args.genes_date, args.alternate_ids,
+        args.regions, args.lof_sites, args.pp_filter, args.output, args.export_vcf,
+        args.debug_chrom, args.debug_pos, )
+    
+    for family in families:
+        finder.filter_trio(family)
 
 if __name__ == "__main__":
     main()

@@ -23,7 +23,6 @@ import unittest
 
 from clinicalfilter.filter import Filter
 from clinicalfilter.ped import Family
-from clinicalfilter.load_options import LoadOptions
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
@@ -36,21 +35,18 @@ class TestClinicalFilterPy(unittest.TestCase):
         """ create a default ClinicalFilter object to test
         """
         
-        class opts:
-            ped = None
-            child, mother, father = None, None, None
-            gender = None
-            mom_aff, dad_aff = None, None
-            regions = None
-            genes, genes_date = None, None
-            alternate_ids = None
-            output, export_vcf = None, None
-            loglevel = "debug"
-            debug_chrom, debug_pos = None, None
-            pp_filter = 0.9
-            lof_sites = None
+        count = 1
+        regions = None
+        known_genes, genes_date = None, None
+        alternate_ids = None
+        output_path, export_vcf = None, None
+        debug_chrom, debug_pos = None, None
+        pp_filter = 0.9
+        lof_sites = None
         
-        self.finder = Filter(opts)
+        self.finder = Filter(count, known_genes, genes_date, alternate_ids,
+            regions, lof_sites, pp_filter, output_path, export_vcf, debug_chrom,
+            debug_pos)
     
     def create_snv(self, sex, genotype, cq="missense_variant", hgnc="TEST", chrom="1"):
         """ create a default variant
@@ -113,11 +109,11 @@ class TestClinicalFilterPy(unittest.TestCase):
         # define the trio, so that we can know whether the parents are affected.
         # The child also needs to be included and set, so that we can get the
         # child ID for logging purposes.
-        self.finder.family = Family("famID")
-        self.finder.family.add_child("child_id", 'dad_id', 'mom_id', 'f', '2', "/vcf/path")
-        self.finder.family.add_father("dad_id", '0', '0', 'm', '1', "/vcf/path")
-        self.finder.family.add_mother("mom_id", '0', '0', 'f', '1', "/vcf/path")
-        self.finder.family.set_child()
+        family = Family("famID")
+        family.add_child("child_id", 'dad_id', 'mom_id', 'f', '2', "/vcf/path")
+        family.add_father("dad_id", '0', '0', 'm', '1', "/vcf/path")
+        family.add_mother("mom_id", '0', '0', 'f', '1', "/vcf/path")
+        family.set_child()
         
         # create variants that cover various scenarios
         snv1 = self.create_trio_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
@@ -131,30 +127,30 @@ class TestClinicalFilterPy(unittest.TestCase):
             "TESTX": {"inh": ["X-linked dominant"]}}
         
         # check the simplest case, a variant in a known gene
-        self.assertEqual(self.finder.find_variants([snv1], "TEST1", self.finder.family),
+        self.assertEqual(self.finder.find_variants([snv1], "TEST1", family),
             [(snv1, ["single_variant"], ["Monoallelic"], ["TEST1"])])
         
         # check that a gene not in a known gene does not pass
-        self.assertEqual(self.finder.find_variants([snv1], "TEST2", self.finder.family), [])
+        self.assertEqual(self.finder.find_variants([snv1], "TEST2", family), [])
         
         # check a variant where the gene is known, but the consequence for that
         # gene is not functional, does not pass
-        self.assertEqual(self.finder.find_variants([snv2], "OTHER2", self.finder.family), [])
+        self.assertEqual(self.finder.find_variants([snv2], "OTHER2", family), [])
         
         # check that intergenic variants (which lack HGNC symbols) do not pass
-        self.assertEqual(self.finder.find_variants([snv3], None, self.finder.family), [])
+        self.assertEqual(self.finder.find_variants([snv3], None, family), [])
         
         # check that a variant on chrX passes through the allosomal instance
-        self.assertEqual(self.finder.find_variants([snv4], "TESTX", self.finder.family),
+        self.assertEqual(self.finder.find_variants([snv4], "TESTX", family),
             [(snv4, ["single_variant"], ["X-linked dominant"], ["TESTX"])])
         
         # remove the known genes, so that the variants in unknown genes pass
         self.finder.known_genes = None
-        self.assertEqual(self.finder.find_variants([snv1], "TEST2", self.finder.family),
+        self.assertEqual(self.finder.find_variants([snv1], "TEST2", family),
             [(snv1, ["single_variant"], ["Monoallelic"], ["TEST2"])])
         
         # but variants without gene symbols still are excluded
-        self.assertEqual(self.finder.find_variants([snv3], None, self.finder.family), [])
+        self.assertEqual(self.finder.find_variants([snv3], None, family), [])
     
     def test_exclude_duplicates(self):
         """ test that exclude duplicates works correctly
@@ -188,7 +184,4 @@ class TestClinicalFilterPy(unittest.TestCase):
         # symbols
         self.assertEqual(self.finder.exclude_duplicates(variants),
             [(snv1, ["single_variant"], ["Monoallelic"], ["TEST1", "TEST2"])])
-        
-        
-        
         
