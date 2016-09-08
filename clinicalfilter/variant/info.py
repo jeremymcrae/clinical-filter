@@ -47,7 +47,7 @@ class Info(object):
     # define the set of loss-of-function consequences
     lof_consequences = set(["transcript_ablation", "splice_donor_variant", \
         "splice_acceptor_variant", "stop_gained", "frameshift_variant",  \
-        "coding_sequence_variant", "start_lost", "initiator_codon_variant",
+        "start_lost", "initiator_codon_variant",
         "conserved_exon_terminus_variant"])
     
     # define the set of missense (or non loss-of-function) consequences

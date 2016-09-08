@@ -317,7 +317,7 @@ class TestVariantSnvPy(unittest.TestCase):
             "splice_acceptor_variant", "frameshift_variant", \
             "initiator_codon_variant", "inframe_insertion", "inframe_deletion",\
             "missense_variant", "transcript_amplification", "stop_gained",\
-            "stop_lost", "coding_sequence_variant"]
+            "stop_lost"]
         
         # check all the passing consequences
         for cq in vep_passing:
@@ -338,7 +338,7 @@ class TestVariantSnvPy(unittest.TestCase):
             "TFBS_ablation", "TFBS_amplification", "TF_binding_site_variant", \
             "regulatory_region_variant", "regulatory_region_ablation", \
             "regulatory_region_amplification", "feature_elongation", \
-            "feature_truncation", "intergenic_variant"]
+            "feature_truncation", "intergenic_variant", "coding_sequence_variant"]
         
         # check all the failing consequences
         for cq in vep_failing:
