@@ -61,7 +61,8 @@ class TestReportPy(unittest.TestCase):
         
         self.report = Report(None, None, None, None)
         self.report.family = self.trio
-        # self.report.tags_dict = tags
+        SNV.set_populations(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF",
+            "EAS_AF", "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"])
     
     def create_snv(self, gender, genotype):
         """ create a default variant

@@ -51,6 +51,8 @@ class TestVariantSnvPy(unittest.TestCase):
             "EAS_AF", "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", \
             "UK10K_cohort_AF"]
         
+        SNV.set_populations(self.pops)
+        
         self.format_keys = "GT:DP"
         self.sample_values = "0/1:50"
         
@@ -302,6 +304,10 @@ class TestVariantSnvPy(unittest.TestCase):
     def test_fails_filters_high_maf(self):
         """ test that variants with high MAF fail the filtering
         """
+        
+        print('\n\n')
+        print(self.var.populations)
+        print('\n\n')
         
         # check th
         for pop in self.pops:

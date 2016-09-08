@@ -4,58 +4,40 @@
 (https://coveralls.io/github/jeremymcrae/clinical-filter?branch=master)
 
 ## Clinical filtering for trios
-
-Find variants in affected children that might contribute to their disorder. We
-load VCF files (either named on the command line, or listed in a PED file) for
-members of a family, filter for rare, functionally disruptive variants, and
-assess whether each variant might affect the child's disorder. We take into
-account the parents genotypes (if available) and whether the parents are also
-affected with a (the?) disorder. For variants in known disease causative genes
-we check whether the inheritance patterns matches one expected for the
-inheritance models of the gene.
+Find candidate diagnostic variants in affected children that might contribute to
+their disorder. We load VCF files (either named on the command line, or listed
+in a PED file) for members of a family, filter for rare, functionally disruptive
+variants, and assess whether each variant might affect the child's disorder. We
+take into account the parents genotypes (if available) and whether the parents
+are also affected with a (the?) disorder. For variants in known disease
+causative genes we check whether the inheritance patterns matches one expected
+for the inheritance models of the gene.
 
 ### VCF requirements
-Gene symbols are expected as either `HGNC` (single gene) or `HGNC_ALL`
-("&"-seperated multiple genes) entries in the INFO field. Consequence strings
-come from VEP, and are expected in the `CQ` entry in the INFO. De novo mutations
-need a `PP_DNM` (posterior probability of de novo mutation, estimated by
-denovogear) entry in the FORMAT. By default, we screen for de novos with
-PP_DNM > 0.9.
+The code expects VCFs as version 4.2. Many INFO entries need to take multiple
+alleles, and/or multiple genes into account. Multi-allelic variants expect
+comma-separated entries for many fields, such as in the HGNC field e.g
+'GENE1,GENE1' for a multi-allelic variant where both alleles affect the gene
+'GENE1'. Multi-genic variants similarly expect '|' separated entries for the
+multiple genes e.g. 'GENE1|GENE2' for a variant that occurs in both 'GENE1' and
+'GENE2'.
 
-We only check rare variants by excluding variants where any reference population
-has a minor allele frequency (MAF) >= 0.01. The MAF for the reference
-populations are included in the INFO field, if the MAF is available for that
-population. Currently the populations that are checked are:
-* [continental 1000 Genomes populations](http://www.1000genomes.org/about)
-* [DDD unaffected parents population](http://www.ddduk.org/)
-* [UK10K population](http://www.uk10k.org/)
+Consequence strings come from VEP, and are expected in the `CQ` entry in the
+INFO. De novo mutations need a `PP_DNM` (posterior probability of de novo
+mutation, estimated by denovogear) entry in the FORMAT. By default, we screen
+for de novos with PP_DNM > 0.9.
 
-The reference population tags are hard-coded as a class variable in
-`../clinicalfilter/variant/info.py`. The tags for these populations in the VCF
-are:
-- AFR_AF
-- AMR_AF
-- ASN_AF
-- DDD_AF
-- EAS_AF
-- ESP_AF
-- EUR_AF
-- MAX_AF
-- SAS_AF
-- UK10K_cohort_AF
-
-### Usage
+### Install
 ```sh
-python clinical_filter.py \
-  --ped temp_name.ped \
-  --syndrome-regions regions_filename.txt \ # optional
-  --known-genes known_genes.txt \ # optional (but recommended)
-  --known-genes-date 2014-01-01 \ # optional
-  --alternate-ids alternate_ids.txt \ # optional
-  --output output_name.txt \ # optional
-  -export-vcf vcf_filename_or_directory # optional
+pip install git+git://github.com/jeremymcrae/clinical-filter.git --user
+
+# Alternatively:
+git clone https://github.com/jeremymcrae/clinical-filter.git
+cd clinical-filter
+python setup.py install --user
 ```
 
+### Usage
 For running the filtering, the basic command is either with a ped file
 specified, i.e.
 
@@ -90,5 +72,7 @@ Other options are:
    written to the given path
  * `--export-vcf OUTPUT_VCF_PATH` # to specify you want a filtered VCF, can
    give a directory (when analysing multiple individuals), or give a file path
+ * `--maf-populations POP1_AF,POP2_AF` # to specify populations with MAF values
+   within the INFO field of variants.
 
 The output options can be omitted, or used together, whichever you need.

@@ -45,6 +45,8 @@ class TestVariantInfoPy(unittest.TestCase):
         
         SNV.set_debug('1', 15000000)
         SNV.set_known_genes(known)
+        SNV.set_populations(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF",
+            "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"])
         
         # set up a SNV object, since SNV inherits Info
         info = "HGNC=ATRX;CQ=missense_variant;random_tag"
