@@ -36,7 +36,7 @@ class Filter(object):
     probands disorder.
     """
     
-    def __init__(self, count=0, known_genes=None, genes_date=None,
+    def __init__(self, population_tags=None, count=0, known_genes=None, genes_date=None,
             alternate_ids=None, regions=None, lof_sites=None, pp_filter=0.0,
             output_path=None, export_vcf=None, debug_chrom=None, debug_pos=None):
         """ initialise the class object
@@ -71,7 +71,7 @@ class Filter(object):
         self.cnv_regions = open_cnv_regions(regions)
         self.last_base = open_last_base_sites(lof_sites)
         
-        self.loader = LoadVCFs(count, self.known_genes, self.last_base,
+        self.loader = LoadVCFs(count, population_tags, self.known_genes, self.last_base,
              self.debug_chrom, self.debug_pos)
         
         self.reporter = Report(output_path, export_vcf, self.id_mapper, genes_date)

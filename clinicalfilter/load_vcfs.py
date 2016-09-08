@@ -33,11 +33,13 @@ class LoadVCFs(object):
     """ load VCF files for a trio
     """
     
-    def __init__(self, total_trios, known_genes, last_base, debug_chrom, debug_pos):
+    def __init__(self, probands_n, maf_tags, known_genes, last_base, debug_chrom, debug_pos):
         """ intitalise the class with the filters and tags details etc
         
         Args:
-            total_trios: count of how many trios are to be analysed
+            probands_n: count of how many probands are to be analysed
+            maf_tags: list of populations who have minor allele frequencies in
+                the INFO.
             known_genes: dictionary of genes known to be involved with genetic
                 disorders.
             last_base: set of sites in genome at conserved last base of exons,
@@ -50,7 +52,7 @@ class LoadVCFs(object):
         
         self.family = None
         self.counter = 0
-        self.total_trios = total_trios
+        self.probands_n = probands_n
         self.known_genes = known_genes
         
         # define several parameters of the variant classes, before we have
@@ -58,6 +60,7 @@ class LoadVCFs(object):
         SNV.set_known_genes(known_genes)
         SNV.set_debug(debug_chrom, debug_pos)
         SNV.set_last_base_sites(last_base)
+        SNV.set_populations(maf_tags)
         
         CNV.set_known_genes(known_genes)
         CNV.set_debug(debug_chrom, debug_pos)
@@ -75,7 +78,7 @@ class LoadVCFs(object):
         
         self.family = family
         self.counter += 1
-        logging.info("opening trio {} of {}".format(self.counter, self.total_trios))
+        logging.info("opening trio {} of {}".format(self.counter, self.probands_n))
         
         try:
             variants = self.load_trio(family)

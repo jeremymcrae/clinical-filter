@@ -27,12 +27,12 @@ from clinicalfilter.variant.snv import SNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
 
-class TestClinicalFilterPy(unittest.TestCase):
-    """ test the ClinicalFilter class
+class TestFilterPy(unittest.TestCase):
+    """ test the Filter class
     """
     
     def setUp(self):
-        """ create a default ClinicalFilter object to test
+        """ create a default Filter object to test
         """
         
         count = 1
@@ -43,8 +43,10 @@ class TestClinicalFilterPy(unittest.TestCase):
         debug_chrom, debug_pos = None, None
         pp_filter = 0.9
         lof_sites = None
+        population_tags = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF",
+            "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"]
         
-        self.finder = Filter(count, known_genes, genes_date, alternate_ids,
+        self.finder = Filter(population_tags, count, known_genes, genes_date, alternate_ids,
             regions, lof_sites, pp_filter, output_path, export_vcf, debug_chrom,
             debug_pos)
     

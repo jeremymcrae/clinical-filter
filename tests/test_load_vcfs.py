@@ -59,11 +59,13 @@ class TestLoadVCFsPy(unittest.TestCase):
         """
         
         total_trios = 1
+        maf_tags = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF", "ESP_AF",
+            "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"]
         self.known_genes = {"ATRX": {"inheritance": {"Hemizygous": \
             {"Loss of function"}}, "start": 1, "chrom": "1", \
             "confirmed_status": {"Confirmed DD Gene"}, "end": 20000000}}
         
-        self.vcf_loader = LoadVCFs(total_trios, self.known_genes, set(), None, None, )
+        self.vcf_loader = LoadVCFs(total_trios, maf_tags, self.known_genes, set(), None, None, )
     
     def make_vcf_header(self):
     
@@ -507,13 +509,14 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         total_trios = 1
         known_genes = {}
+        maf_tags = None
         
         # if the debug info isn't available, then the SNV object doesn't use the
         # debug filter function
-        self.vcf_loader = LoadVCFs(total_trios, known_genes, set(), None, None)
+        self.vcf_loader = LoadVCFs(total_trios, maf_tags, known_genes, set(), None, None)
         self.assertNotEqual(SNV.passes_filters, SNV.passes_filters_with_debug)
         
         # if the debug info is passed in, check that the debug filter function
         # got set correctly
-        self.vcf_loader = LoadVCFs(total_trios, known_genes, set(), "1", "10000")
+        self.vcf_loader = LoadVCFs(total_trios, maf_tags, known_genes, set(), "1", "10000")
         self.assertEqual(SNV.passes_filters, SNV.passes_filters_with_debug)

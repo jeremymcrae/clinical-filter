@@ -55,13 +55,10 @@ class Info(object):
         "inframe_insertion", "inframe_deletion", "missense_variant", \
         "transcript_amplification", "protein_altering_variant"])
     
-    # define the populations who have minor allele frequencies in the INFO
-    populations = set(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF", \
-        "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"])
-    
     # create static variables (set before creating any class instances)
     known_genes = None
     last_base = set([])
+    populations = []
     
     @classmethod
     def set_known_genes(cls_obj, known_genes):
@@ -70,6 +67,14 @@ class Info(object):
     @classmethod
     def set_last_base_sites(cls_obj, sites):
         cls_obj.last_base = sites
+    
+    @classmethod
+    def set_populations(cls_obj, populations):
+        '''define the populations who have minor allele frequencies in the INFO
+        '''
+        if populations is not None:
+            assert type(populations) == list
+            cls_obj.populations = populations
     
     def add_info(self, info_values):
         """Parses the INFO column from VCF files.

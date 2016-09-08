@@ -51,8 +51,13 @@ def get_options():
     parser.add_argument("--lof-sites", help="path to file of sites at the last base of exons that are potentially LoF sites.")
     
     # New argument added by PJ to allow DNM_PP filtering to be disabled.
-    parser.add_argument("--pp-dnm-threshold", dest="pp_filter", type=float, default=0.9, help="Set PP_DNM threshold for filtering (defaults to >=0.9)")
-
+    parser.add_argument("--pp-dnm-threshold", dest="pp_filter", type=float,
+        default=0.9, help="Set PP_DNM threshold for filtering (defaults to >=0.9)")
+    parser.add_argument("--maf-populations",
+        default="AFR_AF,AMR_AF,ASN_AF,DDD_AF,EAS_AF,ESP_AF,EUR_AF,MAX_AF,SAS_AF,UK10K_cohort_AF",
+        help="Comma separated list of population tags that can exist in the INFO"
+            "field for population-specific minor allele frequencies")
+    
     args = parser.parse_args()
     
     if args.child is not None and args.alternate_ids is not None:
@@ -60,5 +65,7 @@ def get_options():
 
     if args.pp_filter < 0.0 or args.pp_filter > 1:
         argparse.ArgumentParser.error("--pp-dnm-threshold must be between 0 and 1")
+    
+    args.populations = args.populations.split(',')
     
     return args
