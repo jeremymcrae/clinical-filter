@@ -42,6 +42,8 @@ class Filter(object):
         """ initialise the class object
         
         Args:
+            population_tags: list of population ID tags, that could exist within
+                the INFO field, or None.
             count: number of probands to analyse, helpful for tracking progress
                 in output logs.
             known_genes: path to table of genes genes known to be associated
