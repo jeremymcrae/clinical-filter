@@ -43,10 +43,12 @@ class TestVariantInfoPy(unittest.TestCase):
             {"Loss of function"}}, "start": "10000000", "chrom": "1", \
             "confirmed_status": {"Confirmed DD Gene"}, "end": "20000000"}}
         
+        self.pops = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF",
+            "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"]
+        
         SNV.set_debug('1', 15000000)
         SNV.set_known_genes(known)
-        SNV.set_populations(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF",
-            "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"])
+        SNV.set_populations(self.pops)
         
         # set up a SNV object, since SNV inherits Info
         info = "HGNC=ATRX;CQ=missense_variant;random_tag"
@@ -435,3 +437,20 @@ class TestVariantInfoPy(unittest.TestCase):
         # make sure we can handle having None values
         self.var.info["AFR_AF"] = None
         self.assertEqual(self.var.find_max_allele_frequency(), 0.05)
+    
+    def test_find_max_allele_frequency_without_populations(self):
+        ''' test if the MAF finder operates correctly when we haven't set any
+        populations to check
+        '''
+        
+        self.var.info["MAX_AF"] = "0.005"
+        
+        # this is a regression test for a problem that only occurs if the unit
+        # tests are run in an order such that the populations might not have
+        # been set in previous commits.
+        SNV.set_populations([])
+        self.assertEqual(self.var.find_max_allele_frequency(), None)
+        
+        # reset the populations, so that other unit tests can also rely on the
+        # populations being set
+        SNV.set_populations(self.pops)
