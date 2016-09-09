@@ -200,9 +200,9 @@ class TestInheritancePy(unittest.TestCase):
             geno=['0/1', '0/0', '1/0'])
         self.inh = Autosomal([var1, var2], self.trio, inh, "TEST")
         
-        self.assertEqual(self.inh.get_candidate_variants(),
-            [(var1, ['compound_het'], ['Biallelic'], ['TEST']),
-            (var2, ['compound_het'], ['Biallelic'], ['TEST'])])
+        self.assertEqual(sorted(self.inh.get_candidate_variants()),
+            sorted([(var1, ['compound_het'], ['Biallelic'], ['TEST']),
+            (var2, ['compound_het'], ['Biallelic'], ['TEST'])]))
         
         # check that a single variant isn't included in the compound hets
         self.inh = Autosomal([var1], self.trio, inh, "TEST")
