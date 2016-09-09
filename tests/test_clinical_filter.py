@@ -67,7 +67,7 @@ class TestFilterPy(unittest.TestCase):
         return SNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
             sample=values, gender=sex)
     
-    def create_trio_variant(self, child_gender, cq, hgnc, chrom="1", pos='15000000'):
+    def create_variant(self, child_gender, cq, hgnc, chrom="1", pos='15000000'):
         """ create a default TrioGenotypes variant
         """
         
@@ -83,9 +83,9 @@ class TestFilterPy(unittest.TestCase):
         """
         
         # create variants that share genes, or not
-        snv1 = self.create_trio_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
-        snv2 = self.create_trio_variant("F", "missense_variant", "TEST1")
-        snv3 = self.create_trio_variant("F", "missense_variant", "OTHER1")
+        snv1 = self.create_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
+        snv2 = self.create_variant("F", "missense_variant", "TEST1")
+        snv3 = self.create_variant("F", "missense_variant", "OTHER1")
         
         # the variants that share a gene should be grouped in lists indexed by
         # the gene key
@@ -106,10 +106,10 @@ class TestFilterPy(unittest.TestCase):
         family.set_child()
         
         # create variants that cover various scenarios
-        snv1 = self.create_trio_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
-        snv2 = self.create_trio_variant("F", "missense_variant|synonymous_variant", "OTHER1|OTHER2")
-        snv3 = self.create_trio_variant("F", "missense_variant", "")
-        snv4 = self.create_trio_variant("F", "missense_variant", "TESTX", chrom="X")
+        snv1 = self.create_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
+        snv2 = self.create_variant("F", "missense_variant|synonymous_variant", "OTHER1|OTHER2")
+        snv3 = self.create_variant("F", "missense_variant", "")
+        snv4 = self.create_variant("F", "missense_variant", "TESTX", chrom="X")
         
         self.finder.known_genes = {"TEST1": {"inh": ["Monoallelic"]},
             "OTHER1": {"inh": ["Monoallelic"]},
@@ -147,11 +147,11 @@ class TestFilterPy(unittest.TestCase):
         """
         
         # create a variant that is within two genes
-        snv1 = self.create_trio_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
+        snv1 = self.create_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
         
         # two variants that lie in different genes on different chromosomes
         # should not be merged
-        snv2 = self.create_trio_variant("F", "missense_variant", "OTHER1", chrom="2")
+        snv2 = self.create_variant("F", "missense_variant", "OTHER1", chrom="2")
         variants = [(snv1, ["single_variant"], ["Monoallelic"], ["TEST1"]),
             ((snv2, ["single_variant"], ["Monoallelic"], ["OTHER1"]))]
         self.assertEqual(sorted(self.finder.exclude_duplicates(variants)), sorted(variants))
