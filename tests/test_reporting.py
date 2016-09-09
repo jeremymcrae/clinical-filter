@@ -49,15 +49,11 @@ class TestReportPy(unittest.TestCase):
         self.trio = self.create_family(child_gender, mom_aff, dad_aff)
         
         # generate a test variant
-        child_var = self.create_snv(child_gender, "0/1")
-        mom_var = self.create_snv("F", "0/0")
-        dad_var = self.create_snv("M", "0/0")
+        child = self.create_snv(child_gender, "0/1")
+        mom = self.create_snv("F", "0/0")
+        dad = self.create_snv("M", "0/0")
         
-        var = TrioGenotypes()
-        var.add_child(child_var)
-        var.add_mother(mom_var)
-        var.add_father(dad_var)
-        self.variants = [var]
+        self.variants = [TrioGenotypes('X', '15000000', child, mom, dad)]
         
         self.report = Report(None, None, None, None)
         self.report.family = self.trio
@@ -76,19 +72,15 @@ class TestReportPy(unittest.TestCase):
         qual = "50"
         filt = "PASS"
         
-        # set up a SNV object, since SNV inherits VcfInfo
-        var = SNV(chrom, pos, snp_id, ref, alt, filt)
-        
         info = "HGNC=TEST;CQ=missense_variant;random_tag;EUR_AF=0.0005"
-        format_keys = "GT:DP"
-        sample_values = genotype + ":50"
+        keys = "GT:DP"
+        values = genotype + ":50"
         
-        var.vcf_line = [chrom, pos, snp_id, ref, alt, qual, filt, info, format_keys, sample_values]
+        # set up a SNV object, since SNV inherits VcfInfo
+        var = SNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
+            sample=values, gender=gender)
         
-        var.add_info(info)
-        var.add_format(format_keys, sample_values)
-        var.set_gender(gender)
-        var.set_genotype()
+        var.vcf_line = [chrom, pos, snp_id, ref, alt, qual, filt, info, keys, values]
         
         return var
     

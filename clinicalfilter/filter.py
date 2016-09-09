@@ -36,7 +36,7 @@ class Filter(object):
     probands disorder.
     """
     
-    def __init__(self, population_tags=None, count=0, known_genes=None, genes_date=None,
+    def __init__(self, population_tags=None, count=0, known_genes=None, date=None,
             alternate_ids=None, regions=None, lof_sites=None, pp_filter=0.0,
             output_path=None, export_vcf=None, debug_chrom=None, debug_pos=None):
         """ initialise the class object
@@ -48,7 +48,7 @@ class Filter(object):
                 in output logs.
             known_genes: path to table of genes genes known to be associated
                 with genetic disorders, or None.
-            genes_date: date of the known_genes file, or None if not using/unknown.
+            date: date of the known_genes file, or None if not using/unknown.
             alternate_ids: path to table linking proband IDs to an alternate ID scheme.
             regions: path to a table of regions for DECIPHER CNV syndromes.
             lof_sites: path to json file of [chrom, position] coordinates in
@@ -73,10 +73,10 @@ class Filter(object):
         self.cnv_regions = open_cnv_regions(regions)
         self.last_base = open_last_base_sites(lof_sites)
         
-        self.loader = LoadVCFs(count, population_tags, self.known_genes, self.last_base,
-             self.debug_chrom, self.debug_pos)
+        self.loader = LoadVCFs(count, population_tags, self.known_genes,
+              self.last_base, self.debug_chrom, self.debug_pos)
         
-        self.reporter = Report(output_path, export_vcf, self.id_mapper, genes_date)
+        self.reporter = Report(output_path, export_vcf, self.id_mapper, date)
     
     def filter_trio(self, family):
         """ loads trio variants, and screens for candidate variants
@@ -108,28 +108,28 @@ class Filter(object):
         pos-inheritance filters, and exporting the data (ir required).
         
         Args:
-            variants: list of TrioGenotypes objects
+            family: Family object
+        
+        Returns:
+            list of (TrioGenotype, [genes], [inheritances], [type]) tuples for
+            variants that pass inheritance and post-inheritance checks.
         """
         
         variants = self.loader.get_trio_variants(family, self.pp_filter)
         
         # organise variants by gene, then find variants that fit
         # different inheritance models
-        genes_dict = self.create_gene_dict(variants)
-        found_vars = []
-        for gene in genes_dict:
-            gene_vars = genes_dict[gene]
-            found_vars += self.find_variants(gene_vars, gene, family)
+        genes = self.create_gene_dict(variants)
+        variants = [ self.find_variants(genes[x], x, family) for x in genes ]
         
         # remove any duplicate variants (which might ocur due to CNVs being
         # checked against all the genes that they encompass)
-        found_vars = self.exclude_duplicates(found_vars)
+        variants = self.exclude_duplicates(variants)
         
         # apply some final filters to the flagged variants
-        post_filter = PostInheritanceFilter(found_vars, family, self.debug_chrom,
-            self.debug_pos)
+        post_filter = PostInheritanceFilter(family, self.debug_chrom, self.debug_pos)
         
-        return post_filter.filter_variants()
+        return post_filter.filter_variants(variants)
     
     def create_gene_dict(self, variants):
         """creates dictionary of variants indexed by gene
@@ -168,9 +168,13 @@ class Filter(object):
         # get the inheritance for the gene (monoalleleic, biallelic, hemizygous
         # etc), but allow for times when we haven't specified a list of genes
         # to use
+        known_gene = None
         gene_inh = None
         if self.known_genes is not None and gene in self.known_genes:
-            gene_inh = self.known_genes[gene]["inh"]
+            known_gene = self.known_genes[gene]
+            gene_inh = known_gene['inh']
+        
+        chrom_inheritance = variants[0].get_inheritance_type()
         
         # If we are looking for variants in a set of known genes, and the gene
         # isn't part of that set, then we don't ant to examine the variant for
@@ -192,19 +196,15 @@ class Filter(object):
         if variants == []:
             return []
         
-        logging.info("{}\t{}\tvariants: {}\trequired_mode: {}".format(family.child.get_id(), gene,
-            [str(x) for x in variants], gene_inh))
-        chrom_inheritance = variants[0].get_inheritance_type()
+        logging.info("{}\t{}\tvariants: {}\trequired_mode: {}".format(
+            family.child.get_id(), gene, [str(x) for x in variants], gene_inh))
         
         if chrom_inheritance == "autosomal":
-            finder = Autosomal(variants, family, self.known_genes, gene, self.cnv_regions)
+            finder = Autosomal(variants, family, known_gene, gene, self.cnv_regions)
         elif chrom_inheritance in ["XChrMale", "XChrFemale", "YChrMale"]:
-            finder = Allosomal(variants, family, self.known_genes, gene, self.cnv_regions)
+            finder = Allosomal(variants, family, known_gene, gene, self.cnv_regions)
         
-        variants = finder.get_candidate_variants()
-        variants = [ (x[0], list(x[1]), list(x[2]), [gene]) for x in variants ]
-        
-        return variants
+        return finder.get_candidate_variants()
     
     def exclude_duplicates(self, variants):
         """ rejig variants included under multiple inheritance mechanisms

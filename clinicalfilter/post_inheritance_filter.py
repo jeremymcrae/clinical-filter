@@ -38,32 +38,29 @@ class PostInheritanceFilter(object):
             polyphen=benign, we require both SNVs to be polyphen=not benign
     """
     
-    def __init__(self, variants, family, debug_chrom=None, debug_pos=None):
+    def __init__(self, family, debug_chrom=None, debug_pos=None):
         """intialise the class with the some definitions
         """
         
-        self.variants = variants
         self.debug_chrom = debug_chrom
         self.debug_pos = debug_pos
         self.family = family
     
-    def filter_variants(self):
+    def filter_variants(self, variants):
         """ loads trio variants, and screens for candidate variants
         """
         
         # if we have flagged CNVs on three different chroms, drop all CNVs,
         # since the sample is sufficiently anomalous
-        if self.count_cnv_chroms(self.variants) > 2:
-            self.variants = self.remove_cnvs(self.variants)
+        if self.count_cnv_chroms(variants) > 2:
+            variants = self.remove_cnvs(variants)
         
         # and filter by a lower MAF threshold
-        self.variants = self.filter_by_maf(self.variants)
+        variants = self.filter_by_maf(variants)
+        variants = self.filter_polyphen(variants)
+        variants = self.filter_exac(variants)
         
-        self.variants = self.filter_polyphen(self.variants)
-        
-        self.variants = self.filter_exac(self.variants)
-        
-        return self.variants
+        return variants
     
     def count_cnv_chroms(self, variants):
         """ count the number of different chroms that CNVs are on

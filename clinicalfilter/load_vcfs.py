@@ -236,15 +236,13 @@ class LoadVCFs(object):
         variants = []
         for child in child_vars:
             
-            mother, father = None, None
+            mom, dad = None, None
             if family.has_parents():
-                mother = self.get_parental_var(child, mother_vars, family.mother.get_gender(), mom_cnvs)
-                father = self.get_parental_var(child, father_vars, family.father.get_gender(), dad_cnvs)
+                mom = self.get_parental_var(child, mother_vars, family.mother.get_gender(), mom_cnvs)
+                dad = self.get_parental_var(child, father_vars, family.father.get_gender(), dad_cnvs)
             
-            trio = TrioGenotypes(child.get_chrom(), child.get_position(), SNV.debug_chrom, SNV.debug_pos)
-            trio.add_child(child)
-            trio.add_mother(mother)
-            trio.add_father(father)
+            trio = TrioGenotypes(child.get_chrom(), child.get_position(),
+                child, mom, dad, SNV.debug_chrom, SNV.debug_pos)
             
             variants.append(trio)
         

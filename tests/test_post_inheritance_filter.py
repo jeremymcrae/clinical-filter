@@ -40,16 +40,17 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         family.add_father('father', '0', '0', 'male', '2', 'father_vcf')
         family.set_child()
         
-        variants = []
+        self.variants = []
         snv = self.create_var("1", True)
         cnv = self.create_var("1", False)
         
-        variants.append((snv, ["single_variant"], ["Monoallelic"], ["ATRX"]))
-        variants.append((cnv, ["single_variant"], ["Monoallelic"], ["ATRX"]))
+        self.variants.append((snv, ["single_variant"], ["Monoallelic"], ["ATRX"]))
+        self.variants.append((cnv, ["single_variant"], ["Monoallelic"], ["ATRX"]))
         
-        self.post_filter = PostInheritanceFilter(variants, family)
+        self.post_filter = PostInheritanceFilter(family)
         
-    def create_var(self, chrom, snv=True, geno=["0/1", "0/1", "0/1"], info=None, **kwargs):
+    def create_var(self, chrom, snv=True, geno=["0/1", "0/1", "0/1"], info=None,
+            pos='150', **kwargs):
         """ define a family and variant, and start the Inheritance class
         
         Args:
@@ -59,22 +60,17 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # generate a test variant
         if snv:
-            child_var = self.create_snv(chrom, geno[0], info, **kwargs)
-            mom_var = self.create_snv(chrom, geno[1], info, **kwargs)
-            dad_var = self.create_snv(chrom, geno[2], info, **kwargs)
+            child = self.create_snv(chrom, geno[0], info, **kwargs)
+            mom = self.create_snv(chrom, geno[1], info, **kwargs)
+            dad = self.create_snv(chrom, geno[2], info, **kwargs)
         else:
-            child_var = self.create_cnv(chrom, info, **kwargs)
-            mom_var = self.create_cnv(chrom, info, **kwargs)
-            dad_var = self.create_cnv(chrom, info, **kwargs)
+            child = self.create_cnv(chrom, info, **kwargs)
+            mom = self.create_cnv(chrom, info, **kwargs)
+            dad = self.create_cnv(chrom, info, **kwargs)
         
-        var = TrioGenotypes()
-        var.add_child(child_var)
-        var.add_mother(mom_var)
-        var.add_father(dad_var)
-        
-        return var
+        return TrioGenotypes(chrom, pos, child, mom, dad)
     
-    def create_snv(self, chrom, geno="0/1", info=None, pos='15000000',
+    def create_snv(self, chrom, geno="0/1", info=None, pos='150',
             snp_id='.', ref='A', alt='G', filt='PASS', **kwargs):
         
         var = SNV(chrom, pos, snp_id, ref, alt, filt, **kwargs)
@@ -126,21 +122,19 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
             ["Biallelic"], ["ATRX"]))
         
         # check that if we have CNVs on two chroms pass the filter
-        self.post_filter.variants = variants
-        self.assertEqual(self.post_filter.filter_variants(), variants)
+        self.assertEqual(self.post_filter.filter_variants(variants), variants)
         
         # check that CNVs on three different chroms get filtered out
         variants.append((self.create_var("3", snv=False), ["single_variant"],
             ["Biallelic"], ["ATRX"]))
-        self.post_filter.variants = variants
-        self.assertEqual(self.post_filter.filter_variants(), [])
+        self.assertEqual(self.post_filter.filter_variants(variants), [])
     
     def test_count_cnv_chroms(self):
         """ test that count_cnv_chroms() works correctly
         """
         
         # check that the default list of variants counts only one chrom
-        variants = self.post_filter.variants
+        variants = self.variants
         self.assertEqual(self.post_filter.count_cnv_chroms(variants), 1)
         
         # add CNVs on the same chrom, and check the chrom count increments one
@@ -161,7 +155,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         """ test that remove_cnvs() works correctly
         """
         
-        mixed_list = self.post_filter.variants
+        mixed_list = self.variants
         snv_list = [mixed_list[0]]
         cnv_list = [mixed_list[1]]
         

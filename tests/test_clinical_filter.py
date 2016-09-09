@@ -50,45 +50,33 @@ class TestFilterPy(unittest.TestCase):
             regions, lof_sites, pp_filter, output_path, export_vcf, debug_chrom,
             debug_pos)
     
-    def create_snv(self, sex, genotype, cq="missense_variant", hgnc="TEST", chrom="1"):
+    def create_snv(self, sex, genotype, cq="missense_variant", hgnc="TEST",
+            chrom="1", pos='15000000'):
         """ create a default variant
         """
         
-        pos = "15000000"
         snp_id = "."
         ref = "A"
         alt = "G"
         filt = "PASS"
         
-        # set up a SNV object, since SNV inherits VcfInfo
-        var = SNV(chrom, pos, snp_id, ref, alt, filt)
-        
         info = "HGNC={0};CQ={1};DENOVO-SNP;PP_DNM=0.99".format(hgnc, cq)
         keys = "GT:DP:TEAM29_FILTER:PP_DNM"
         values = genotype + ":50:PASS:0.99"
         
-        var.add_info(info)
-        var.add_format(keys, values)
-        var.set_gender(sex)
-        var.set_genotype()
-        
-        return var
+        return SNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
+            sample=values, gender=sex)
     
-    def create_trio_variant(self, child_gender, cq, hgnc, chrom="1"):
+    def create_trio_variant(self, child_gender, cq, hgnc, chrom="1", pos='15000000'):
         """ create a default TrioGenotypes variant
         """
         
         # generate a test variant
-        child_var = self.create_snv(child_gender, "0/1", cq, hgnc, chrom)
-        mom_var = self.create_snv("F", "0/0", cq, hgnc, chrom)
-        dad_var = self.create_snv("M", "0/0", cq, hgnc, chrom)
+        child = self.create_snv(child_gender, "0/1", cq, hgnc, chrom)
+        mom = self.create_snv("F", "0/0", cq, hgnc, chrom)
+        dad = self.create_snv("M", "0/0", cq, hgnc, chrom)
         
-        var = TrioGenotypes()
-        var.add_child(child_var)
-        var.add_mother(mom_var)
-        var.add_father(dad_var)
-        
-        return var
+        return TrioGenotypes(chrom, pos, child, mom, dad)
     
     def test_create_gene_dict(self):
         """ test that create_gene_dict works correctly

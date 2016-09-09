@@ -37,28 +37,28 @@ class TestTrioGenotypesPy(unittest.TestCase):
         """
         
         # generate a test family
-        child_gender = "F"
+        sex = "F"
         mom_aff = "1"
         dad_aff = "1"
         
-        self.trio = self.create_family(child_gender, mom_aff, dad_aff)
-        
-        # generate a test variant
-        child_var = self.create_snv(child_gender, "0/1")
-        mom_var = self.create_snv("F", "0/0")
-        dad_var = self.create_snv("M", "0/0")
-        
-        self.var = TrioGenotypes(child_var.get_chrom(), child_var.get_position())
-        self.var.add_child(child_var)
-        self.var.add_mother(mom_var)
-        self.var.add_father(dad_var)
+        self.trio = self.create_family(sex, mom_aff, dad_aff)
+        self.var = self.create_var(sex)
     
-    def create_snv(self, gender, genotype):
+    def create_var(self, chrom='1', position='150', sex='F', child_geno='0/1'):
+        ''' generate a test variant
+        '''
+        
+        child = self.create_snv(chrom, position, sex, child_geno)
+        mom = self.create_snv(chrom, position, "F", "0/0")
+        dad = self.create_snv(chrom, position, "M", "0/0")
+        
+        return TrioGenotypes(child.get_chrom(), child.get_position(),
+            child, mom, dad)
+    
+    def create_snv(self, chrom, pos, gender, genotype):
         """ create a default variant
         """
         
-        chrom = "1"
-        pos = "15000000"
         snp_id = "."
         ref = "A"
         alt = "G"
@@ -123,42 +123,34 @@ class TestTrioGenotypesPy(unittest.TestCase):
         """
         
         # check that a male X chrom de novo passes
-        self.trio.child.gender = "M"
-        self.var.inheritance_type = "XChrMale"
-        self.var.child.format["GT"] = "1/1"
-        self.var.child.set_genotype()
-        self.assertTrue(self.var.passes_de_novo_checks(pp_filter=0.9))
+        var = self.create_var(chrom='X', sex='M', child_geno='1/1')
+        self.assertTrue(var.passes_de_novo_checks(pp_filter=0.9))
         
         # and change a field so that it would fail
-        del self.var.child.info["DENOVO-SNP"]
-        self.assertFalse(self.var.passes_de_novo_checks(pp_filter=0.9))
-        
-        # and change the variant fom a male X de novo genotype
-        self.var.child.format["GT"] = "1/0"
-        self.var.child.set_genotype()
-        self.assertTrue(self.var.passes_de_novo_checks(pp_filter=0.9))
+        del var.child.info["DENOVO-SNP"]
+        self.assertFalse(var.passes_de_novo_checks(pp_filter=0.9))
         
         # now check that a female X chrom de novo passes
-        self.trio.child.gender = "F"
-        self.var.inheritance_type = "XChrFemale"
-        self.var.child.set_genotype()
-        self.var.child.info["DENOVO-SNP"] = True
-        self.assertTrue(self.var.passes_de_novo_checks(pp_filter=0.9))
+        var = self.create_var(chrom='X', sex='F', child_geno='0/1')
+        self.assertTrue(var.passes_de_novo_checks(pp_filter=0.9))
     
     def test_get_de_novo_genotype(self):
         """ check that get_de_novo_genotype() works correctly
         """
         
-        self.var.inheritance_type = "autosomal"
-        self.assertEqual(self.var.get_de_novo_genotype(), (1, 0, 0))
+        var = self.create_var(chrom='1')
+        self.assertEqual(var.get_inheritance_type(), 'autosomal')
+        self.assertEqual(var.get_de_novo_genotype(), (1, 0, 0))
         
-        self.var.inheritance_type = "XChrFemale"
-        self.assertEqual(self.var.get_de_novo_genotype(), (1, 0, 0))
+        var = self.create_var(chrom='X')
+        self.assertEqual(var.get_inheritance_type(), 'XChrFemale')
+        self.assertEqual(var.get_de_novo_genotype(), (1, 0, 0))
         
         # we double the alt count for males on the X, so a de novo genotype
         # differes from the other situations
-        self.var.inheritance_type = "XChrMale"
-        self.assertEqual(self.var.get_de_novo_genotype(), (2, 0, 0))
+        var = self.create_var(chrom='X', sex='M', child_geno='1/1')
+        self.assertEqual(var.get_inheritance_type(), 'XChrMale')
+        self.assertEqual(var.get_de_novo_genotype(), (2, 0, 0))
     
     def test_get_trio_genotype(self):
         """ test that get_trio_genotype() works correctly

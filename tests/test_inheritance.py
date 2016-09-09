@@ -38,22 +38,22 @@ class TestInheritancePy(unittest.TestCase):
         """
         
         # generate a test family
-        child_gender = "F"
+        sex = "F"
         mom_aff = "1"
         dad_aff = "1"
         
-        self.trio = self.create_family(child_gender, mom_aff, dad_aff)
+        self.trio = self.create_family(sex, mom_aff, dad_aff)
         
         # generate list of variants
-        self.variants = [self.create_variant(child_gender)]
-        self.variants.append(self.create_variant(child_gender))
+        self.variants = [self.create_variant(sex)]
+        self.variants.append(self.create_variant(sex))
         
         # make sure we've got known genes data
-        self.known_genes = {"TEST": {"inh": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}}
+        self.known_gene = {"inh": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}
         
-        self.inh = Autosomal(self.variants, self.trio, self.known_genes, "TEST")
+        self.inh = Autosomal(self.variants, self.trio, self.known_gene, "TEST")
     
-    def create_snv(self, gender, genotype, chrom, pos, cq=None):
+    def create_snv(self, chrom, pos, gender, genotype, cq=None):
         """ create a default variant
         """
         
@@ -69,17 +69,13 @@ class TestInheritancePy(unittest.TestCase):
         var = SNV(chrom, pos, snp_id, ref, alt, filt)
         
         info = "HGNC=TEST;CQ={};random_tag".format(cq)
-        format_keys = "GT:DP"
-        sample_values = genotype + ":50"
+        keys = "GT:DP"
+        values = genotype + ":50"
         
-        var.add_info(info)
-        var.add_format(format_keys, sample_values)
-        var.set_gender(gender)
-        var.set_genotype()
-        
-        return var
+        return SNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
+            sample=values, gender=gender)
     
-    def create_cnv(self, gender, inh, chrom, pos, cq=None):
+    def create_cnv(self, chrom, pos, gender, inh, cq=None):
         """ create a default variant
         """
         
@@ -91,39 +87,24 @@ class TestInheritancePy(unittest.TestCase):
         if cq is None:
             cq = "transcript_ablation"
         
-        # set up a SNV object, since SNV inherits VcfInfo
-        var = CNV(chrom, pos, snp_id, ref, alt, filt)
+        info = "CQ={};HGNC=TEST;HGNC_ALL=TEST;END=160;SVLEN=5000".format(cq)
+        keys = "INHERITANCE:DP:CIFER_INHERITANCE"
+        values = "{0}:50:{0}".format(inh)
         
-        info = "CQ={};HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000".format(cq)
-        format_keys = "INHERITANCE:DP:CIFER_INHERITANCE"
-        sample_values = "{0}:50:{0}".format(inh)
-        
-        var.add_info(info)
-        var.add_format(format_keys, sample_values)
-        var.set_gender(gender)
-        var.set_genotype()
-        
-        return var
+        return CNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
+            sample=values, gender=gender)
     
-    def create_variant(self, child_gender, chrom="1", position="15000000", cq=None):
+    def create_variant(self, chrom="1", position="150", sex='F', cq=None,
+            geno=['0/1', '0/0', '0/0']):
         """ creates a TrioGenotypes variant
         """
         
         # generate a test variant
-        try:
-            child_var = self.create_snv(child_gender, "0/1", chrom, position, cq)
-        except ValueError:
-            child_var = self.create_snv(child_gender, "1/1", chrom, position, cq)
+        child = self.create_snv(chrom, position, sex, geno[0],  cq)
+        mom = self.create_snv(chrom, position, "F", geno[1], cq)
+        dad = self.create_snv(chrom, position, "M", geno[2], cq)
         
-        mom_var = self.create_snv("F", "0/0", chrom, position, cq)
-        dad_var = self.create_snv("M", "0/0", chrom, position, cq)
-        
-        var = TrioGenotypes()
-        var.add_child(child_var)
-        var.add_mother(mom_var)
-        var.add_father(dad_var)
-        
-        return var
+        return TrioGenotypes(chrom, position, child, mom, dad)
     
     def create_family(self, child_gender, mom_aff, dad_aff):
         """ create a default family, with optional gender and parental statuses
@@ -190,36 +171,42 @@ class TestInheritancePy(unittest.TestCase):
         self.assertIsNone(self.inh.mom)
         self.assertIsNone(self.inh.dad)
     
-    def test_add_variant_to_appropriate_list(self):
-        """ test that add_variant_to_appropriate_list() works correctly
+    def test_get_candidate_variants_monoallelic(self):
+        """ test that get_candidate_variants() works for a monoallelic variant
         """
         
-        var = self.variants[0]
-        inheritance = "Monoallelic"
-        check = "compound_het"
+        inh = {"inh": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}
+        var = self.create_variant(position='150', cq='stop_gained',
+            geno=['0/1', '0/0', '0/0'])
+        self.inh = Autosomal([var], self.trio, inh, "TEST")
         
-        # check that compound_het vars are only added to the compound_het list
-        self.inh.compound_hets = []
-        self.inh.candidates = []
-        self.inh.add_variant_to_appropriate_list(var, check, inheritance)
-        self.assertEqual(self.inh.candidates, [])
-        self.assertEqual(self.inh.compound_hets, [(var, (check,), (inheritance,))])
+        self.assertEqual(self.inh.get_candidate_variants(),
+            [(var, ['single_variant'], ['Monoallelic'], ['TEST'])])
         
-        # check that single_variant vars are only added to the candidates list
-        self.inh.compound_hets = []
-        self.inh.candidates = []
-        check = "single_variant"
-        self.inh.add_variant_to_appropriate_list(var, check, inheritance)
-        self.assertEqual(self.inh.candidates, [(var, [check], [inheritance])])
-        self.assertEqual(self.inh.compound_hets, [])
+        # check a variant that shouldn't pass the monoallelic route
+        var = self.create_variant(position='150', cq='stop_gained',
+            geno=['0/1', '0/1', '0/0'])
+        self.inh = Autosomal([var], self.trio, inh, "TEST")
+        self.assertEqual(self.inh.get_candidate_variants(), [])
+    
+    def test_get_candidate_variants_compound_het(self):
+        """ test that get_candidate_variants() works for biallelic variants
+        """
         
-        # check that other vars aren't added either list
-        self.inh.compound_hets = []
-        self.inh.candidates = []
-        check = "nothing"
-        self.inh.add_variant_to_appropriate_list(var, check, inheritance)
-        self.assertEqual(self.inh.candidates, [])
-        self.assertEqual(self.inh.compound_hets, [])
+        inh = {"inh": ["Biallelic"], "confirmed_status": ["Confirmed DD Gene"]}
+        var1 = self.create_variant(position='150', cq='stop_gained',
+            geno=['0/1', '0/1', '0/0'])
+        var2 = self.create_variant(position='151', cq='stop_gained',
+            geno=['0/1', '0/0', '1/0'])
+        self.inh = Autosomal([var1, var2], self.trio, inh, "TEST")
+        
+        self.assertEqual(self.inh.get_candidate_variants(),
+            [(var1, ['compound_het'], ['Biallelic'], ['TEST']),
+            (var2, ['compound_het'], ['Biallelic'], ['TEST'])])
+        
+        # check that a single variant isn't included in the compound hets
+        self.inh = Autosomal([var1], self.trio, inh, "TEST")
+        self.assertEqual(self.inh.get_candidate_variants(), [])
     
     def test_check_if_any_variant_is_cnv(self):
         """ test if check_if_any_variant_is_cnv() works correctly
@@ -228,14 +215,11 @@ class TestInheritancePy(unittest.TestCase):
         # generate a test variant
         chrom = "1"
         position = "60000"
-        child_var = self.create_cnv("F", "unknown", chrom, position)
-        mom_var = self.create_cnv("F", "unknown", chrom, position)
-        dad_var = self.create_cnv("M", "unknown", chrom, position)
+        child = self.create_cnv(chrom, position, "F", "unknown")
+        mom = self.create_cnv(chrom, position, "F", "unknown")
+        dad = self.create_cnv(chrom, position, "M", "unknown")
         
-        cnv_var = TrioGenotypes()
-        cnv_var.add_child(child_var)
-        cnv_var.add_mother(mom_var)
-        cnv_var.add_father(dad_var)
+        cnv_var = TrioGenotypes(chrom, position, child, mom, dad)
         
         # check that all variants=SNV returns False
         self.assertFalse(self.inh.check_if_any_variant_is_cnv())
@@ -273,15 +257,15 @@ class TestInheritancePy(unittest.TestCase):
         """
         
         # set some variants, so we can alter them later
-        var1 = self.create_variant("F", chrom="1", position="15000000", cq="stop_gained")
-        var2 = self.create_variant("F", chrom="1", position="16000000", cq="stop_gained")
-        var3 = self.create_variant("F", chrom="1", position="17000000", cq="stop_gained")
+        var1 = self.create_variant(chrom="1", position="150", sex="F", cq="stop_gained")
+        var2 = self.create_variant(chrom="1", position="160", sex="F", cq="stop_gained")
+        var3 = self.create_variant(chrom="1", position="170", sex="F", cq="stop_gained")
         
         # set the inheritance type, the compound het type ("compound_het"
         # for autosomal variants, and start autosomal inheritance)
         # known_genes = "Biallelic"
-        known_genes = {"TEST": {"inh": ["Biallelic"], "confirmed_status": ["Confirmed DD Gene"]}}
-        self.inh = Autosomal([var1, var2, var3], self.trio, known_genes, "TEST")
+        known_gene = {"inh": ["Biallelic"], "confirmed_status": ["Confirmed DD Gene"]}
+        self.inh = Autosomal([var1, var2, var3], self.trio, known_gene, "TEST")
         
         variants = [(), ()]
         
@@ -311,8 +295,8 @@ class TestInheritancePy(unittest.TestCase):
         """
         
         # set some variants, so we can alter them later
-        var1 = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
-        var2 = self.create_variant("F", chrom="1", position="160", cq="stop_gained")
+        var1 = self.create_variant(chrom="1", position="150", sex="F", cq="stop_gained")
+        var2 = self.create_variant(chrom="1", position="160", sex="F", cq="stop_gained")
         
         var1 = self.set_compound_het_var(var1, "110")
         var2 = self.set_compound_het_var(var2, "101")
@@ -328,10 +312,10 @@ class TestInheritancePy(unittest.TestCase):
         """
         
         # set some variants, so we can alter them later
-        var1 = self.create_variant("F", chrom="1", position="150", cq="missense_variant")
-        var2 = self.create_variant("F", chrom="1", position="160", cq="missense_variant")
-        var3 = self.create_variant("F", chrom="1", position="160", cq="inframe_deletion")
-        var4 = self.create_variant("F", chrom="1", position="160", cq="stop_gained")
+        var1 = self.create_variant(chrom="1", position="150", sex="F", cq="missense_variant")
+        var2 = self.create_variant(chrom="1", position="160", sex="F", cq="missense_variant")
+        var3 = self.create_variant(chrom="1", position="160", sex="F", cq="inframe_deletion")
+        var4 = self.create_variant(chrom="1", position="160", sex="F", cq="stop_gained")
         
         var1 = self.set_compound_het_var(var1, "110")
         var2 = self.set_compound_het_var(var2, "101")
@@ -351,10 +335,10 @@ class TestInheritancePy(unittest.TestCase):
         """
         
         # set some variants, so we can alter them later
-        var1 = self.create_variant("F", chrom="1", position="150", cq="missense_variant")
-        var2 = self.create_variant("F", chrom="1", position="160", cq="missense_variant")
-        var3 = self.create_variant("F", chrom="1", position="160", cq="inframe_deletion")
-        var4 = self.create_variant("F", chrom="1", position="160", cq="stop_gained")
+        var1 = self.create_variant(chrom="1", position="150", sex="F", cq="missense_variant")
+        var2 = self.create_variant(chrom="1", position="160", sex="F", cq="missense_variant")
+        var3 = self.create_variant(chrom="1", position="160", sex="F", cq="inframe_deletion")
+        var4 = self.create_variant(chrom="1", position="160", sex="F", cq="stop_gained")
         
         var1 = self.set_compound_het_var(var1, "110")
         var2 = self.set_compound_het_var(var2, "101")
@@ -377,8 +361,8 @@ class TestInheritancePy(unittest.TestCase):
         """
         
         # set some variants, so we can alter them later
-        var1 = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
-        var2 = self.create_variant("F", chrom="1", position="160", cq="stop_gained")
+        var1 = self.create_variant(chrom="1", position="150", sex="F", cq="stop_gained")
+        var2 = self.create_variant(chrom="1", position="160", sex="F", cq="stop_gained")
         
         var1 = self.set_compound_het_var(var1, "110")
         var2 = self.set_compound_het_var(var2, "101")
@@ -396,17 +380,14 @@ class TestInheritancePy(unittest.TestCase):
         # generate a test variant
         chrom = "1"
         position = "60000"
-        child_var = self.create_cnv("F", "paternal", chrom, position)
-        mom_var = self.create_cnv("F", "unknown", chrom, position)
-        dad_var = self.create_cnv("M", "unknown", chrom, position)
+        child = self.create_cnv(chrom, position, "F", "paternal")
+        mom = self.create_cnv(chrom, position, "F", "unknown")
+        dad = self.create_cnv(chrom, position, "M", "unknown")
         
-        cnv = TrioGenotypes()
-        cnv.add_child(child_var)
-        cnv.add_mother(mom_var)
-        cnv.add_father(dad_var)
+        cnv = TrioGenotypes(chrom, position, child, mom, dad)
         
         # set some variants, so we can alter them later
-        snv = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
+        snv = self.create_variant(chrom="1", position="150", sex="F", cq="stop_gained")
         snv = self.set_compound_het_var(snv, "110")
         
         # check that these variants are compound hets, no matter which order
@@ -426,17 +407,14 @@ class TestInheritancePy(unittest.TestCase):
         # generate a test variant
         chrom = "1"
         position = "60000"
-        child_var = self.create_cnv("F", "maternal", chrom, position)
-        mom_var = self.create_cnv("F", "unknown", chrom, position)
-        dad_var = self.create_cnv("M", "unknown", chrom, position)
+        child = self.create_cnv(chrom, position, "F", "maternal")
+        mom = self.create_cnv(chrom, position, "F", "unknown")
+        dad = self.create_cnv(chrom, position, "M", "unknown")
         
-        cnv = TrioGenotypes()
-        cnv.add_child(child_var)
-        cnv.add_mother(mom_var)
-        cnv.add_father(dad_var)
+        cnv = TrioGenotypes(chrom, position, child, mom, dad)
         
         # set some variants, so we can alter them later
-        snv = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
+        snv = self.create_variant(chrom="1", position="150", sex="F", cq="stop_gained")
         snv = self.set_compound_het_var(snv, "101")
         
         # check that these variants are compound hets, no matter which order
@@ -457,10 +435,10 @@ class TestInheritancePy(unittest.TestCase):
         fam.set_child()
         
         # set some variants, so we can alter them later
-        var1 = self.create_variant("F", chrom="1", position="150", cq="stop_gained")
-        var2 = self.create_variant("F", chrom="1", position="160", cq="stop_gained")
+        var1 = self.create_variant(chrom="1", position="150", sex="F", cq="stop_gained")
+        var2 = self.create_variant(chrom="1", position="160", sex="F", cq="stop_gained")
         
-        inh = Autosomal([var1, var2], fam, self.known_genes, "TEST")
+        inh = Autosomal([var1, var2], fam, self.known_gene, "TEST")
         
         # check that a proband-only passes, regardless of the parental genotypes
         self.assertTrue(inh.is_compound_pair(var1, var2))
@@ -470,8 +448,8 @@ class TestInheritancePy(unittest.TestCase):
         """
         
         # set some variants, so we can alter them later
-        var1 = self.create_variant("M", chrom="X", position="150", cq="stop_gained")
-        var2 = self.create_variant("M", chrom="X", position="160", cq="stop_gained")
+        var1 = self.create_variant(chrom="X", position="150", sex="F", cq="stop_gained")
+        var2 = self.create_variant(chrom="X", position="160", sex="F", cq="stop_gained")
         
         var1 = self.set_compound_het_var(var1, "210")
         var2 = self.set_compound_het_var(var2, "202")
@@ -492,8 +470,8 @@ class TestInheritancePy(unittest.TestCase):
         """
         
         # set some variants, so we can alter them later
-        var1 = self.create_variant("M", chrom="1", position="150", cq="stop_gained")
-        var2 = self.create_variant("M", chrom="1", position="160", cq="stop_gained")
+        var1 = self.create_variant(chrom="1", position="150", sex="M", cq="stop_gained")
+        var2 = self.create_variant(chrom="1", position="160", sex="M", cq="stop_gained")
         
         var1 = self.set_compound_het_var(var1, "110")
         var2 = self.set_compound_het_var(var2, "101")
@@ -524,5 +502,3 @@ class TestInheritancePy(unittest.TestCase):
         var1 = self.set_compound_het_var(var1, "111")
         var2 = self.set_compound_het_var(var2, "111")
         self.assertFalse(self.inh.is_compound_pair(var1, var2))
-        
-        

@@ -39,16 +39,38 @@ class TrioGenotypes(object):
         self.mother = mother
         self.father = father
         
-        self.inheritance_type = None
-        
         self.debug_chrom = debug_chrom
         self.debug_pos = debug_pos
     
-    def get_chrom(self): return self.chrom
-    def get_position(self): return self.pos
-    def get_genes(self): return None
-    def get_range(self): return None
-    def is_cnv(self): return None
+    def get_chrom(self):
+        if self.child is not None:
+            return self.child.get_chrom()
+        else:
+            return self.chrom
+    
+    def get_position(self):
+        if self.child is not None:
+            return self.child.get_position()
+        else:
+            return self.pos
+    
+    def get_genes(self):
+        if self.child is not None:
+            return self.child.get_genes()
+        else:
+            return None
+    
+    def get_range(self):
+        if self.child is not None:
+            return self.child.get_range()
+        else:
+            return None
+    
+    def is_cnv(self):
+        if self.child is not None:
+            return self.child.is_cnv()
+        else:
+            return None
     
     def chrom_to_int(self, chrom):
         """ converts a chromosome string to an int (if possible) for sorting.
@@ -92,26 +114,11 @@ class TrioGenotypes(object):
     def __hash__(self):
         return hash(self.__repr__())
     
-    def add_child(self, variant):
-        self.child = variant
-        
-        # use functions from the child variant
-        self.get_chrom = self.child.get_chrom
-        self.get_position = self.child.get_position
-        self.get_genes = self.child.get_genes
-        self.get_range = self.child.get_range
-        self.is_cnv = self.child.is_cnv
-        
-        self.inheritance_type = self.child.inheritance_type
-    
-    def add_father(self, variant):
-        self.father = variant
-    
-    def add_mother(self, variant):
-        self.mother = variant
-    
     def get_inheritance_type(self):
-        return self.inheritance_type
+        if self.child is not None:
+            return self.child.get_inheritance_type()
+        else:
+            return None
     
     def get_trio_genotype(self):
         child = self.child.get_genotype()
@@ -133,7 +140,7 @@ class TrioGenotypes(object):
         de_novo_genotype = (1, 0, 0)
         
         # account for X chrom de novos in males
-        if self.inheritance_type == "XChrMale":
+        if self.get_inheritance_type() == "XChrMale":
             de_novo_genotype = (2, 0, 0)
         
         return de_novo_genotype

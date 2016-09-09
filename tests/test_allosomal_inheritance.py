@@ -44,20 +44,17 @@ class TestAllosomalPy(unittest.TestCase):
         self.trio = self.create_family(child_gender, mom_aff, dad_aff)
         
         # generate a test variant
-        child_var = self.create_snv(child_gender, "0/1")
-        mom_var = self.create_snv("F", "0/0")
-        dad_var = self.create_snv("M", "0/0")
+        child = self.create_snv(child_gender, "0/1")
+        mom = self.create_snv("F", "0/0")
+        dad = self.create_snv("M", "0/0")
         
-        var = TrioGenotypes()
-        var.add_child(child_var)
-        var.add_mother(mom_var)
-        var.add_father(dad_var)
+        var = TrioGenotypes(child.get_chrom(), child.get_position(), child, mom, dad)
         self.variants = [var]
         
         # make sure we've got known genes data
-        self.known_genes = {"TEST": {"inh": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}}
+        self.known_gene = {"inh": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}
         
-        self.inh = Allosomal(self.variants, self.trio, self.known_genes, "TEST")
+        self.inh = Allosomal(self.variants, self.trio, self.known_gene, "TEST")
         self.inh.is_lof = var.child.is_lof()
     
     def create_snv(self, gender, genotype):
@@ -365,14 +362,11 @@ class TestAllosomalPy(unittest.TestCase):
         # generate a test variant
         chrom = "X"
         position = "60000"
-        child_var = self.create_cnv("F", "unknown", chrom, position)
-        mom_var = self.create_cnv("F", "unknown", chrom, position)
-        dad_var = self.create_cnv("M", "unknown", chrom, position)
+        child = self.create_cnv("F", "unknown", chrom, position)
+        mom = self.create_cnv("F", "unknown", chrom, position)
+        dad = self.create_cnv("M", "unknown", chrom, position)
         
-        cnv_var = TrioGenotypes()
-        cnv_var.add_child(child_var)
-        cnv_var.add_mother(mom_var)
-        cnv_var.add_father(dad_var)
+        cnv = TrioGenotypes(chrom, position, child, mom, dad)
         
         var = self.variants[0]
         
@@ -382,10 +376,6 @@ class TestAllosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.log_string, "non-mendelian trio")
         
         # check when a CNV is in the variants list
-        self.inh.variants.append(cnv_var)
+        self.inh.variants.append(cnv)
         self.assertEqual(self.inh.check_homozygous("Hemizygous"), "compound_het")
         self.assertEqual(self.inh.log_string, "non-mendelian, but CNV might affect call")
-
-
-if __name__ == '__main__':
-    unittest.main()

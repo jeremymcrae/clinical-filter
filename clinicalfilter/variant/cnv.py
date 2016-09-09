@@ -50,10 +50,13 @@ class CNV(Variant):
         if self.format is not None:
             keys = ':'.join(sorted(self.format))
             sample = ':'.join([ self.format[x] for x in keys.split(':') ])
+            keys = '"{}"'.format(keys)
+            sample = '"{}"'.format(sample)
         
         info = None
         if self.info is not None:
             info = ';'.join([ '{}={}'.format(x, self.info[x]) for x in self.info ])
+            info = '"{}"'.format(info)
         
         gender = self.gender
         if gender is not None:
