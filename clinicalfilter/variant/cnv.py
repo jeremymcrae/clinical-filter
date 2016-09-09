@@ -44,29 +44,6 @@ class CNV(Variant):
         
         return True
     
-    def __repr__(self):
-        # reprocess the format dictionary back to the original text strings
-        keys, sample = None, None
-        if self.format is not None:
-            keys = ':'.join(sorted(self.format))
-            sample = ':'.join([ self.format[x] for x in keys.split(':') ])
-            keys = '"{}"'.format(keys)
-            sample = '"{}"'.format(sample)
-        
-        info = None
-        if self.info is not None:
-            info = ';'.join([ '{}={}'.format(x, self.info[x]) for x in self.info ])
-            info = '"{}"'.format(info)
-        
-        gender = self.gender
-        if gender is not None:
-            gender = '"{}"'.format(gender)
-        
-        return 'CNV(chrom="{}", position={}, id="{}", ref="{}", alts="{}", ' \
-            'filter="{}", info={}, format={}, sample={}, gender={})'.format(self.chrom,
-            self.position, self.variant_id, self.ref_allele, ','.join(self.alt_alleles),
-            self.filter, info, keys, sample, gender)
-    
     def set_genotype(self):
         """ sets the genotype of the variant
         """

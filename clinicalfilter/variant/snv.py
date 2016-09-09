@@ -39,35 +39,6 @@ class SNV(Variant):
         if cls_obj.debug_chrom is not None:
             cls_obj.passes_filters = cls_obj.passes_filters_with_debug
     
-    def __repr__(self):
-        
-        # reprocess the format dictionary back to the original text strings
-        keys, sample = None, None
-        if self.format is not None:
-            keys = ':'.join(sorted(self.format))
-            sample = ':'.join([ self.format[x] for x in keys.split(':') ])
-            keys = '"{}"'.format(keys)
-            sample = '"{}"'.format(sample)
-        
-        info = None
-        if self.info is not None:
-            info = ';'.join([ '{}={}'.format(x, self.info[x]) for x in sorted(self.info) ])
-            info = '"{}"'.format(info)
-        
-        gender = self.gender
-        if gender is not None:
-            gender = '"{}"'.format(gender)
-        
-        mnv_code = self.mnv_code
-        if mnv_code is not None:
-            mnv_code = '"{}"'.format(mnv_code)
-        
-        return 'SNV(chrom="{}", position={}, id="{}", ref="{}", alts="{}", ' \
-            'filter="{}", info={}, format={}, sample={}, gender={}, ' \
-            'mnv_code={})'.format(self.chrom, self.position, self.variant_id,
-            self.ref_allele, ','.join(self.alt_alleles), self.filter, info, keys, sample,
-            gender, mnv_code)
-    
     def is_cnv(self):
         """ checks whether the variant is for a CNV
         """
