@@ -305,10 +305,6 @@ class TestVariantSnvPy(unittest.TestCase):
         """ test that variants with high MAF fail the filtering
         """
         
-        print('\n\n')
-        print(self.var.populations)
-        print('\n\n')
-        
         # check th
         for pop in self.pops:
             var = self.var
