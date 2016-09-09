@@ -90,6 +90,28 @@ class TestTrioGenotypesPy(unittest.TestCase):
         
         return fam
     
+    def test_getters(self):
+        ''' test that the class getter methods work correctly
+        '''
+        
+        # create a variant where the child, mother and father variables are filled in
+        var = self.create_var(chrom='1', position='150', sex='F', child_geno='0/1')
+        self.assertEqual(var.get_chrom(), '1')
+        self.assertEqual(var.get_position(), 150)
+        self.assertEqual(var.get_genes(), ['TEST'])
+        self.assertEqual(var.get_range(), (150, 150))
+        self.assertEqual(var.is_cnv(), False)
+        self.assertEqual(var.get_inheritance_type(), 'autosomal')
+        
+        # construct a variant without values for the getter methods
+        var = TrioGenotypes()
+        self.assertEqual(var.get_chrom(), None)
+        self.assertEqual(var.get_position(), None)
+        self.assertEqual(var.get_genes(), None)
+        self.assertEqual(var.get_range(), None)
+        self.assertEqual(var.is_cnv(), None)
+        self.assertEqual(var.get_inheritance_type(), None)
+    
     def test_passes_de_novo_checks(self):
         """ test that passes_de_novo_checks() works correctly
         """
