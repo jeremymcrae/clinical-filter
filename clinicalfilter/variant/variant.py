@@ -87,8 +87,13 @@ class Variant(Info):
         
         info = None
         if self.info is not None:
-            info = ';'.join([ '{}={}'.format(x, self.info[x]) for x in sorted(self.info) ])
-            info = '"{}"'.format(info)
+            info = []
+            for key, value in sorted(self.info.items()):
+                entry = key
+                if value != True:
+                    entry = '{}={}'.format(key, value)
+                info.append(entry)
+            info = '"{}"'.format(';'.join(info))
         
         gender = self.gender
         if gender is not None:
