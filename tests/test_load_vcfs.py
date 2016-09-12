@@ -43,6 +43,7 @@ from clinicalfilter.ped import Family, Person
 IS_PYTHON3 = sys.version_info.major == 3
 
 from tests.utils import make_vcf_line, make_vcf_header, make_minimal_vcf
+from tests.utils import create_snv, create_cnv
 
 class TestLoadVCFsPy(unittest.TestCase):
     """ test that the LoadVCFs methods work as expected
@@ -415,6 +416,46 @@ class TestLoadVCFsPy(unittest.TestCase):
         self.assertEqual(self.vcf_loader.load_trio(family),
             [TrioGenotypes(chrom="1", pos=2, child=SNV(**args),
                 mother=SNV(**args), father=SNV(**dad_args)) ])
+    
+    def test_get_parental_var_snv(self):
+        ''' check that get_parental_var() works correctly for SNVs
+        '''
+        
+        sex = 'F'
+        var = create_snv(sex, '0/1')
+        matcher = MatchCNVs([])
+        parental_vars = []
+        
+        # try to get a matching variant for a mother. This will create a default
+        # variant for a missing parental genotype
+        self.assertEqual(self.vcf_loader.get_parental_var(var, parental_vars,
+            'F', matcher), SNV(chrom="1", position=150, id=".", ref="A",
+                alts="G", filter="PASS", info=None, format="GT", sample="0/0",
+                gender="female", mnv_code=None))
+        
+        # now see if we can pick up a  variant where it does exist
+        mother_var = create_snv(sex, '0/0')
+        self.assertEqual(self.vcf_loader.get_parental_var(var, [mother_var],
+            'F', matcher), mother_var)
+    
+    def test_get_parental_var_cnv(self):
+        ''' check that get_parental_var() works correctly for CNVs
+        '''
+        
+        sex = 'F'
+        var = create_cnv(sex, 'deNovo')
+        matcher = MatchCNVs([var])
+        parental_vars = []
+        
+        self.assertEqual(self.vcf_loader.get_parental_var(var, parental_vars,
+            'F', matcher), CNV(chrom="1", position=150, id=".", ref="A",
+                alts="<REF>", filter="PASS", info="END=1000000000", format="GT",
+                sample="REF", gender="female", mnv_code=None))
+        
+        # now see if we can pick up a CNV where it does exist in the parent
+        mother_var = create_cnv(sex, 'uncertain')
+        self.assertEqual(self.vcf_loader.get_parental_var(var, [mother_var],
+            'F', matcher), mother_var)
     
     def test_filter_de_novos(self):
         """ check that filter_de_novos() works correctly
