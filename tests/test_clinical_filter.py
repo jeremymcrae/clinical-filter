@@ -20,16 +20,29 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
 import unittest
+import tempfile
+import shutil
 
 from clinicalfilter.filter import Filter
-from clinicalfilter.ped import Family
+from clinicalfilter.ped import Family, Person
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
+
+from tests.utils import create_snv, create_variant
+from tests.utils import make_vcf_header, make_vcf_line
 
 
 class TestFilterPy(unittest.TestCase):
     """ test the Filter class
     """
+    
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = tempfile.mkdtemp()
+    
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.temp_dir)
     
     def setUp(self):
         """ create a default Filter object to test
@@ -50,42 +63,59 @@ class TestFilterPy(unittest.TestCase):
             regions, lof_sites, pp_filter, output_path, export_vcf, debug_chrom,
             debug_pos)
     
-    def create_snv(self, sex, genotype, cq="missense_variant", hgnc="TEST",
-            chrom="1", pos='15000000'):
-        """ create a default variant
-        """
+    def test_analyse_trio(self):
+        ''' test that analyse_trio() works correctly
+        '''
         
-        snp_id = "."
-        ref = "A"
-        alt = "G"
-        filt = "PASS"
+        # construct the VCFs for the trio members
+        paths = {}
+        for member in ['child', 'mom', 'dad']:
+            vcf = make_vcf_header()
+            
+            geno, pp_dnm = '0/0', ''
+            if member == 'child':
+                geno, pp_dnm = '0/1', ';DENOVO-SNP;PP_DNM=1'
+            
+            vcf.append(make_vcf_line(genotype=geno, extra='HGNC=ARID1B' + pp_dnm))
+            
+            # write the VCF data to a file
+            handle = tempfile.NamedTemporaryFile(dir=self.temp_dir, delete=False,
+                suffix='.vcf')
+            for x in vcf:
+                handle.write(x.encode('utf8'))
+            handle.flush()
+            
+            paths[member] = handle.name
         
-        info = "HGNC={0};CQ={1};DENOVO-SNP;PP_DNM=0.99".format(hgnc, cq)
-        keys = "GT:DP:TEAM29_FILTER:PP_DNM"
-        values = genotype + ":50:PASS:0.99"
+        # create a Family object, so we can load the data from the trio's VCFs
+        fam_id = 'fam01'
+        child = Person(fam_id, 'child', 'dad', 'mom', 'female', '2', paths['child'])
+        mom = Person(fam_id, 'mom', '0', '0', 'female', '1', paths['mom'])
+        dad = Person(fam_id, 'dad', '0', '0', 'male', '1', paths['dad'])
+        family = Family(fam_id, [child], mom, dad)
         
-        return SNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
-            sample=values, gender=sex)
-    
-    def create_variant(self, child_gender, cq, hgnc, chrom="1", pos='15000000'):
-        """ create a default TrioGenotypes variant
-        """
-        
-        # generate a test variant
-        child = self.create_snv(child_gender, "0/1", cq, hgnc, chrom)
-        mom = self.create_snv("F", "0/0", cq, hgnc, chrom)
-        dad = self.create_snv("M", "0/0", cq, hgnc, chrom)
-        
-        return TrioGenotypes(chrom, pos, child, mom, dad)
+        self.assertEqual(self.finder.analyse_trio(family),
+            [(TrioGenotypes(chrom="1", pos=1,
+                child=SNV(chrom="1", position=1, id=".", ref="G", alts="T",
+                    filter="PASS",
+                    info="CQ=missense_variant;DENOVO-SNP;HGNC=ARID1B;PP_DNM=1",
+                    format="DP:GT", sample="50:0/1", gender="female", mnv_code=None),
+                mother=SNV(chrom="1", position=1, id=".", ref="G", alts="T",
+                    filter="PASS", info="CQ=missense_variant;HGNC=ARID1B",
+                    format="DP:GT", sample="50:0/0", gender="female", mnv_code=None),
+                father=SNV(chrom="1", position=1, id=".", ref="G", alts="T",
+                    filter="PASS", info="CQ=missense_variant;HGNC=ARID1B",
+                    format="DP:GT", sample="50:0/0", gender="male", mnv_code=None)),
+            ['single_variant'], ['Monoallelic'], ['ARID1B'])])
     
     def test_create_gene_dict(self):
         """ test that create_gene_dict works correctly
         """
         
         # create variants that share genes, or not
-        snv1 = self.create_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
-        snv2 = self.create_variant("F", "missense_variant", "TEST1")
-        snv3 = self.create_variant("F", "missense_variant", "OTHER1")
+        snv1 = create_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
+        snv2 = create_variant("F", "missense_variant", "TEST1")
+        snv3 = create_variant("F", "missense_variant", "OTHER1")
         
         # the variants that share a gene should be grouped in lists indexed by
         # the gene key
@@ -106,10 +136,10 @@ class TestFilterPy(unittest.TestCase):
         family.set_child()
         
         # create variants that cover various scenarios
-        snv1 = self.create_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
-        snv2 = self.create_variant("F", "missense_variant|synonymous_variant", "OTHER1|OTHER2")
-        snv3 = self.create_variant("F", "missense_variant", "")
-        snv4 = self.create_variant("F", "missense_variant", "TESTX", chrom="X")
+        snv1 = create_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
+        snv2 = create_variant("F", "missense_variant|synonymous_variant", "OTHER1|OTHER2")
+        snv3 = create_variant("F", "missense_variant", "")
+        snv4 = create_variant("F", "missense_variant", "TESTX", chrom="X")
         
         self.finder.known_genes = {"TEST1": {"inh": ["Monoallelic"]},
             "OTHER1": {"inh": ["Monoallelic"]},
@@ -147,11 +177,11 @@ class TestFilterPy(unittest.TestCase):
         """
         
         # create a variant that is within two genes
-        snv1 = self.create_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
+        snv1 = create_variant("F", "missense_variant|missense_variant", "TEST1|TEST2")
         
         # two variants that lie in different genes on different chromosomes
         # should not be merged
-        snv2 = self.create_variant("F", "missense_variant", "OTHER1", chrom="2")
+        snv2 = create_variant("F", "missense_variant", "OTHER1", chrom="2")
         variants = [(snv1, ["single_variant"], ["Monoallelic"], ["TEST1"]),
             ((snv2, ["single_variant"], ["Monoallelic"], ["OTHER1"]))]
         self.assertEqual(sorted(self.finder.exclude_duplicates(variants)), sorted(variants))

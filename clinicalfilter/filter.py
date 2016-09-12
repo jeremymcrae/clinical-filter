@@ -117,10 +117,11 @@ class Filter(object):
         
         variants = self.loader.get_trio_variants(family, self.pp_filter)
         
-        # organise variants by gene, then find variants that fit
-        # different inheritance models
+        # organise variants by gene, then find variants that fit different
+        # inheritance models. We have to flatten the list of variant lists
         genes = self.create_gene_dict(variants)
         variants = [ self.find_variants(genes[x], x, family) for x in genes ]
+        variants = [ x for sublist in variants for x in sublist ]
         
         # remove any duplicate variants (which might ocur due to CNVs being
         # checked against all the genes that they encompass)
