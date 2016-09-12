@@ -467,7 +467,7 @@ class Allosomal(Inheritance):
                  (self.mom.is_hom_alt() and self.mother_affected):
                 self.log_string = "male X chrom inherited from het mother or hom affected mother"
                 return "single_variant"
-        elif self.trio.child.is_female():
+        else:
             if self.dad.is_hom_ref() or self.mom.is_hom_ref():
                 # some hom alts might occur as CNV DELs change a het call to a hom,
                 # catch these if a non-mendelian hom alt overlaps a CNV
@@ -596,7 +596,7 @@ class CNVInheritance(object):
             if "Biallelic" in self.known_gene["inh"] or \
                  (variant.get_chrom() == "X" and \
                  "Hemizygous" in self.known_gene["inh"] and \
-                 self.trio.child.is_female() and variant.child.info["CNS"] == "1"):
+                 not self.trio.child.is_male() and variant.child.info["CNS"] == "1"):
                 return True
         
         return False
@@ -746,7 +746,7 @@ class CNVInheritance(object):
             chroms = {"X"}
         elif inh == "Hemizygous":
             chroms = {"X"}
-            if variant.child.is_female():
+            if not variant.child.is_male():
                 copies = {"3"}
                 mechanisms = {"Increased gene dosage"}
         else:

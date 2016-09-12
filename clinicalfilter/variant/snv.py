@@ -182,10 +182,8 @@ class SNV(Variant):
                 raise ValueError("heterozygous X-chromomosome male")
             else:
                 raise ValueError("unknown genotype '" + str(genotype))
-        elif self.is_female():
-            self.convert_autosomal_genotype_code_to_alleles()
         else:
-            raise ValueError("Unknown gender: " + self.gender)
+            self.convert_autosomal_genotype_code_to_alleles()
     
     def passes_filters(self):
         """Checks whether a VCF record passes user defined criteria.

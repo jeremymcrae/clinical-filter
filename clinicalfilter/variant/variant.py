@@ -166,12 +166,6 @@ class Variant(Info):
         
         return self.get_gender() in self.male_codes
     
-    def is_female(self):
-        """ returns True/False for whether the person is male
-        """
-        
-        return self.get_gender() in self.female_codes
-    
     def add_format(self, keys, values):
         """Parses the FORMAT column from VCF files.
         
@@ -210,7 +204,7 @@ class Variant(Info):
             
             if self.is_male():
                 self.inheritance_type =  "XChrMale"
-            elif self.is_female():
+            else:
                 self.inheritance_type = "XChrFemale"
         elif self.chrom in ["chrY", "ChrY", "Y"]:
             # check if the gene lies within a pseudoautosomal region
@@ -220,7 +214,7 @@ class Variant(Info):
                     return
             if self.is_male():
                 self.inheritance_type =  "YChrMale"
-            elif self.is_female():
+            else:
                 self.inheritance_type = "YChrFemale"
     
     def get_inheritance_type(self):
