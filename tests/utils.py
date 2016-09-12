@@ -83,14 +83,14 @@ def create_variant(child_sex, cq, hgnc, chrom='1', pos='150'):
     
     return TrioGenotypes(chrom, pos, child, mom, dad)
 
-def make_vcf_header():
+def make_vcf_header(sample_id='sample'):
     ''' generate a test VCF header
     '''
     
     lines = ['##fileformat=VCFv4.1\n',
         '##fileDate=2014-01-01\n',
         '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n',
-        '#CHROM\tPOS\t ID\tREF\t ALT\t QUAL\tFILTER\tINFO\tFORMAT\tsample\n']
+        '#CHROM\tPOS\t ID\tREF\t ALT\t QUAL\tFILTER\tINFO\tFORMAT\t{}\n'.format(sample_id)]
     
     return lines
 
