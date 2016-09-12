@@ -43,9 +43,6 @@ class TestVariantSnvPy(unittest.TestCase):
         alt = "G"
         filt = "PASS"
         
-        # set up a SNV object, since SNV inherits VcfInfo
-        self.var = SNV(chrom, pos, snp_id, ref, alt, filt)
-        
         info = "HGNC=ATRX;CQ=missense_variant;random_tag"
         self.pops = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", \
             "EAS_AF", "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", \
@@ -53,10 +50,12 @@ class TestVariantSnvPy(unittest.TestCase):
         
         SNV.set_populations(self.pops)
         
-        self.format_keys = "GT:DP"
-        self.sample_values = "0/1:50"
+        self.keys = "GT:DP"
+        self.values = "0/1:50"
         
-        self.var.add_info(info)
+        # set up a SNV object, since SNV inherits VcfInfo
+        self.var = SNV(chrom, pos, snp_id, ref, alt, filt, info=info,
+            format=self.keys, sample=self.values)
     
     def test_get_key(self):
         """ tests that get_key() operates correctly
@@ -105,7 +104,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """ test that set_genotype() operates correctly
         """
         
-        self.var.add_format(self.format_keys, self.sample_values)
+        self.var.add_format(self.keys, self.values)
         self.var.set_gender("male")
         
         genotypes = [("0/0", 0), ("0/1", 1), ("1/1", 2)]
@@ -127,7 +126,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """ test that set_genotype() operates correctly for the male X chrom
         """
         
-        self.var.add_format(self.format_keys, self.sample_values)
+        self.var.add_format(self.keys, self.values)
         self.var.chrom = "X"
         self.var.set_gender("male")
         
@@ -152,7 +151,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """ test that set_genotype() operates correctly for the female X chrom
         """
         
-        self.var.add_format(self.format_keys, self.sample_values)
+        self.var.add_format(self.keys, self.values)
         self.var.chrom = "X"
         self.var.set_gender("female")
         
@@ -170,7 +169,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """ tests that is_het() operates correctly for automsal chromosomes
         """
         
-        self.var.add_format(self.format_keys, self.sample_values)
+        self.var.add_format(self.keys, self.values)
         self.var.set_gender("male")
         
         het = [("0/0", False), ("0/1", True), ("1/1", False)]
@@ -187,7 +186,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """ tests that is_hom_alt() operates correctly for automsal chromosomes
         """
         
-        self.var.add_format(self.format_keys, self.sample_values)
+        self.var.add_format(self.keys, self.values)
         self.var.set_gender("male")
         
         hom_alt = [("0/0", False), ("0/1", False), ("1/1", True)]
@@ -204,7 +203,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """ tests that is_hom_ref() operates correctly for automsal chromosomes
         """
         
-        self.var.add_format(self.format_keys, self.sample_values)
+        self.var.add_format(self.keys, self.values)
         self.var.set_gender("male")
         
         hom_ref = [("0/0", True), ("0/1", False), ("1/1", False)]
@@ -221,7 +220,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """ tests that is_not_ref() operates correctly for automsal chromosomes
         """
         
-        self.var.add_format(self.format_keys, self.sample_values)
+        self.var.add_format(self.keys, self.values)
         self.var.set_gender("male")
         
         not_ref = [("0/0", False), ("0/1", True), ("1/1", True)]
@@ -238,7 +237,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """ tests that is_not_ref() operates correctly for automsal chromosomes
         """
         
-        self.var.add_format(self.format_keys, self.sample_values)
+        self.var.add_format(self.keys, self.values)
         self.var.set_gender("male")
         
         not_alt = [("0/0", True), ("0/1", True), ("1/1", False)]
