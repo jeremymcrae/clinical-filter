@@ -104,14 +104,14 @@ class SNV(Variant):
         
         if self.inheritance_type == "autosomal":
             self.convert_autosomal_genotype_code_to_alleles()
-        elif self.inheritance_type == "XChrMale" or self.inheritance_type == "XChrFemale":
+        elif self.inheritance_type in ["XChrMale", "XChrFemale"]:
             self.convert_allosomal_genotype_code_to_alleles()
     
     def set_reference_genotypes(self):
-        """ sets reference genotypes for homozygotess and heterozygotes
+        """ sets reference genotypes for homozygotes and heterozygotes
         """
         
-        if self.inheritance_type == "autosomal" or self.inheritance_type == "XChrFemale":
+        if self.inheritance_type in ["autosomal", "XChrFemale"]:
             self.hom_ref = set([self.ref_allele, self.ref_allele])
             self.het = set([self.ref_allele, self.alt_alleles])
             self.hom_alt = set([self.alt_alleles, self.alt_alleles])
