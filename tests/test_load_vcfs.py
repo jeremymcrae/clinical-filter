@@ -42,6 +42,8 @@ from clinicalfilter.ped import Family, Person
 
 IS_PYTHON3 = sys.version_info.major == 3
 
+from tests.utils import make_vcf_line, make_vcf_header
+
 class TestLoadVCFsPy(unittest.TestCase):
     """ test that the LoadVCFs methods work as expected
     """
@@ -67,49 +69,15 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         self.vcf_loader = LoadVCFs(total_trios, maf_tags, self.known_genes, set(), None, None, )
     
-    def make_vcf_header(self):
-        ''' generate a test VCF header
-        '''
-    
-        lines = ['##fileformat=VCFv4.1\n',
-            "##fileDate=2014-01-01\n",
-            "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n",
-            '#CHROM\tPOS\t ID\tREF\t ALT\t QUAL\tFILTER\tINFO\tFORMAT\tsample\n']
-        
-        return lines
-    
-    def make_vcf_line(self, chrom=1, pos=1, ref='G', alts='T',
-            cq='missense_variant', genotype='0/1', extra=None):
-        ''' generate a VCF line suitable for the unit tests
-        
-        Args:
-            chrom: chromosome as string
-            pos: nucleotide position of the variant
-            ref: reference allele
-            alts: comma-separated alternate alleles
-            cq: vep consequence string. Can be '|' separated (for multiple
-                genes) and/or ',' separated (for multiple alt alleles).
-        
-        Returns:
-            string for VCF line
-        '''
-        
-        info = 'CQ={}'.format(cq)
-        if extra is not None:
-             info += ';' + extra
-        
-        return '{}\t{}\t.\t{}\t{}\t1000\tPASS\t{}\tGT:DP\t{}:50\n'.format(chrom,
-            pos, ref, alts, info, genotype)
-    
     def make_minimal_vcf(self):
         """ construct the bare minimum of lines for a VCF file
         """
         
         variants = []
-        variants.append(self.make_vcf_line(pos=100))
-        variants.append(self.make_vcf_line(pos=200))
+        variants.append(make_vcf_line(pos=100))
+        variants.append(make_vcf_line(pos=200))
         
-        return self.make_vcf_header() + variants
+        return make_vcf_header() + variants
     
     def write_temp_vcf(self, path, vcf_data):
         """ writes data to a file
@@ -364,9 +332,9 @@ class TestLoadVCFsPy(unittest.TestCase):
         # missing individual returns empty list
         self.assertEqual(self.vcf_loader.open_individual(None), [])
         
-        vcf = self.make_vcf_header()
-        vcf.append(self.make_vcf_line(pos=1, extra='HGNC=TEST;MAX_AF=0.0001'))
-        vcf.append(self.make_vcf_line(pos=2, extra='HGNC=ATRX;MAX_AF=0.0001'))
+        vcf = make_vcf_header()
+        vcf.append(make_vcf_line(pos=1, extra='HGNC=TEST;MAX_AF=0.0001'))
+        vcf.append(make_vcf_line(pos=2, extra='HGNC=ATRX;MAX_AF=0.0001'))
         
         path = os.path.join(self.temp_dir, "temp.vcf")
         self.write_temp_vcf(path, vcf)
@@ -392,10 +360,10 @@ class TestLoadVCFsPy(unittest.TestCase):
         ''' test that open_individual works with MNVs
         '''
         
-        vcf = self.make_vcf_header()
-        vcf.append(self.make_vcf_line(pos=1, cq='splice_region_variant',
+        vcf = make_vcf_header()
+        vcf.append(make_vcf_line(pos=1, cq='splice_region_variant',
             extra='HGNC=ATRX;MAX_AF=0.0001'))
-        vcf.append(self.make_vcf_line(pos=2, cq='missense_variant',
+        vcf.append(make_vcf_line(pos=2, cq='missense_variant',
             extra='HGNC=ATRX;MAX_AF=0.0001'))
         
         path = os.path.join(self.temp_dir, "temp.vcf.gz")
@@ -428,9 +396,9 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         def make_vcf(person):
             # make a VCF, where one line would pass the default filtering
-            vcf = self.make_vcf_header()
-            vcf.append(self.make_vcf_line(pos=1, extra='HGNC=TEST;MAX_AF=0.0001'))
-            vcf.append(self.make_vcf_line(pos=2, extra='HGNC=ATRX;MAX_AF=0.0001'))
+            vcf = make_vcf_header()
+            vcf.append(make_vcf_line(pos=1, extra='HGNC=TEST;MAX_AF=0.0001'))
+            vcf.append(make_vcf_line(pos=2, extra='HGNC=ATRX;MAX_AF=0.0001'))
             
             path = os.path.join(self.temp_dir, "{}.vcf.gz".format(person))
             self.write_gzipped_vcf(path, vcf)
