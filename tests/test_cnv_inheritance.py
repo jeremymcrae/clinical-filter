@@ -194,8 +194,6 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.inh.known_gene["inh"][inh] = {"Increased gene dosage"}
         self.assertTrue(self.inh.passes_gene_inheritance(cnv, inh))
         
-        
-        print('\n\n\n')
         # check that a CNV in a gene with differing inheritance mechanism fails
         self.inh.known_gene["inh"][inh] = {"Activating"}
         self.assertFalse(self.inh.passes_gene_inheritance(cnv, inh))
