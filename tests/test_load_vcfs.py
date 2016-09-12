@@ -42,7 +42,7 @@ from clinicalfilter.ped import Family, Person
 
 IS_PYTHON3 = sys.version_info.major == 3
 
-from tests.utils import make_vcf_line, make_vcf_header
+from tests.utils import make_vcf_line, make_vcf_header, make_minimal_vcf
 
 class TestLoadVCFsPy(unittest.TestCase):
     """ test that the LoadVCFs methods work as expected
@@ -69,16 +69,6 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         self.vcf_loader = LoadVCFs(total_trios, maf_tags, self.known_genes, set(), None, None, )
     
-    def make_minimal_vcf(self):
-        """ construct the bare minimum of lines for a VCF file
-        """
-        
-        variants = []
-        variants.append(make_vcf_line(pos=100))
-        variants.append(make_vcf_line(pos=200))
-        
-        return make_vcf_header() + variants
-    
     def write_temp_vcf(self, path, vcf_data):
         """ writes data to a file
         """
@@ -104,7 +94,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         """ test obtaining a file handle for the VCF
         """
         
-        vcf = self.make_minimal_vcf()
+        vcf = make_minimal_vcf()
         path = os.path.join(self.temp_dir, "temp.vcf")
         self.write_temp_vcf(path, vcf)
         
@@ -139,7 +129,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         """ test that get_vcf_header() works correctly
         """
         
-        vcf = self.make_minimal_vcf()
+        vcf = make_minimal_vcf()
         path = os.path.join(self.temp_dir, "temp.vcf")
         self.write_temp_vcf(path, vcf)
         
@@ -152,7 +142,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         """ test that exclude_header() works correctly
         """
         
-        vcf = self.make_minimal_vcf()
+        vcf = make_minimal_vcf()
         
         # make sure we drop the header, and only the header from the file
         # check this by reading the file, and making sure the first line
@@ -217,7 +207,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         family.add_father('dad_id', '0', '0', 'male', '1', date_path)
         family.set_child()
         
-        vcf = self.make_minimal_vcf()
+        vcf = make_minimal_vcf()
         vcf_string = "".join(vcf)
         if IS_PYTHON3:
             vcf_string = vcf_string.encode("utf-8")
