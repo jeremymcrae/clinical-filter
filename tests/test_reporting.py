@@ -33,6 +33,8 @@ from clinicalfilter.reporting import Report
 
 logging.disable(logging.CRITICAL)
 
+from tests.utils import create_snv
+
 class TestReportPy(unittest.TestCase):
     """ test the Report class
     """
@@ -49,9 +51,9 @@ class TestReportPy(unittest.TestCase):
         self.trio = self.create_family(child_gender, mom_aff, dad_aff)
         
         # generate a test variant
-        child = self.create_snv(child_gender, "0/1")
-        mom = self.create_snv("F", "0/0")
-        dad = self.create_snv("M", "0/0")
+        child = create_snv(child_gender, "0/1", chrom='X', pos=15000000, extra_info='MAX_AF=0.0005;PP_DNM=0.99')
+        mom = create_snv("F", "0/0", chrom='X', pos=15000000)
+        dad = create_snv("M", "0/0", chrom='X', pos=15000000)
         
         self.variants = [TrioGenotypes('X', '15000000', child, mom, dad)]
         
@@ -59,30 +61,6 @@ class TestReportPy(unittest.TestCase):
         self.report.family = self.trio
         SNV.set_populations(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF",
             "EAS_AF", "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"])
-    
-    def create_snv(self, gender, genotype):
-        """ create a default variant
-        """
-        
-        chrom = "X"
-        pos = "15000000"
-        snp_id = "."
-        ref = "A"
-        alt = "G"
-        qual = "50"
-        filt = "PASS"
-        
-        info = "HGNC=TEST;CQ=missense_variant;random_tag;EUR_AF=0.0005"
-        keys = "GT:DP"
-        values = genotype + ":50"
-        
-        # set up a SNV object, since SNV inherits VcfInfo
-        var = SNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
-            sample=values, gender=gender)
-        
-        var.vcf_line = [chrom, pos, snp_id, ref, alt, qual, filt, info, keys, values]
-        
-        return var
     
     def create_family(self, child_gender, mom_aff, dad_aff):
         """ create a default family, with optional gender and parental statuses
@@ -242,6 +220,10 @@ class TestReportPy(unittest.TestCase):
         # that we haven't checked against CNVs, which can change the
         # INHERITANCE_GENOTYPE flag, nor have we tested a larger list of variants
         var = (self.variants[0], ["single_variant"], ["Monoallelic"], ["TEST"])
+        var[0].child.add_vcf_line(['X', '15000000', '.', 'A', 'G', '50',
+            'PASS', 'HGNC=TEST;CQ=missense_variant;random_tag;EUR_AF=0.0005',
+            'GT:DP', '0/1:50'])
+        
         self.assertEqual(self.report._get_vcf_lines([var], header, provenance), vcf_lines + line)
     
     def test__get_output_line(self):
@@ -254,7 +236,7 @@ class TestReportPy(unittest.TestCase):
         alt_id = "test_id"
         
         # check the output for the default variant
-        expected = "child\ttest_id\tF\tX\t15000000\tTEST\tNA\tNA\tmissense_variant\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t0\tsingle_variant\tNA\tNA\n"
+        expected = "child\ttest_id\tF\tX\t15000000\tTEST\tNA\tNA\tmissense_variant\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t0\tsingle_variant\t0.99\tNA\n"
         self.assertEqual(self.report._get_output_line(var, dad_aff, mom_aff, alt_id), expected)
         
         # introduce additional info for the output line parsing, check the line
@@ -262,6 +244,6 @@ class TestReportPy(unittest.TestCase):
         var[0].child.info["PolyPhen"] = "probably_damaging(0.99)"
         var[0].child.info["SIFT"] = "deleterious(0)"
         var[0].child.info["ENST"] = "ENST00X"
-        expected = "child\ttest_id\tF\tX\t15000000\tTEST\tNA\tENST00X\tmissense_variant,PolyPhen=probably_damaging(0.99),SIFT=deleterious(0)\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t0\tsingle_variant\tNA\tNA\n"
+        expected = "child\ttest_id\tF\tX\t15000000\tTEST\tNA\tENST00X\tmissense_variant,PolyPhen=probably_damaging(0.99),SIFT=deleterious(0)\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t0\tsingle_variant\t0.99\tNA\n"
         self.assertEqual(self.report._get_output_line(var, dad_aff, mom_aff, alt_id), expected)
         

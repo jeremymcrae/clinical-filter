@@ -27,6 +27,7 @@ from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
+from tests.utils import create_snv
 
 class TestTrioGenotypesPy(unittest.TestCase):
     """ test the TrioGenotypes class
@@ -48,35 +49,12 @@ class TestTrioGenotypesPy(unittest.TestCase):
         ''' generate a test variant
         '''
         
-        child = self.create_snv(chrom, position, sex, child_geno)
-        mom = self.create_snv(chrom, position, "F", "0/0")
-        dad = self.create_snv(chrom, position, "M", "0/0")
+        child = create_snv(sex, child_geno, chrom=chrom, pos=position)
+        mom = create_snv("F", "0/0", chrom=chrom, pos=position)
+        dad = create_snv("M", "0/0", chrom=chrom, pos=position)
         
         return TrioGenotypes(child.get_chrom(), child.get_position(),
             child, mom, dad)
-    
-    def create_snv(self, chrom, pos, gender, genotype):
-        """ create a default variant
-        """
-        
-        snp_id = "."
-        ref = "A"
-        alt = "G"
-        filt = "PASS"
-        
-        # set up a SNV object, since SNV inherits VcfInfo
-        var = SNV(chrom, pos, snp_id, ref, alt, filt)
-        
-        info = "HGNC=TEST;CQ=missense_variant;DENOVO-SNP;PP_DNM=0.99"
-        keys = "GT:DP:TEAM29_FILTER:PP_DNM"
-        values = genotype + ":50:PASS:0.99"
-        
-        var.add_info(info)
-        var.add_format(keys, values)
-        var.set_gender(gender)
-        var.set_genotype()
-        
-        return var
     
     def create_family(self, child_gender, mom_aff, dad_aff):
         """ create a default family, with optional gender and parental statuses

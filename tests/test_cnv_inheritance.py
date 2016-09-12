@@ -58,13 +58,13 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         chrom = '1'
         position = '150'
-        extra_info = 'CNS=3;CALLSOURCE=aCGH'
-        extra_format = [('CIFER_INHERITANCE', 'uncertain')]
+        info = 'CNS=3;CALLSOURCE=aCGH'
+        format = [('CIFER_INHERITANCE', 'uncertain')]
         
         # generate a test variant
-        child = create_cnv(sex, "unknown", extra_info=extra_info, format=extra_format)
-        mom = create_cnv("F", "unknown", extra_info=extra_info, format=extra_format)
-        dad = create_cnv("M", "unknown", extra_info=extra_info, format=extra_format)
+        child = create_cnv(sex, "unknown", extra_info=info, format=format)
+        mom = create_cnv("F", "unknown", extra_info=info, format=format)
+        dad = create_cnv("M", "unknown", extra_info=info, format=format)
         
         return TrioGenotypes(chrom, position, child, mom, dad)
     
@@ -187,23 +187,21 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         gene = "TEST"
         inh = "Monoallelic"
-        cnv = self.create_variant("female")
-        
-        cnv.chrom = "1"
-        cnv.child.info["CNS"] = "3"
-        cnv.child.gender = "M"
-        cnv.child.genotype = "DUP"
+        cnv = self.create_variant("male")
         
         # check that a CNV with all the right characteristics passes
         # for mech in
         self.inh.known_gene["inh"][inh] = {"Increased gene dosage"}
         self.assertTrue(self.inh.passes_gene_inheritance(cnv, inh))
         
+        
+        print('\n\n\n')
         # check that a CNV in a gene with differing inheritance mechanism fails
-        self.inh.known_gene["inh"][inh] = {"Loss of function"}
+        self.inh.known_gene["inh"][inh] = {"Activating"}
         self.assertFalse(self.inh.passes_gene_inheritance(cnv, inh))
         
         # check that a DEL CNV requires a different mechanism
+        self.inh.known_gene["inh"][inh] = {"Loss of function"}
         cnv.child.genotype = "DEL"
         cnv.child.info["CNS"] = "0"
         self.assertTrue(self.inh.passes_gene_inheritance(cnv, inh))

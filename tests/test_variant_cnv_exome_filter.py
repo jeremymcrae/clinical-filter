@@ -23,6 +23,7 @@ import unittest
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.variant.cnv_exome_filter import ExomeCNV
 
+from tests.utils import create_cnv
 
 class TestExomeCnvPy(unittest.TestCase):
     """ test the Exome CNV filters
@@ -32,24 +33,11 @@ class TestExomeCnvPy(unittest.TestCase):
         """ define a default VcfInfo object
         """
         
-        chrom = "1"
-        pos = "15000000"
-        snp_id = "."
-        ref = "A"
-        alt = "<DUP>"
-        filt = "PASS"
+        extra = "OR5A1;CQ=missense_variant;CONVEX;RC50INTERNALFREQ=0.005;COMMONFORWARDS=0.000;MEANLR2=0.5;MADL2R=0.02"
+        cnv = create_cnv('F', 'deNovo', extra_info=extra)
         
-        # set up a SNV object, since SNV inherits VcfInfo
-        cnv = CNV(chrom, pos, snp_id, ref, alt, filt)
         self.var = ExomeCNV(cnv)
         
-        info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;CONVEX;RC50INTERNALFREQ=0.005;COMMONFORWARDS=0.000;MEANLR2=0.5;MADL2R=0.02"
-        format_keys = "inheritance:DP"
-        sample_values = "deNovo:50"
-        
-        self.var.cnv.add_info(info)
-        self.var.cnv.add_format(format_keys, sample_values)
-        self.var.cnv.set_gender("F")
     
     def test_add_cns_state(self):
         """ test that add_cns_state() works correctly
