@@ -86,7 +86,7 @@ class Variant(Info):
             sample = '"{}"'.format(sample)
         
         info = None
-        if self.info is not None:
+        if self.info != {}:
             info = []
             for key, value in sorted(self.info.items()):
                 entry = key
