@@ -127,7 +127,7 @@ class Variant(Info):
         else:
             raise ValueError("unknown gender code")
         
-        self.set_inheritance_type()
+        self.set_inheritance_type(self.get_position(), self.is_male())
     
     def get_gender(self):
         """returns the gender for a person (1, M = male, 2, F = female).
@@ -182,7 +182,7 @@ class Variant(Info):
     def get_vcf_line(self):
         return self.vcf_line
         
-    def set_inheritance_type(self):
+    def set_inheritance_type(self, pos, is_male):
         """ sets the chromosome type (eg autosomal, or X chromosome type).
         
         provides the chromosome type for a chromosome (eg Autosomal, or
@@ -191,28 +191,32 @@ class Variant(Info):
         the sex-chromosomes, the chromosome character. This doesn't allow for
         chromosomes to be specified as "chr1", and sex chromosomes have to be
         specified as "X" or "Y", not "23" or "24".
+        
+        Args:
+            pos: position on the chromosome
+            is_male: True/False for whether the individual is male
         """
         
-        if self.chrom not in ["chrX", "ChrX", "X", "chrY", "ChrY", "Y"]:
+        if self.get_chrom() not in ["chrX", "ChrX", "X", "chrY", "ChrY", "Y"]:
             self.inheritance_type = "autosomal"
-        elif self.chrom in ["chrX", "ChrX", "X"]:
+        elif self.get_chrom() in ["chrX", "ChrX", "X"]:
             # check if the gene lies within a pseudoautosomal region
             for start, end in self.x_pseudoautosomal_regions:
-                if start < self.position < end:
+                if start < pos < end:
                     self.inheritance_type = "autosomal"
                     return
             
-            if self.is_male():
+            if is_male:
                 self.inheritance_type =  "XChrMale"
             else:
                 self.inheritance_type = "XChrFemale"
-        elif self.chrom in ["chrY", "ChrY", "Y"]:
+        elif self.get_chrom() in ["chrY", "ChrY", "Y"]:
             # check if the gene lies within a pseudoautosomal region
             for start, end in self.y_pseudoautosomal_regions:
-                if start < self.position < end:
+                if start < pos < end:
                     self.inheritance_type = "autosomal"
                     return
-            if self.is_male():
+            if is_male:
                 self.inheritance_type =  "YChrMale"
             else:
                 self.inheritance_type = "YChrFemale"

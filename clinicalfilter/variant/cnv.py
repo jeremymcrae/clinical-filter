@@ -48,28 +48,21 @@ class CNV(Variant):
         """ sets the genotype of the variant
         """
         
-        # make sure the inheritance type ("autosomal", "XChrMale" etc) is
-        # set correctly for allosomal CNVs, since they may lie across both
-        # allosomal and pseudoautosomal regions.
-        if self.get_chrom() in ["chrX", "ChrX", "X", "chrY", "ChrY", "Y"]:
-            cnv_start = self.get_position()
-            cnv_start_inh = self.get_inheritance_type()
-            
-            cnv_end = self.info["END"]
-            self.position = int(cnv_end)
-            self.set_inheritance_type()
-            cnv_end_inh = self.get_inheritance_type()
-            
-            # restore the CNVs initial position
-            self.position = cnv_start
-            
-            # if the start and end positions have different inheritance types,
-            # swap ourselves over to the allosomal inheritance type
-            if cnv_start_inh != cnv_end_inh:
-                # currently we are using the end inh type, so we only need to
-                # swap to the start type if that is the allosomal end
-                if cnv_start_inh != "autosomal":
-                    self.set_inheritance_type()
+        # ensure the inheritance type ("autosomal", "XChrMale" etc) is correct
+        # for CNVs, since they can overlap allosomal and pseudoautosomal regions.
+        self.set_inheritance_type(self.get_position(), self.is_male())
+        start_inh = self.get_inheritance_type()
+        
+        self.set_inheritance_type(int(self.info["END"]), self.is_male())
+        end_inh = self.get_inheritance_type()
+        
+        # CNVs that overlap allosomal and pseudoautosomal regions will have
+        # different inheritance types for the range ends. Swap to allosomal.
+        if start_inh != end_inh:
+            # currently we are using the end inh type, so we only need to
+            # swap to the start type if that is the allosomal end
+            if start_inh != "autosomal":
+                self.set_inheritance_type(start, self.is_male())
         
         if "CALLSOURCE" in self.info and self.info["CALLSOURCE"] == "EXOME":
             self.add_cns_state()
