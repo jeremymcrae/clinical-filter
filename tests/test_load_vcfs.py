@@ -68,8 +68,9 @@ class TestLoadVCFsPy(unittest.TestCase):
         self.vcf_loader = LoadVCFs(total_trios, maf_tags, self.known_genes, set(), None, None, )
     
     def make_vcf_header(self):
+        ''' generate a test VCF header
+        '''
     
-        # generate a test VCF
         lines = ['##fileformat=VCFv4.1\n',
             "##fileDate=2014-01-01\n",
             "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n",

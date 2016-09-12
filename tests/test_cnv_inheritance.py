@@ -25,6 +25,7 @@ from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.inheritance import CNVInheritance
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
+from tests.utils import create_cnv
 
 class TestCNVInheritancePy(unittest.TestCase):
     """ test the Inheritance class
@@ -51,30 +52,19 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         self.inh = CNVInheritance(self.trio, self.known_gene, "TEST", syndrome_regions)
     
-    def create_cnv(self, gender, inh, cifer, chrom, pos):
-        """ create a default variant
-        """
-        
-        snp_id = "."
-        ref = "A"
-        alt = "<DUP>"
-        filt = "PASS"
-        
-        info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000;CNS=3;CALLSOURCE=aCGH"
-        keys = "CIFER:INHERITANCE:DP"
-        values = cifer + ":" + inh + ":50"
-        
-        return CNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
-            sample=values, gender=gender)
-    
-    def create_variant(self, sex, chrom="1", position="15000000"):
+    def create_variant(self, sex):
         """ creates a TrioGenotypes variant
         """
         
+        chrom = '1'
+        position = '150'
+        extra_info = 'CNS=3;CALLSOURCE=aCGH'
+        extra_format = [('CIFER_INHERITANCE', 'uncertain')]
+        
         # generate a test variant
-        child = self.create_cnv(sex, "unknown", "uncertain", chrom, position)
-        mom = self.create_cnv("F", "unknown", "uncertain", chrom, position)
-        dad = self.create_cnv("M", "unknown", "uncertain", chrom, position)
+        child = create_cnv(sex, "unknown", extra_info=extra_info, format=extra_format)
+        mom = create_cnv("F", "unknown", extra_info=extra_info, format=extra_format)
+        dad = create_cnv("M", "unknown", extra_info=extra_info, format=extra_format)
         
         return TrioGenotypes(chrom, position, child, mom, dad)
     
@@ -211,7 +201,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         # check that a CNV in a gene with differing inheritance mechanism fails
         self.inh.known_gene["inh"][inh] = {"Loss of function"}
-        self.assertTrue(self.inh.passes_gene_inheritance(cnv, inh))
+        self.assertFalse(self.inh.passes_gene_inheritance(cnv, inh))
         
         # check that a DEL CNV requires a different mechanism
         cnv.child.genotype = "DEL"

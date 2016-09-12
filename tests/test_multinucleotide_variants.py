@@ -34,6 +34,8 @@ from clinicalfilter.multinucleotide_variants import get_mnv_candidates, \
     find_nearby_variants, parse_vcf_line, get_matches, is_not_indel, is_coding, \
     screen_pairs, same_aa, translate, get_codons, check_mnv_consequence
 
+from tests.utils import make_vcf_header, make_vcf_line
+
 class TestMNVChecksPy(unittest.TestCase):
     """ test the multinucleotide variant (MNV) checking functions
     """
@@ -114,9 +116,9 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' check that get_mnv_candidates works correctly
         '''
         
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(chrom='1', pos=1, codons='aaT/aaG'))
-        lines.append(self.make_vcf_line(chrom='1', pos=2, codons='Aat/Cat'))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(chrom='1', pos=1, extra='Protein_position=1;Codons=aaT/aaG'))
+        lines.append(make_vcf_line(chrom='1', pos=2, extra='Protein_position=1;Codons=Aat/Cat'))
         self.write_vcf(lines)
         
         self.assertEqual(get_mnv_candidates(self.path), {
@@ -126,9 +128,9 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' check that get_mnv_candidates works correctly
         '''
         
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(chrom='1', pos=1, codons='aaT/aaG'))
-        lines.append(self.make_vcf_line(chrom='1', pos=2, codons='Att/Ctt'))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(chrom='1', pos=1, extra='Protein_position=1;Codons=aaT/aaG'))
+        lines.append(make_vcf_line(chrom='1', pos=2, extra='Protein_position=2;Codons=Att/Ctt'))
         self.write_vcf(lines)
         
         self.assertEqual(get_mnv_candidates(self.path), {})
@@ -137,9 +139,9 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that find_nearby_variants() works correctly
         '''
         
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(pos=1))
-        lines.append(self.make_vcf_line(pos=2))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(pos=1))
+        lines.append(make_vcf_line(pos=2))
         self.write_vcf(lines)
         
         vcf = open_vcf(self.path)
@@ -150,9 +152,9 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that find_nearby_variants() doesn't include vars far apart
         '''
         
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(pos=1))
-        lines.append(self.make_vcf_line(pos=4))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(pos=1))
+        lines.append(make_vcf_line(pos=4))
         self.write_vcf(lines)
         
         vcf = open_vcf(self.path)
@@ -164,12 +166,12 @@ class TestMNVChecksPy(unittest.TestCase):
         '''
         
         # get the default two variants
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(pos=1))
-        lines.append(self.make_vcf_line(pos=2))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(pos=1))
+        lines.append(make_vcf_line(pos=2))
         
         # make a third variant, but at the same position as the second
-        lines.append(self.make_vcf_line(pos=2))
+        lines.append(make_vcf_line(pos=2))
         self.write_vcf(lines)
         
         vcf = open_vcf(self.path)
@@ -182,9 +184,9 @@ class TestMNVChecksPy(unittest.TestCase):
         '''
         
         # get the default two variants
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(chrom='1', pos=1))
-        lines.append(self.make_vcf_line(chrom='2', pos=1))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(chrom='1', pos=1))
+        lines.append(make_vcf_line(chrom='2', pos=1))
         
         vcf = open_vcf(self.path)
         exclude_header(vcf)
@@ -195,9 +197,9 @@ class TestMNVChecksPy(unittest.TestCase):
         '''
         
         # get the default two variants
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(pos=1))
-        lines.append(self.make_vcf_line(pos=2))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(pos=1))
+        lines.append(make_vcf_line(pos=2))
         
         vcf = open_vcf(self.path)
         exclude_header(vcf)
@@ -209,7 +211,7 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that parse_vcf_line() works correctly
         '''
         
-        line = self.make_vcf_line().split('\t')
+        line = make_vcf_line(extra='Protein_position=1;Codons=aGt/aTt').split('\t')
         var = parse_vcf_line(line, self.Variant)
         
         parsed = self.Variant(chrom='1', pos=1, id='.', ref='G', alts=['T'],
@@ -242,12 +244,11 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' check that parse_vcf_line() works when we have multiple alts
         '''
         
-        line = self.make_vcf_line(alts='C,CT').split('\t')
+        line = make_vcf_line(alts='C,CT').split('\t')
         var = parse_vcf_line(line, self.Variant)
         
         parsed = self.Variant(chrom='1', pos=1, id='.', ref='G', alts=['C', 'CT'],
-            qual='1000', filter='PASS', info={'Protein_position': '1',
-            'CQ': 'missense_variant', 'Codons': 'aGt/aTt'})
+            qual='1000', filter='PASS', info={'CQ': 'missense_variant'})
         
         self.assertEqual(var, parsed)
     
@@ -256,19 +257,19 @@ class TestMNVChecksPy(unittest.TestCase):
         '''
         
         # get the VCF lines
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(pos=1))
-        lines.append(self.make_vcf_line(pos=2))
-        lines.append(self.make_vcf_line(pos=4))
-        lines.append(self.make_vcf_line(pos=5))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(pos=1))
+        lines.append(make_vcf_line(pos=2))
+        lines.append(make_vcf_line(pos=4))
+        lines.append(make_vcf_line(pos=5))
         self.write_vcf(lines)
         
         vcf = tabix.open(self.path)
         pair = [('1', 2), ('1', 4)]
         
         # define the expected lines
-        var1 = parse_vcf_line(self.make_vcf_line(pos=2).split('\t'), self.Variant)
-        var2 = parse_vcf_line(self.make_vcf_line(pos=4).split('\t'), self.Variant)
+        var1 = parse_vcf_line(make_vcf_line(pos=2).split('\t'), self.Variant)
+        var2 = parse_vcf_line(make_vcf_line(pos=4).split('\t'), self.Variant)
         
         self.assertEqual(list(get_matches(vcf, pair)), [var1, var2])
     
@@ -277,20 +278,20 @@ class TestMNVChecksPy(unittest.TestCase):
         '''
         
         # get the VCF lines
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(pos=1))
-        lines.append(self.make_vcf_line(pos=2))
-        lines.append(self.make_vcf_line(pos=4))
-        lines.append(self.make_vcf_line(pos=5))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(pos=1))
+        lines.append(make_vcf_line(pos=2))
+        lines.append(make_vcf_line(pos=4))
+        lines.append(make_vcf_line(pos=5))
         self.write_vcf(lines)
         
         vcf = tabix.open(self.path)
         pair = [('1', 2), ('1', 4), ('1', 5)]
         
         # define the expected lines
-        var1 = parse_vcf_line(self.make_vcf_line(pos=2).split('\t'), self.Variant)
-        var2 = parse_vcf_line(self.make_vcf_line(pos=4).split('\t'), self.Variant)
-        var3 = parse_vcf_line(self.make_vcf_line(pos=5).split('\t'), self.Variant)
+        var1 = parse_vcf_line(make_vcf_line(pos=2).split('\t'), self.Variant)
+        var2 = parse_vcf_line(make_vcf_line(pos=4).split('\t'), self.Variant)
+        var3 = parse_vcf_line(make_vcf_line(pos=5).split('\t'), self.Variant)
         
         self.assertEqual(list(get_matches(vcf, pair)), [var1, var2, var3])
     
@@ -299,32 +300,32 @@ class TestMNVChecksPy(unittest.TestCase):
         '''
         
         # check a deletion indel (from ref allele)
-        line = self.make_vcf_line(ref='AA').split('\t')
+        line = make_vcf_line(ref='AA').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertFalse(is_not_indel(var))
         
         # check a SNV, should pass
-        line = self.make_vcf_line(ref='A').split('\t')
+        line = make_vcf_line(ref='A').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertTrue(is_not_indel(var))
         
         # check a SNV with multiple alts
-        line = self.make_vcf_line(ref='A', alts='T,G').split('\t')
+        line = make_vcf_line(ref='A', alts='T,G').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertTrue(is_not_indel(var))
         
         # check a variant with multiple alts, only one of which is for a SNV
-        line = self.make_vcf_line(ref='A', alts='TT,G').split('\t')
+        line = make_vcf_line(ref='A', alts='TT,G').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertTrue(is_not_indel(var))
         
         # check an indel with multiple alts, none of which are for a SNV
-        line = self.make_vcf_line(ref='A', alts='TT,*').split('\t')
+        line = make_vcf_line(ref='A', alts='TT,*').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertFalse(is_not_indel(var))
         
         # check a deletion indel
-        line = self.make_vcf_line(ref='A', alts='TT').split('\t')
+        line = make_vcf_line(ref='A', alts='TT').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertFalse(is_not_indel(var))
     
@@ -333,38 +334,38 @@ class TestMNVChecksPy(unittest.TestCase):
         '''
         
         # check for a single transcript and variant in CDS
-        line = self.make_vcf_line(cq='missense_variant').split('\t')
+        line = make_vcf_line(cq='missense_variant').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertTrue(is_coding(var))
         
         # check for a single transcript and synonymous variant
-        line = self.make_vcf_line(cq='synonymous_variant').split('\t')
+        line = make_vcf_line(cq='synonymous_variant').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertTrue(is_coding(var))
         
         # check for a single transcript and coding variant
-        line = self.make_vcf_line(cq='intergenic_variant').split('\t')
+        line = make_vcf_line(cq='intergenic_variant').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertFalse(is_coding(var))
         
         # check for a single transcript and coding variant
-        line = self.make_vcf_line(cq='intergenic_variant|missense_variant').split('\t')
+        line = make_vcf_line(cq='intergenic_variant|missense_variant').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertTrue(is_coding(var))
         
         # check for a single transcript and coding variant
-        line = self.make_vcf_line(cq='intergenic_variant,missense_variant').split('\t')
+        line = make_vcf_line(cq='intergenic_variant,missense_variant').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertTrue(is_coding(var))
         
         # check for a single transcript and coding variant
-        line = self.make_vcf_line(cq='intergenic_variant,'
+        line = make_vcf_line(cq='intergenic_variant,'
             'intergenic_variant|missense_variant').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertTrue(is_coding(var))
         
         # check for a single transcript and coding variant
-        line = self.make_vcf_line(cq='intergenic_variant,'
+        line = make_vcf_line(cq='intergenic_variant,'
             'intergenic_variant|intergenic_variant').split('\t')
         var = parse_vcf_line(line, self.Variant)
         self.assertFalse(is_coding(var))
@@ -374,13 +375,13 @@ class TestMNVChecksPy(unittest.TestCase):
         '''
         
         # get the VCF lines
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(pos=1))
-        lines.append(self.make_vcf_line(pos=2))
-        lines.append(self.make_vcf_line(pos=4))
-        lines.append(self.make_vcf_line(pos=5))
-        lines.append(self.make_vcf_line(pos=7))
-        lines.append(self.make_vcf_line(pos=8))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(pos=1))
+        lines.append(make_vcf_line(pos=2))
+        lines.append(make_vcf_line(pos=4))
+        lines.append(make_vcf_line(pos=5))
+        lines.append(make_vcf_line(pos=7))
+        lines.append(make_vcf_line(pos=8))
         self.write_vcf(lines)
         
         vcf = tabix.open(self.path)
@@ -396,12 +397,12 @@ class TestMNVChecksPy(unittest.TestCase):
         '''
         
         # get the VCF lines
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(pos=2))
-        lines.append(self.make_vcf_line(pos=4))
-        lines.append(self.make_vcf_line(pos=5))
-        lines.append(self.make_vcf_line(pos=7))
-        lines.append(self.make_vcf_line(pos=8))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(pos=2))
+        lines.append(make_vcf_line(pos=4))
+        lines.append(make_vcf_line(pos=5))
+        lines.append(make_vcf_line(pos=7))
+        lines.append(make_vcf_line(pos=8))
         self.write_vcf(lines)
         
         vcf = tabix.open(self.path)
@@ -415,9 +416,9 @@ class TestMNVChecksPy(unittest.TestCase):
         '''
         
         # get the VCF lines
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(pos=2, aa_pos=1))
-        lines.append(self.make_vcf_line(pos=4, aa_pos=1))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(pos=2, extra='Protein_position=1'))
+        lines.append(make_vcf_line(pos=4, extra='Protein_position=1'))
         self.write_vcf(lines)
         
         vcf = tabix.open(self.path)
@@ -429,10 +430,10 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' check that same_aa() works correctly for different amino acids
         '''
         
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(pos=5, aa_pos=2))
-        lines.append(self.make_vcf_line(pos=7, aa_pos=3))
-        lines.append(self.make_vcf_line(pos=8, aa_pos=4))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(pos=5, extra='Protein_position=2'))
+        lines.append(make_vcf_line(pos=7, extra='Protein_position=3'))
+        lines.append(make_vcf_line(pos=8, extra='Protein_position=4'))
         self.write_vcf(lines)
         
         vcf = tabix.open(self.path)
@@ -447,10 +448,10 @@ class TestMNVChecksPy(unittest.TestCase):
         # if one of the variants in the pair does not have a protein position
         # listed (i.e. residue number), that indicates the variant could be
         # affecting the splice site, so we can't use the pair.
-        lines = self.make_vcf_header()
-        lines.append(self.make_vcf_line(pos=5, aa_pos=None))
-        lines.append(self.make_vcf_line(pos=7, aa_pos=None))
-        lines.append(self.make_vcf_line(pos=8, aa_pos=4))
+        lines = make_vcf_header()
+        lines.append(make_vcf_line(pos=5))
+        lines.append(make_vcf_line(pos=7))
+        lines.append(make_vcf_line(pos=8, extra='Protein_position=4'))
         self.write_vcf(lines)
         
         vcf = tabix.open(self.path)
@@ -474,8 +475,8 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that get_codons() works correctly
         '''
         
-        var1 = self.make_vcf_line(codons='aGt/aTt').split('\t')
-        var2 = self.make_vcf_line(codons='agT/agC').split('\t')
+        var1 = make_vcf_line(extra='Codons=aGt/aTt').split('\t')
+        var2 = make_vcf_line(extra='Codons=agT/agC').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)
@@ -487,8 +488,8 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that get_codons() works correctly when some genes have null values
         '''
         
-        var1 = self.make_vcf_line(codons='aGt/aTt|.').split('\t')
-        var2 = self.make_vcf_line(codons='agT/agC|.').split('\t')
+        var1 = make_vcf_line(extra='Codons=aGt/aTt|.').split('\t')
+        var2 = make_vcf_line(extra='Codons=agT/agC|.').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)
@@ -500,8 +501,8 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that get_codons() works when variants duplicate codons
         '''
         
-        var1 = self.make_vcf_line(codons='aGt/aTt|aGt/aTt').split('\t')
-        var2 = self.make_vcf_line(codons='agT/agC|agT/agC').split('\t')
+        var1 = make_vcf_line(extra='Codons=aGt/aTt|aGt/aTt').split('\t')
+        var2 = make_vcf_line(extra='Codons=agT/agC|agT/agC').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)
@@ -514,8 +515,8 @@ class TestMNVChecksPy(unittest.TestCase):
         have different codons
         '''
         
-        var1 = self.make_vcf_line(codons='aGt/aTt|Gta/Tta').split('\t')
-        var2 = self.make_vcf_line(codons='agT/agC|gTa/gCa').split('\t')
+        var1 = make_vcf_line(extra='Codons=aGt/aTt|Gta/Tta').split('\t')
+        var2 = make_vcf_line(extra='Codons=agT/agC|gTa/gCa').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)
@@ -528,8 +529,8 @@ class TestMNVChecksPy(unittest.TestCase):
         not un upper case.
         '''
         
-        var1 = self.make_vcf_line(codons='agt/att').split('\t')
-        var2 = self.make_vcf_line(codons='agt/agc').split('\t')
+        var1 = make_vcf_line(extra='Codons=agt/att').split('\t')
+        var2 = make_vcf_line(extra='Codons=agt/agc').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)
@@ -541,8 +542,8 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that get_mnv_consequence() works correctly
         '''
         
-        var1 = self.make_vcf_line(codons='Cga/Aga').split('\t')
-        var2 = self.make_vcf_line(codons='cgA/cgG').split('\t')
+        var1 = make_vcf_line(extra='Codons=Cga/Aga').split('\t')
+        var2 = make_vcf_line(extra='Codons=cgA/cgG').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)
@@ -554,8 +555,8 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that get_mnv_consequence() works correctly
         '''
         
-        var1 = self.make_vcf_line(codons='Ctt/Ttt').split('\t')
-        var2 = self.make_vcf_line(codons='ctT/ctC').split('\t')
+        var1 = make_vcf_line(extra='Codons=Ctt/Ttt').split('\t')
+        var2 = make_vcf_line(extra='Codons=ctT/ctC').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)
@@ -567,8 +568,8 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that get_mnv_consequence() works correctly
         '''
         
-        var1 = self.make_vcf_line(codons='Cta/Tta').split('\t')
-        var2 = self.make_vcf_line(codons='ctA/ctT').split('\t')
+        var1 = make_vcf_line(extra='Codons=Cta/Tta').split('\t')
+        var2 = make_vcf_line(extra='Codons=ctA/ctT').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)
@@ -582,8 +583,8 @@ class TestMNVChecksPy(unittest.TestCase):
         This should only be true for Serine residues, such as TCT -> AGT.
         '''
         
-        var1 = self.make_vcf_line(codons='tCt/tGt').split('\t')
-        var2 = self.make_vcf_line(codons='Tct/Act').split('\t')
+        var1 = make_vcf_line(extra='Codons=tCt/tGt').split('\t')
+        var2 = make_vcf_line(extra='Codons=Tct/Act').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)
@@ -595,8 +596,8 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that get_mnv_consequence() works correctly
         '''
         
-        var1 = self.make_vcf_line(codons='Cat/Tat').split('\t')
-        var2 = self.make_vcf_line(codons='caT/caG').split('\t')
+        var1 = make_vcf_line(extra='Codons=Cat/Tat').split('\t')
+        var2 = make_vcf_line(extra='Codons=caT/caG').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)
@@ -608,8 +609,8 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that get_mnv_consequence() works correctly
         '''
         
-        var1 = self.make_vcf_line(codons='taT/taG').split('\t')
-        var2 = self.make_vcf_line(codons='Tat/Cat').split('\t')
+        var1 = make_vcf_line(extra='Codons=taT/taG').split('\t')
+        var2 = make_vcf_line(extra='Codons=Tat/Cat').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)
@@ -621,8 +622,8 @@ class TestMNVChecksPy(unittest.TestCase):
         ''' test that get_mnv_consequence() works correctly
         '''
         
-        var1 = self.make_vcf_line(codons='aaT/aaG').split('\t')
-        var2 = self.make_vcf_line(codons='Aat/Cat').split('\t')
+        var1 = make_vcf_line(extra='Codons=aaT/aaG').split('\t')
+        var2 = make_vcf_line(extra='Codons=Aat/Cat').split('\t')
         
         var1 = parse_vcf_line(var1, self.Variant)
         var2 = parse_vcf_line(var2, self.Variant)

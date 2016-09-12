@@ -26,6 +26,7 @@ from clinicalfilter.variant.snv import SNV
 from clinicalfilter.inheritance import Autosomal
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
+from tests.utils import create_snv, create_cnv
 
 class TestAutosomalPy(unittest.TestCase):
     """ test the Autosomal class
@@ -43,9 +44,9 @@ class TestAutosomalPy(unittest.TestCase):
         self.trio = self.create_family(sex, mom_aff, dad_aff)
         
         # generate a test variant
-        child = self.create_snv(sex, "0/1")
-        mom = self.create_snv("F", "0/0")
-        dad = self.create_snv("M", "0/0")
+        child = create_snv(sex, "0/1")
+        mom = create_snv("F", "0/0")
+        dad = create_snv("M", "0/0")
         
         var = TrioGenotypes(child.get_chrom(), child.get_position(),child, mom, dad)
         self.variants = [var]
@@ -55,54 +56,6 @@ class TestAutosomalPy(unittest.TestCase):
         
         self.inh = Autosomal(self.variants, self.trio, self.known_gene, "TEST")
         self.inh.is_lof = var.child.is_lof()
-    
-    def create_snv(self, gender, genotype):
-        """ create a default variant
-        """
-        
-        chrom = "1"
-        pos = "15000000"
-        snp_id = "."
-        ref = "A"
-        alt = "G"
-        filt = "PASS"
-        
-        # set up a SNV object, since SNV inherits VcfInfo
-        var = SNV(chrom, pos, snp_id, ref, alt, filt)
-        
-        info = "HGNC=TEST;CQ=missense_variant;random_tag"
-        format_keys = "GT:DP"
-        sample_values = genotype + ":50"
-        
-        var.add_info(info)
-        var.add_format(format_keys, sample_values)
-        var.set_gender(gender)
-        var.set_genotype()
-        
-        return var
-        
-    def create_cnv(self, gender, inh, chrom, pos):
-        """ create a default variant
-        """
-        
-        snp_id = "."
-        ref = "A"
-        alt = "<DUP>"
-        filt = "PASS"
-        
-        # set up a SNV object, since SNV inherits VcfInfo
-        var = CNV(chrom, pos, snp_id, ref, alt, filt)
-        
-        info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000"
-        format_keys = "INHERITANCE:DP"
-        sample_values = inh + ":50"
-        
-        var.add_info(info)
-        var.add_format(format_keys, sample_values)
-        var.set_gender(gender)
-        var.set_genotype()
-        
-        return var
     
     def create_family(self, child_gender, mom_aff, dad_aff):
         """ create a default family, with optional gender and parental statuses
@@ -323,9 +276,9 @@ class TestAutosomalPy(unittest.TestCase):
         # generate a test variant
         chrom = "1"
         position = "60000"
-        child = self.create_cnv("F", "unknown", chrom, position)
-        mom = self.create_cnv("F", "unknown", chrom, position)
-        dad = self.create_cnv("M", "unknown", chrom, position)
+        child = create_cnv("F", "unknown", chrom=chrom, pos=position)
+        mom = create_cnv("F", "unknown", chrom=chrom, pos=position)
+        dad = create_cnv("M", "unknown", chrom=chrom, pos=position)
         
         cnv = TrioGenotypes(chrom, position, child, mom, dad)
         var = self.variants[0]

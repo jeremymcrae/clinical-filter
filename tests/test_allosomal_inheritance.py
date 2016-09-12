@@ -27,6 +27,7 @@ from clinicalfilter.variant.snv import SNV
 from clinicalfilter.inheritance import Allosomal
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
+from tests.utils import create_snv, create_cnv
 
 class TestAllosomalPy(unittest.TestCase):
     """ test the Allosomal class
@@ -44,9 +45,9 @@ class TestAllosomalPy(unittest.TestCase):
         self.trio = self.create_family(child_gender, mom_aff, dad_aff)
         
         # generate a test variant
-        child = self.create_snv(child_gender, "0/1")
-        mom = self.create_snv("F", "0/0")
-        dad = self.create_snv("M", "0/0")
+        child = create_snv(child_gender, "0/1")
+        mom = create_snv("F", "0/0")
+        dad = create_snv("M", "0/0")
         
         var = TrioGenotypes(child.get_chrom(), child.get_position(), child, mom, dad)
         self.variants = [var]
@@ -361,12 +362,12 @@ class TestAllosomalPy(unittest.TestCase):
         
         # generate a test variant
         chrom = "X"
-        position = "60000"
-        child = self.create_cnv("F", "unknown", chrom, position)
-        mom = self.create_cnv("F", "unknown", chrom, position)
-        dad = self.create_cnv("M", "unknown", chrom, position)
+        pos = '160'
+        child = create_cnv('F', 'unknown', chrom=chrom, pos=pos)
+        mom = create_cnv('F', 'unknown', chrom=chrom, pos=pos)
+        dad = create_cnv('F', 'unknown', chrom=chrom, pos=pos)
         
-        cnv = TrioGenotypes(chrom, position, child, mom, dad)
+        cnv = TrioGenotypes(chrom, pos, child, mom, dad)
         
         var = self.variants[0]
         

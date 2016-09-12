@@ -28,6 +28,7 @@ from clinicalfilter.inheritance import Autosomal
 from clinicalfilter.inheritance import Allosomal
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
+from tests.utils import create_snv, create_cnv
 
 class TestInheritancePy(unittest.TestCase):
     """ test the Inheritance class
@@ -53,56 +54,15 @@ class TestInheritancePy(unittest.TestCase):
         
         self.inh = Autosomal(self.variants, self.trio, self.known_gene, "TEST")
     
-    def create_snv(self, chrom, pos, gender, genotype, cq=None):
-        """ create a default variant
-        """
-        
-        snp_id = "."
-        ref = "A"
-        alt = "G"
-        filt = "PASS"
-        
-        if cq is None:
-            cq = "missense_variant"
-        
-        # set up a SNV object, since SNV inherits VcfInfo
-        var = SNV(chrom, pos, snp_id, ref, alt, filt)
-        
-        info = "HGNC=TEST;CQ={};random_tag".format(cq)
-        keys = "GT:DP"
-        values = genotype + ":50"
-        
-        return SNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
-            sample=values, gender=gender)
-    
-    def create_cnv(self, chrom, pos, gender, inh, cq=None):
-        """ create a default variant
-        """
-        
-        snp_id = "."
-        ref = "A"
-        alt = "<DEL>"
-        filt = "PASS"
-        
-        if cq is None:
-            cq = "transcript_ablation"
-        
-        info = "CQ={};HGNC=TEST;HGNC_ALL=TEST;END=160;SVLEN=5000".format(cq)
-        keys = "INHERITANCE:DP:CIFER_INHERITANCE"
-        values = "{0}:50:{0}".format(inh)
-        
-        return CNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
-            sample=values, gender=gender)
-    
     def create_variant(self, chrom="1", position="150", sex='F', cq=None,
             geno=['0/1', '0/0', '0/0']):
         """ creates a TrioGenotypes variant
         """
         
         # generate a test variant
-        child = self.create_snv(chrom, position, sex, geno[0],  cq)
-        mom = self.create_snv(chrom, position, "F", geno[1], cq)
-        dad = self.create_snv(chrom, position, "M", geno[2], cq)
+        child = create_snv(sex, geno[0], cq, chrom=chrom, pos=position)
+        mom = create_snv("F", geno[1], cq, chrom=chrom, pos=position)
+        dad = create_snv("M", geno[2], cq, chrom=chrom, pos=position)
         
         return TrioGenotypes(chrom, position, child, mom, dad)
     
@@ -215,9 +175,9 @@ class TestInheritancePy(unittest.TestCase):
         # generate a test variant
         chrom = "1"
         position = "60000"
-        child = self.create_cnv(chrom, position, "F", "unknown")
-        mom = self.create_cnv(chrom, position, "F", "unknown")
-        dad = self.create_cnv(chrom, position, "M", "unknown")
+        child = create_cnv("F", "unknown", chrom=chrom, pos=position)
+        mom = create_cnv("F", "unknown", chrom=chrom, pos=position)
+        dad = create_cnv("M", "unknown", chrom=chrom, pos=position)
         
         cnv_var = TrioGenotypes(chrom, position, child, mom, dad)
         
@@ -380,9 +340,10 @@ class TestInheritancePy(unittest.TestCase):
         # generate a test variant
         chrom = "1"
         position = "60000"
-        child = self.create_cnv(chrom, position, "F", "paternal")
-        mom = self.create_cnv(chrom, position, "F", "unknown")
-        dad = self.create_cnv(chrom, position, "M", "unknown")
+        extra = [('CIFER_INHERITANCE', 'paternal')]
+        child = create_cnv("F", "paternal", chrom=chrom, pos=position, format=extra)
+        mom = create_cnv("F", "unknown", chrom=chrom, pos=position)
+        dad = create_cnv("M", "unknown", chrom=chrom, pos=position)
         
         cnv = TrioGenotypes(chrom, position, child, mom, dad)
         
@@ -407,9 +368,10 @@ class TestInheritancePy(unittest.TestCase):
         # generate a test variant
         chrom = "1"
         position = "60000"
-        child = self.create_cnv(chrom, position, "F", "maternal")
-        mom = self.create_cnv(chrom, position, "F", "unknown")
-        dad = self.create_cnv(chrom, position, "M", "unknown")
+        extra = [('CIFER_INHERITANCE', 'maternal')]
+        child = create_cnv("F", "maternal", chrom=chrom, pos=position, format=extra)
+        mom = create_cnv("F", "unknown", chrom=chrom, pos=position)
+        dad = create_cnv("M", "unknown", chrom=chrom, pos=position)
         
         cnv = TrioGenotypes(chrom, position, child, mom, dad)
         
