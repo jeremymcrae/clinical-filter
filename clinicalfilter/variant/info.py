@@ -99,12 +99,6 @@ class Info(object):
         self.set_gene_from_info()
         self.set_consequence()
     
-    def has_info(self):
-        """ checks if the INFO field has been parsed and added to the object
-        """
-        
-        return self.info != {}
-    
     def get_range(self):
         """ gets the range for the CNV
         """
@@ -113,7 +107,7 @@ class Info(object):
         
         if self.is_cnv():
             end_position = start_position + 10000
-            if self.has_info() and "END" in self.info:
+            if "END" in self.info:
                 end_position = int(self.info["END"])
         else:
             end_position = start_position
