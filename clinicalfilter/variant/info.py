@@ -99,6 +99,38 @@ class Info(object):
         self.set_gene_from_info()
         self.set_consequence()
     
+    def get_info_as_string(self):
+        ''' reprocess the info dictionary back into a string, correctly sorted
+        '''
+        
+        info = None
+        if self.info != {}:
+            info = []
+            for key, value in sorted(self.info.items()):
+                entry = key
+                if value != True:
+                    entry = '{}={}'.format(key, value)
+                info.append(entry)
+            info = ';'.join(info)
+        
+        return info
+    
+    def add_info_field(self, key, value):
+        ''' add another entry to the info dictionary
+        
+        Args:
+            key: string for the info key
+            value: value for the field, or True if the key will be used as a flag
+        
+        Raises:
+            ValueError if the key is already present in the dictionary
+        '''
+        
+        if key not in self.info:
+            self.info[key] = value
+        else:
+            raise ValueError('tried to add an already existing field to the INFO')
+    
     def get_range(self):
         """ gets the range for the CNV
         """
