@@ -52,7 +52,7 @@ class Report(object):
                     'chrom', 'position', 'gene', 'mutation_ID', 'transcript',
                     'consequence', 'ref/alt_alleles', 'MAX_MAF', 'inheritance',
                     'trio_genotype', 'mom_aff', 'dad_aff', 'result', 'pp_dnm',
-                    'exac_allele_count']) + '\n')
+                    'exac_allele_count', 'GQ', 'has_parents', 'cnv_length']) + '\n')
         
         self._log_run_details()
     
@@ -155,6 +155,15 @@ class Report(object):
         if 'AC_Adj' in var.child.info:
             exac_ac = var.child.info['AC_Adj']
         
+        cnv_length = 'NA'
+        if var.is_cnv():
+            start, end = var.get_range()
+            cnv_length = str(end - start)
+        
+        gq = 'NA'
+        if 'GQ' in var.child.info:
+            gq = str(var.child.info['GQ'])
+        
         genes = ','.join(list(set(candidate[3])))
         result = ','.join(candidate[1])
         inh = ','.join(candidate[2])
@@ -163,7 +172,8 @@ class Report(object):
             family.child.get_gender(), var.get_chrom(),
             str(var.get_position()), genes, var.child.get_mutation_id(),
             transcript, consequence, alleles, max_af, inh,
-            trio_genotype, mom_aff, dad_aff, result, pp_dnm, exac_ac]
+            trio_genotype, mom_aff, dad_aff, result, pp_dnm, exac_ac, gq,
+            str(family.has_parents()), cnv_length]
         
         return '\t'.join(output_line) + '\n'
     

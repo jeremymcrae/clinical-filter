@@ -95,9 +95,8 @@ class TestReportPy(unittest.TestCase):
         report = Report(temp.name, None, None, None)
         
         var = (self.variants[0], ["single_variant"], ["Monoallelic"], ["TEST"])
+        var[0].child.add_info_field('GQ', 40)
         report._save_tabular([var], self.trio)
-        
-        print('\n\n\nsaving tabular')
         
         with open(temp.name, 'r') as handle:
             lines = handle.readlines()
@@ -105,10 +104,10 @@ class TestReportPy(unittest.TestCase):
         expected = ['proband\talternate_ID\tsex\tchrom\tposition\tgene\t'
             'mutation_ID\ttranscript\tconsequence\tref/alt_alleles\tMAX_MAF\t'
             'inheritance\ttrio_genotype\tmom_aff\tdad_aff\tresult\tpp_dnm\t'
-            'exac_allele_count\n',
+            'exac_allele_count\tGQ\thas_parents\tcnv_length\n',
             'child\tno_alternate_ID\tF\tX\t150\tTEST\tNA\tNA\t'
             'missense_variant\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\t'
-            'single_variant\t0.99\tNA\n']
+            'single_variant\t0.99\tNA\t40\tTrue\tNA\n']
         
         self.assertEqual(lines, expected)
     
@@ -295,7 +294,7 @@ class TestReportPy(unittest.TestCase):
         
         # check the output for the default variant
         expected = "child\ttest_id\tF\tX\t150\tTEST\tNA\tNA\tmissense_variant\t" \
-            "A/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\tsingle_variant\t0.99\tNA\n"
+            "A/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\tsingle_variant\t0.99\tNA\tNA\tTrue\tNA\n"
         self.assertEqual(self.report._get_output_line(var, self.trio, alt_id), expected)
         
         # introduce additional info for the output line parsing, check the line
@@ -306,7 +305,7 @@ class TestReportPy(unittest.TestCase):
         expected = "child\ttest_id\tF\tX\t150\tTEST\tNA\tENST00X\t" \
             "missense_variant,PolyPhen=probably_damaging(0.99)," \
             "SIFT=deleterious(0)\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\t" \
-            "single_variant\t0.99\tNA\n"
+            "single_variant\t0.99\tNA\tNA\tTrue\tNA\n"
         self.assertEqual(self.report._get_output_line(var, self.trio, alt_id), expected)
     
     def test__write_vcf(self):
