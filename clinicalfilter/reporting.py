@@ -185,13 +185,10 @@ class Report(object):
         if self.id_mapper is not None and family.child.get_id() in self.id_mapper:
             alt_id = self.id_mapper[family.child.get_id()]
         
-        print(self.output_path)
-        
         with open(self.output_path, 'a') as handle:
             for var in sorted(variants):
                 line = self._get_output_line(var, family, alt_id)
                 handle.write(line)
-        
     
     def _get_provenance(self, provenance, member):
         ''' gets the VCF filename, checksum and VCF date for family members
