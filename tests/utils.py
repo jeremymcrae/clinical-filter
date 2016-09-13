@@ -50,7 +50,7 @@ def create_snv(sex, genotype, cq='missense_variant', hgnc='TEST', chrom='1',
     
     alt = 'G'
     
-    info = 'HGNC={0};CQ={1};DENOVO-SNP;PP_DNM=0.99'.format(hgnc, cq)
+    info = 'HGNC={0};CQ={1};DENOVO-SNP'.format(hgnc, cq)
     keys = 'GT:DP:TEAM29_FILTER:PP_DNM'
     values = '{}:50:PASS:0.99'.format(genotype)
     
@@ -90,7 +90,7 @@ def make_vcf_header(sample_id='sample'):
     lines = ['##fileformat=VCFv4.1\n',
         '##fileDate=2014-01-01\n',
         '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n',
-        '#CHROM\tPOS\t ID\tREF\t ALT\t QUAL\tFILTER\tINFO\tFORMAT\t{}\n'.format(sample_id)]
+        '#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{}\n'.format(sample_id)]
     
     return lines
 
