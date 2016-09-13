@@ -24,6 +24,9 @@ import unittest
 import logging
 import os
 import datetime
+import tempfile
+import shutil
+import gzip
 
 from clinicalfilter.ped import Family
 from clinicalfilter.variant.cnv import CNV
@@ -33,11 +36,19 @@ from clinicalfilter.reporting import Report
 
 logging.disable(logging.CRITICAL)
 
-from tests.utils import create_snv
+from tests.utils import create_snv, make_vcf_header
 
 class TestReportPy(unittest.TestCase):
     """ test the Report class
     """
+    
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = tempfile.mkdtemp()
+    
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.temp_dir)
     
     def setUp(self):
         """ define a family and variant, and start the Allosomal class
@@ -51,11 +62,12 @@ class TestReportPy(unittest.TestCase):
         self.trio = self.create_family(child_gender, mom_aff, dad_aff)
         
         # generate a test variant
-        child = create_snv(child_gender, "0/1", chrom='X', pos=15000000, extra_info='MAX_AF=0.0005;PP_DNM=0.99')
-        mom = create_snv("F", "0/0", chrom='X', pos=15000000)
-        dad = create_snv("M", "0/0", chrom='X', pos=15000000)
+        child = create_snv(child_gender, "0/1", chrom='X', pos=150,
+            extra_info='MAX_AF=0.0005')
+        mom = create_snv("F", "0/0", chrom='X', pos=150)
+        dad = create_snv("M", "0/0", chrom='X', pos=150)
         
-        self.variants = [TrioGenotypes('X', '15000000', child, mom, dad)]
+        self.variants = [TrioGenotypes('X', '150', child, mom, dad)]
         
         self.report = Report(None, None, None, None)
         self.report.family = self.trio
@@ -73,6 +85,32 @@ class TestReportPy(unittest.TestCase):
         fam.set_child()
         
         return fam
+    
+    def test__save_tabular(self):
+        ''' check that _save_tabular() works correctly
+        '''
+        
+        temp = tempfile.NamedTemporaryFile(suffix='.txt', dir=self.temp_dir,
+            delete=False)
+        report = Report(temp.name, None, None, None)
+        
+        var = (self.variants[0], ["single_variant"], ["Monoallelic"], ["TEST"])
+        report._save_tabular([var], self.trio)
+        
+        print('\n\n\nsaving tabular')
+        
+        with open(temp.name, 'r') as handle:
+            lines = handle.readlines()
+        
+        expected = ['proband\talternate_ID\tsex\tchrom\tposition\tgene\t'
+            'mutation_ID\ttranscript\tconsequence\tref/alt_alleles\tMAX_MAF\t'
+            'inheritance\ttrio_genotype\tmom_aff\tdad_aff\tresult\tpp_dnm\t'
+            'exac_allele_count\n',
+            'child\tno_alternate_ID\tF\tX\t150\tTEST\tNA\tNA\t'
+            'missense_variant\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\t'
+            'single_variant\t0.99\tNA\n']
+        
+        self.assertEqual(lines, expected)
     
     def test__get_provenance(self):
         """ check that _get_provenance() works correctly
@@ -94,9 +132,10 @@ class TestReportPy(unittest.TestCase):
         # use a folder to place the VCFG file in, which means we join the
         # proband ID to get a full path
         self.report.export_vcf = os.getcwd()
-        self.assertEqual(self.report._get_vcf_export_path(), os.path.join(os.getcwd(), "child.vcf.gz"))
+        self.assertEqual(self.report._get_vcf_export_path(),
+            os.path.join(os.getcwd(), "child.vcf.gz"))
         
-        # define an un-uable directory, to raise an error
+        # define an un-usable directory, to raise an error
         self.report.export_vcf = os.getcwd() + "asjhfgasjhfg"
         self.assertRaises(ValueError, self.report._get_vcf_export_path)
         
@@ -109,22 +148,31 @@ class TestReportPy(unittest.TestCase):
         """
         
         # define the intial header lines
-        header = ["####fileformat=VCFv4.1\n",
-            "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n",
-            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\sample_id\n"]
+        header = make_vcf_header()
         
         # define the VCF provenances
         provenance = [("checksum", "proband.calls.date.vcf.gz", "2014-01-01"),
             ("checksum", "mother.calls.date.vcf.gz", "2014-01-02"),
             ("checksum", "father.calls.date.vcf.gz", "2014-01-03")]
         
-        processed_header = ["####fileformat=VCFv4.1\n",
+        processed_header = ["##fileformat=VCFv4.1\n",
+           '##fileDate=2014-01-01\n',
            "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n",
-           '##INFO=<ID=ClinicalFilterType,Number=.,Type=String,Description="The type of clinical filter that passed this variant.">\n',
-           '##INFO=<ID=ClinicalFilterGeneInheritance,Number=.,Type=String,Description="The inheritance mode (Monoallelic, Biallelic etc) under which the variant was found.">\n',
-           '##INFO=<ID=ClinicalFilterReportableHGNC,Number=.,Type=String,Description="The HGNC symbol which the variant was identified as being reportable for.">\n',
-           '##FORMAT=<ID=INHERITANCE_GENOTYPE,Number=.,Type=String,Description="The 012 coded genotypes for a trio (child, mother, father).">\n',
-           '##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="The inheritance of the variant in the trio (biparental, paternal, maternal, deNovo).">\n',
+           '##INFO=<ID=ClinicalFilterType,Number=.,Type=String,'
+                'Description="The type of clinical filter that passed this '
+                'variant.">\n',
+           '##INFO=<ID=ClinicalFilterGeneInheritance,Number=.,Type=String,'
+                'Description="The inheritance mode (Monoallelic, Biallelic '
+                'etc) under which the variant was found.">\n',
+           '##INFO=<ID=ClinicalFilterReportableHGNC,Number=.,Type=String,'
+                'Description="The HGNC symbol which the variant was identified '
+                'as being reportable for.">\n',
+           '##FORMAT=<ID=INHERITANCE_GENOTYPE,Number=.,Type=String,'
+                'Description="The 012 coded genotypes for a trio (child, '
+                'mother, father).">\n',
+           '##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="The '
+                'inheritance of the variant in the trio (biparental, paternal, '
+                'maternal, deNovo).">\n',
            "##ClinicalFilterRunDate={0}\n".format(datetime.date.today()),
            "##ClinicalFilterVersion=XXX\n",
            "##ClinicalFilterHistory=single_variant,compound_het\n",
@@ -140,7 +188,7 @@ class TestReportPy(unittest.TestCase):
            "##UberVCF_paternal_Checksum=checksum\n",
            "##UberVCF_paternal_Basename=father.calls.date.vcf.gz\n",
            "##UberVCF_paternal_Date=2014-01-03\n",
-           "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\sample_id\n"]
+           "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsample\n"]
         
         # check that the standard function returns the expected value. Note that
         # I haven't checked the output if self.known_genes_date is not None, nor
@@ -179,9 +227,7 @@ class TestReportPy(unittest.TestCase):
         """
         
          # define the intial header lines
-        header = ["####fileformat=VCFv4.1\n",
-            "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n",
-            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\sample_id\n"]
+        header = make_vcf_header()
         
         # define the VCF provenances
         provenance = [("checksum", "proband.calls.date.vcf.gz", "2014-01-01"),
@@ -189,13 +235,23 @@ class TestReportPy(unittest.TestCase):
             ("checksum", "father.calls.date.vcf.gz", "2014-01-03")]
         
         # define what the header will become
-        vcf_lines = ["####fileformat=VCFv4.1\n",
-           "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n",
-           '##INFO=<ID=ClinicalFilterType,Number=.,Type=String,Description="The type of clinical filter that passed this variant.">\n',
-           '##INFO=<ID=ClinicalFilterGeneInheritance,Number=.,Type=String,Description="The inheritance mode (Monoallelic, Biallelic etc) under which the variant was found.">\n',
-           '##INFO=<ID=ClinicalFilterReportableHGNC,Number=.,Type=String,Description="The HGNC symbol which the variant was identified as being reportable for.">\n',
-           '##FORMAT=<ID=INHERITANCE_GENOTYPE,Number=.,Type=String,Description="The 012 coded genotypes for a trio (child, mother, father).">\n',
-           '##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="The inheritance of the variant in the trio (biparental, paternal, maternal, deNovo).">\n',
+        vcf_lines = ["##fileformat=VCFv4.1\n",
+           '##fileDate=2014-01-01\n',
+           '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n',
+           '##INFO=<ID=ClinicalFilterType,Number=.,Type=String,Description="The '
+                'type of clinical filter that passed this variant.">\n',
+           '##INFO=<ID=ClinicalFilterGeneInheritance,Number=.,Type=String,'
+                'Description="The inheritance mode (Monoallelic, Biallelic etc) '
+                'under which the variant was found.">\n',
+           '##INFO=<ID=ClinicalFilterReportableHGNC,Number=.,Type=String,'
+                'Description="The HGNC symbol which the variant was identified '
+                'as being reportable for.">\n',
+           '##FORMAT=<ID=INHERITANCE_GENOTYPE,Number=.,Type=String,'
+                'Description="The 012 coded genotypes for a trio (child, '
+                'mother, father).">\n',
+           '##FORMAT=<ID=INHERITANCE,Number=.,Type=String,Description="'
+                'The inheritance of the variant in the trio (biparental, '
+                'paternal, maternal, deNovo).">\n',
            "##ClinicalFilterRunDate={0}\n".format(datetime.date.today()),
            "##ClinicalFilterVersion=XXX\n",
            "##ClinicalFilterHistory=single_variant,compound_het\n",
@@ -211,17 +267,21 @@ class TestReportPy(unittest.TestCase):
            "##UberVCF_paternal_Checksum=checksum\n",
            "##UberVCF_paternal_Basename=father.calls.date.vcf.gz\n",
            "##UberVCF_paternal_Date=2014-01-03\n",
-           "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\sample_id\n"]
+           "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsample\n"]
         
         # define what the default variant vcf line will become
-        line = ["X\t15000000\t.\tA\tG\t50\tPASS\tHGNC=TEST;CQ=missense_variant;random_tag;EUR_AF=0.0005;ClinicalFilterGeneInheritance=Monoallelic;ClinicalFilterType=single_variant;ClinicalFilterReportableHGNC=TEST\tGT:DP:INHERITANCE:INHERITANCE_GENOTYPE\t0/1:50:deNovo:1,0,0\n"]
+        line = ['X\t150\t.\tA\tG\t50\tPASS\tCQ=missense_variant;'
+            'ClinicalFilterGeneInheritance=Monoallelic;'
+            'ClinicalFilterReportableHGNC=TEST;ClinicalFilterType=single_variant;'
+            'DENOVO-SNP;HGNC=TEST;MAX_AF=0.0005\tGT:DP:INHERITANCE:'
+            'INHERITANCE_GENOTYPE\t0/1:50:deNovo:1,0,0\n']
         
         # check that a list of one variant produces the correct VCF output. Note
         # that we haven't checked against CNVs, which can change the
         # INHERITANCE_GENOTYPE flag, nor have we tested a larger list of variants
         var = (self.variants[0], ["single_variant"], ["Monoallelic"], ["TEST"])
-        var[0].child.add_vcf_line(['X', '15000000', '.', 'A', 'G', '50',
-            'PASS', 'HGNC=TEST;CQ=missense_variant;random_tag;EUR_AF=0.0005',
+        var[0].child.add_vcf_line(['X', '150', '.', 'A', 'G', '50',
+            'PASS', 'HGNC=TEST;CQ=missense_variant;EUR_AF=0.0005',
             'GT:DP', '0/1:50'])
         
         self.assertEqual(self.report._get_vcf_lines([var], header, provenance), vcf_lines + line)
@@ -231,19 +291,40 @@ class TestReportPy(unittest.TestCase):
         """
         
         var = (self.variants[0], ["single_variant"], ["Monoallelic"], ["TEST"])
-        dad_aff = "0"
-        mom_aff = "1"
         alt_id = "test_id"
         
         # check the output for the default variant
-        expected = "child\ttest_id\tF\tX\t15000000\tTEST\tNA\tNA\tmissense_variant\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t0\tsingle_variant\t0.99\tNA\n"
-        self.assertEqual(self.report._get_output_line(var, dad_aff, mom_aff, alt_id), expected)
+        expected = "child\ttest_id\tF\tX\t150\tTEST\tNA\tNA\tmissense_variant\t" \
+            "A/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\tsingle_variant\t0.99\tNA\n"
+        self.assertEqual(self.report._get_output_line(var, self.trio, alt_id), expected)
         
         # introduce additional info for the output line parsing, check the line
         # that is returned is expected
         var[0].child.info["PolyPhen"] = "probably_damaging(0.99)"
         var[0].child.info["SIFT"] = "deleterious(0)"
         var[0].child.info["ENST"] = "ENST00X"
-        expected = "child\ttest_id\tF\tX\t15000000\tTEST\tNA\tENST00X\tmissense_variant,PolyPhen=probably_damaging(0.99),SIFT=deleterious(0)\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t0\tsingle_variant\t0.99\tNA\n"
-        self.assertEqual(self.report._get_output_line(var, dad_aff, mom_aff, alt_id), expected)
+        expected = "child\ttest_id\tF\tX\t150\tTEST\tNA\tENST00X\t" \
+            "missense_variant,PolyPhen=probably_damaging(0.99)," \
+            "SIFT=deleterious(0)\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\t" \
+            "single_variant\t0.99\tNA\n"
+        self.assertEqual(self.report._get_output_line(var, self.trio, alt_id), expected)
+    
+    def test__write_vcf(self):
+        ''' check that _write_vcf() works correctly
+        '''
+        
+        path = tempfile.NamedTemporaryFile(suffix='.vcf.gz', dir=self.temp_dir,
+            delete=False)
+        lines = make_vcf_header() +  ['X\t150\t.\tA\tG\t50\tPASS\tHGNC=TEST;'
+            'CQ=missense_variant;random_tag;EUR_AF=0.0005;'
+            'ClinicalFilterGeneInheritance=Monoallelic;'
+            'ClinicalFilterType=single_variant;'
+            'ClinicalFilterReportableHGNC=TEST\tGT:DP:INHERITANCE:'
+            'INHERITANCE_GENOTYPE\t0/1:50:deNovo:1,0,0\n']
+        
+        self.report._write_vcf(path.name, lines)
+        
+        with gzip.open(path.name, 'r') as handle:
+            vcf = [ x.decode() for x in handle ]
+            self.assertEqual(lines, vcf)
         
