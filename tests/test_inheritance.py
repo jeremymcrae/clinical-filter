@@ -83,14 +83,15 @@ class TestInheritancePy(unittest.TestCase):
         """
         
         # check that the default inheritance types have been set up correctly
-        self.assertEqual(self.inh.inheritance_modes, {"Monoallelic", "Biallelic", "Both"})
+        self.assertEqual(self.inh.inheritance_modes, {"Monoallelic",
+            "Biallelic", "Both", 'Imprinted'})
         
         # make sure that the default var and gene inheritance work
         self.assertTrue(self.inh.check_inheritance_mode_matches_gene_mode())
         
         # check that no gene inheritance overlap fails
         self.inh.gene_inheritance = {"Mosaic"}
-        self.inh.inheritance_modes = {"Monoallelic", "Biallelic", "Both"}
+        self.inh.inheritance_modes = {"Monoallelic", "Biallelic", "Both", 'Imprinted'}
         self.assertFalse(self.inh.check_inheritance_mode_matches_gene_mode())
         
         # check that a single inheritance type still works
@@ -147,6 +148,58 @@ class TestInheritancePy(unittest.TestCase):
         var = self.create_variant(position='150', cq='stop_gained',
             geno=['0/1', '0/1', '0/0'])
         self.inh = Autosomal([var], self.trio, inh, "TEST")
+        self.assertEqual(self.inh.get_candidate_variants(), [])
+    
+    
+    def test_get_candidate_variants_imprinted(self):
+        """ test that get_candidate_variants() works for imprinted variants
+        """
+        
+        # check a variant where the imprinting route should work
+        inh = {"inh": ["Imprinted"], "confirmed_status": ["Confirmed DD Gene"]}
+        var = self.create_variant(position='150', cq='stop_gained',
+            geno=['0/1', '0/1', '0/0'])
+        self.inh = Autosomal([var], self.trio, inh, "TEST")
+        
+        self.assertEqual(self.inh.get_candidate_variants(),
+            [(var, ['single_variant'], ['Imprinted'], ['TEST'])])
+        
+        # de novos shouldn't pass the imprinted route
+        var = self.create_variant(position='150', cq='stop_gained',
+            geno=['0/1', '0/0', '0/0'])
+        self.inh = Autosomal([var], self.trio, inh, "TEST")
+        self.assertEqual(self.inh.get_candidate_variants(), [])
+        
+        # check a variant that shouldn't pass the imprinted route due to there
+        # not being a known gene.
+        # NOTE: this behavior differs differs slightly from other inheritance
+        # modes when there isn't any known gene. Since there are so few known
+        # imprinting genes, it makes sense to only allow for these when we know
+        # the mode is correct
+        var = self.create_variant(position='150', cq='stop_gained',
+            geno=['0/1', '0/1', '0/0'])
+        self.inh = Autosomal([var], self.trio, None, "TEST")
+        self.assertEqual(self.inh.get_candidate_variants(), [])
+        
+        # also check imprinting requires loss-of-function consequences
+        var = self.create_variant(position='150', cq='missense_variant',
+            geno=['0/1', '0/1', '0/0'])
+        self.inh = Autosomal([var], self.trio, inh, "TEST")
+        self.assertEqual(self.inh.get_candidate_variants(), [])
+        
+        # check imprinting for a biallelic variant
+        var = self.create_variant(position='150', cq='stop_gained',
+            geno=['1/1', '0/1', '0/1'])
+        self.inh = Autosomal([var], self.trio, inh, "TEST")
+        print(self.inh.get_candidate_variants())
+        self.assertEqual(self.inh.get_candidate_variants(),
+            [(var, ['single_variant'], ['Imprinted'], ['TEST'])])
+        
+        # check imprinting for a biallelic variant
+        var = self.create_variant(position='150', cq='missense_variant',
+            geno=['1/1', '0/1', '0/1'])
+        self.inh = Autosomal([var], self.trio, inh, "TEST")
+        print(self.inh.get_candidate_variants())
         self.assertEqual(self.inh.get_candidate_variants(), [])
     
     def test_get_candidate_variants_compound_het(self):

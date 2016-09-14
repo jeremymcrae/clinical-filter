@@ -320,7 +320,9 @@ class Autosomal(Inheritance):
             return "single_variant"
         elif self.child.is_het() and inheritance == "Monoallelic":
             return "single_variant"
-        elif self.child.is_het() and inheritance == "Imprinted":
+        elif self.child.is_het() and inheritance == "Imprinted" and \
+                self.child.is_lof() and self.known_gene is not None and \
+                'Imprinted' in self.known_gene['inh']:
             return "single_variant"
         
         return "nothing"
@@ -335,12 +337,13 @@ class Autosomal(Inheritance):
         elif "Biallelic" == inheritance:
             # recessive: should be marked for compound-het screen
             report = "compound_het"
-        
-        if inheritance == 'Imprinted':
-            report = "single_variant"
-            if self.dad.is_not_ref() or self.mom.is_not_ref():
-                self.log_string = "imprinted variant"
-                return report
+        elif inheritance == 'Imprinted':
+            report = 'nothing'
+            if self.dad.is_not_ref() or self.mom.is_not_ref() and \
+                    self.child.is_lof() and self.known_gene is not None and \
+                    'Imprinted' in self.known_gene['inh']:
+                self.log_string = 'possible imprinted variant'
+                return "single_variant"
         
         if self.mom.is_hom_ref() and self.dad.is_hom_ref():
             self.log_string = "de novo as {0}".format(report)
@@ -389,7 +392,9 @@ class Autosomal(Inheritance):
             if self.father_affected and self.mother_affected:
                 self.log_string = "transmitted from affected parents"
                 return "single_variant"
-        elif "Imprinted" == inheritance:
+        elif "Imprinted" == inheritance and self.child.is_lof() and \
+                self.mom.is_not_ref() and self.dad.is_not_ref() and \
+                self.known_gene is not None and 'Imprinted' in self.known_gene['inh']:
             self.log_string = "imprinted variant"
             return "single_variant"
         
@@ -451,7 +456,9 @@ class Allosomal(Inheritance):
              (self.dad.is_hom_ref() or self.father_affected):
             self.log_string = "x chrom transmitted from aff, other parent non-carrier or aff"
             return report
-        elif inheritance == "X-linked over-dominance" and self.dad.is_not_ref():
+        elif inheritance == "X-linked over-dominance" and self.dad.is_not_ref() \
+                and self.child.is_lof() and self.known_gene is not None and \
+                'X-linked over-dominance' in self.known_gene['inh']:
             self.log_string = "variant inherited from dad in X-linked over-dominance gene"
             return report
         else:
