@@ -39,7 +39,7 @@ clean-srcdir-git:
 	find $(SRCDIR) | grep "/\.gitignore"$ | xargs -I '{}' rm {}
 
 install-python:
-	python setup.py install --user rsync -rp --chmod=$(CHMOD) $(SRCDIR)/clinicalfilter/ $(CLINICAL_FILTER_PREFIX)
+	python setup.py install --user ; rsync -rp --chmod=$(CHMOD) $(SRCDIR)/clinicalfilter/ $(CLINICAL_FILTER_PREFIX)
 
 clean-tmpdir:
 	rm -r $(TMPDIR)
