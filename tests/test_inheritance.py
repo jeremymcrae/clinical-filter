@@ -191,7 +191,6 @@ class TestInheritancePy(unittest.TestCase):
         var = self.create_variant(position='150', cq='stop_gained',
             geno=['1/1', '0/1', '0/1'])
         self.inh = Autosomal([var], self.trio, inh, "TEST")
-        print(self.inh.get_candidate_variants())
         self.assertEqual(self.inh.get_candidate_variants(),
             [(var, ['single_variant'], ['Imprinted'], ['TEST'])])
         
@@ -199,7 +198,6 @@ class TestInheritancePy(unittest.TestCase):
         var = self.create_variant(position='150', cq='missense_variant',
             geno=['1/1', '0/1', '0/1'])
         self.inh = Autosomal([var], self.trio, inh, "TEST")
-        print(self.inh.get_candidate_variants())
         self.assertEqual(self.inh.get_candidate_variants(), [])
     
     def test_get_candidate_variants_compound_het(self):
