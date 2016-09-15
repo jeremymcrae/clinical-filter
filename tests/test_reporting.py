@@ -28,6 +28,7 @@ import tempfile
 import shutil
 import gzip
 
+import clinicalfilter
 from clinicalfilter.ped import Family
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.variant.snv import SNV
@@ -173,7 +174,7 @@ class TestReportPy(unittest.TestCase):
                 'inheritance of the variant in the trio (biparental, paternal, '
                 'maternal, deNovo).">\n',
            "##ClinicalFilterRunDate={0}\n".format(datetime.date.today()),
-           "##ClinicalFilterVersion=XXX\n",
+           "##ClinicalFilterVersion={}\n".format(clinicalfilter.__version__),
            "##ClinicalFilterHistory=single_variant,compound_het\n",
            "##UberVCF_proband_Id=proband\n",
            "##UberVCF_proband_Checksum=checksum\n",
@@ -252,7 +253,7 @@ class TestReportPy(unittest.TestCase):
                 'The inheritance of the variant in the trio (biparental, '
                 'paternal, maternal, deNovo).">\n',
            "##ClinicalFilterRunDate={0}\n".format(datetime.date.today()),
-           "##ClinicalFilterVersion=XXX\n",
+           "##ClinicalFilterVersion={}\n".format(clinicalfilter.__version__),
            "##ClinicalFilterHistory=single_variant,compound_het\n",
            "##UberVCF_proband_Id=proband\n",
            "##UberVCF_proband_Checksum=checksum\n",

@@ -26,6 +26,8 @@ import importlib
 import sys
 import os
 
+import clinicalfilter
+
 class Report(object):
     ''' A class to report candidate variants.
     '''
@@ -55,26 +57,6 @@ class Report(object):
                     'exac_allele_count', 'GQ', 'has_parents', 'cnv_length']) + '\n')
         
         self._log_run_details()
-    
-    def _clinicalFilterVersion(self):
-        ''' get the version (git tag) from clinicalfilter.version.version()
-        
-        Returns:
-            string for the git tag, or 'XXX'
-        '''
-        
-        clinical_filter_version = 'XXX'
-        try:
-            version_module = importlib.import_module('clinicalfilter.version')
-            clinical_filter_version = version_module.version()
-        except ImportError as ierr:
-            logging.info('Failed to import clinicalfilter.version. '
-                'ImportError: "{0}" (Using "XXX")'.format (ierr))
-        except:
-            logging.warn('Uexpected error trying to import clinicalfilter.'
-                'version. "{0}"'.format(sys.exc_info()[0]))
-        
-        return clinical_filter_version
     
     def _log_run_details(self):
         ''' log the python version and run date
@@ -279,7 +261,7 @@ class Report(object):
             '(biparental, paternal, maternal, deNovo).">\n')
         
         header.append('##ClinicalFilterRunDate={0}\n'.format(datetime.date.today()))
-        header.append('##ClinicalFilterVersion={0}\n'.format(self._clinicalFilterVersion()))
+        header.append('##ClinicalFilterVersion={0}\n'.format(clinicalfilter.__version__))
         
         filter_list = ['single_variant', 'compound_het']
         header.append('##ClinicalFilterHistory={0}\n'.format(','.join(filter_list)))

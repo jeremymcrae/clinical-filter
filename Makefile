@@ -26,7 +26,7 @@ clinical-filter-version:
 	@if [ -n "${CLINICAL_FILTER_VERSION}" ]; then echo "Installing clinical-filter-${CLINICAL_FILTER_VERSION}"; else echo "Usage: CLINICAL_FILTER_VERSION=X.X.X install";exit 1; fi
 
 install: clinical-filter-version $(SRCDIR)
-	$(MAKE) -C $(SRCDIR) TMPDIR=$(TMPDIR) CLINICAL_FILTER_VERSION=$(CLINICAL_FILTER_VERSION) add-version clean-srcdir-git install-python clean-tmpdir
+	$(MAKE) -C $(SRCDIR) TMPDIR=$(TMPDIR) CLINICAL_FILTER_VERSION=$(CLINICAL_FILTER_VERSION) clean-srcdir-git install-python clean-tmpdir
 
 
 $(SRCDIR): $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip
@@ -35,14 +35,11 @@ $(SRCDIR): $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip
 $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip:
 	git archive --format zip --output $(TMPDIR)/clinical-filter-$(CLINICAL_FILTER_VERSION).zip --remote $(GIT_URI) --prefix clinical-filter-$(CLINICAL_FILTER_VERSION)/ $(CLINICAL_FILTER_VERSION)
 
-add-version:
-	echo "def version(): return \"$(CLINICAL_FILTER_VERSION)\"" > $(SRCDIR)/src/main/python/clinicalfilter/version.py
-
 clean-srcdir-git:
-	find $(SRCDIR)/src/main/ | grep "/\.gitignore"$ | xargs -I '{}' rm {}
+	find $(SRCDIR) | grep "/\.gitignore"$ | xargs -I '{}' rm {}
 
 install-python:
-	rsync -rp --chmod=$(CHMOD) $(SRCDIR)/clinicalfilter/ $(CLINICAL_FILTER_PREFIX)
+	python setup.py install --user rsync -rp --chmod=$(CHMOD) $(SRCDIR)/clinicalfilter/ $(CLINICAL_FILTER_PREFIX)
 
 clean-tmpdir:
 	rm -r $(TMPDIR)
