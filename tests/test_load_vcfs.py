@@ -88,7 +88,8 @@ class TestLoadVCFsPy(unittest.TestCase):
     
             # assume bgzip and tabix binaries are available, this should be
             # handled by travis-ci setup.
-            subprocess.call(['bgzip', '-c', handle.name], stdout=open(path, 'w'))
+            with open(path, 'w') as output:
+                subprocess.call(['bgzip', '-c', handle.name], stdout=output)
             subprocess.call(['tabix', '-f', '-p', 'vcf', path])
     
     def test_open_vcf(self):
