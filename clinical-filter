@@ -1,5 +1,3 @@
 #!/bin/bash
 
-export PYTHONPATH="clinicalfilter:$PYTHONPATH"
-
 python3 bin/clinical_filter.py $@
