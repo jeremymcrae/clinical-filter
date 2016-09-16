@@ -62,7 +62,7 @@ class CNV(Variant):
             # currently we are using the end inh type, so we only need to
             # swap to the start type if that is the allosomal end
             if start_inh != "autosomal":
-                self.set_inheritance_type(start, self.is_male())
+                self.set_inheritance_type(self.get_position(), self.is_male())
         
         if "CALLSOURCE" in self.info and self.info["CALLSOURCE"] == "EXOME":
             self.add_cns_state()
