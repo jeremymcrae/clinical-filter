@@ -66,6 +66,6 @@ def get_options():
     if args.pp_filter < 0.0 or args.pp_filter > 1:
         argparse.ArgumentParser.error("--pp-dnm-threshold must be between 0 and 1")
     
-    args.populations = args.populations.split(',')
+    args.populations = args.maf_populations.split(',')
     
     return args
