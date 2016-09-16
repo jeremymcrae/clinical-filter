@@ -143,8 +143,8 @@ class Report(object):
             cnv_length = str(end - start)
         
         gq = 'NA'
-        if 'GQ' in var.child.info:
-            gq = str(var.child.info['GQ'])
+        if 'GQ' in var.child.format:
+            gq = str(var.child.format['GQ'])
         
         genes = ','.join(list(set(candidate[3])))
         result = ','.join(candidate[1])
