@@ -96,7 +96,7 @@ class TestReportPy(unittest.TestCase):
         report = Report(temp.name, None, None, None)
         
         var = (self.variants[0], ["single_variant"], ["Monoallelic"], ["TEST"])
-        var[0].child.add_info_field('GQ', 40)
+        var[0].child.format['GQ'] = 40
         report._save_tabular([var], self.trio)
         
         with open(temp.name, 'r') as handle:
