@@ -20,7 +20,7 @@ app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 filter_code = os.path.join(app_folder, "bin", "clinical_filter.py")
 
 datafreeze = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2015-04-13"
-known_genes = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2015-04-13/DDG2P/dd_genes_for_clinical_filter"
+KNOWN_GENES = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2015-04-13/DDG2P/dd_genes_for_clinical_filter"
 ped_file = os.path.join(datafreeze, "family_relationships.txt")
 alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.txt")
 syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
@@ -31,8 +31,11 @@ def get_options():
     """
     
     parser = argparse.ArgumentParser(description="Submit analysis job for single individual")
-    parser.add_argument('-i', '--individual', required=True, help='ID of proband to be analysed')
+    parser.add_argument('-i', '--individuals', required=True,
+        help='comma-separated list of ID of probands to be analysed')
     parser.add_argument('--ped', default=ped_file, help='pedigree file to use')
+    parser.add_argument("--known-genes", default=KNOWN_GENES,
+        help="optional path to the ddg2p file to use (default = current DDD DDG2P file)")
     parser.add_argument('--log', dest='loglevel', default="debug",
         help='level of logging to use, choose from: debug, info, warning, error or critical')
     parser.add_argument('--all-genes', default=False, action="store_true",
@@ -46,34 +49,36 @@ def get_options():
     
     args = parser.parse_args()
     
+    args.individuals = args.individuals.split(',')
+    
     return args
 
-def load_ped(ped_path, proband_id, exclude_parents):
+def load_ped(ped_path, proband_ids, exclude_parents):
     """ loads the pedigree details for a prband
     
     Args:
         ped_path: path to pedigree file for cohort
-        proband_id: individual Id for proband of interest
+        proband_ids: list of person_ids for probands of interest
         exclude_parents: whether to exclude the parents of the proband
     """
     
     families = load_families(ped_path)
     families = [ family for family in families for person in family \
-        if person is not None and person.get_id() == proband_id ]
+        if person is not None and person.get_id() in proband_ids ]
     
-    assert len(families) == 1
-    family = families[0]
+    assert len(families) == len(proband_ids)
     
     lines = []
-    for person in family:
-        if person is None:
-            continue
-        
-        line = '{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(person.family_id,
-            person.get_id(), person.dad_id, person.mom_id,
-            person.get_gender(), person.get_affected_status(),
-            person.get_path())
-        lines.append(line)
+    for family in families:
+        for person in family:
+            if person is None:
+                continue
+            
+            line = '{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(person.family_id,
+                person.get_id(), person.dad_id, person.mom_id,
+                person.get_gender(), person.get_affected_status(),
+                person.get_path())
+            lines.append(line)
     
     return lines
 
@@ -115,7 +120,7 @@ def main():
     args = get_options()
     logging_option = ["--log", args.loglevel]
     
-    ped = load_ped(args.ped, args.individual, args.without_parents)
+    ped = load_ped(args.ped, args.individuals, args.without_parents)
     
     # remove the temp files from the previous run
     tmp_name = "tmp_run."
@@ -139,7 +144,7 @@ def main():
         filter_command += ["--lof-sites", LAST_BASE_PATH]
     
     if not args.all_genes:
-        filter_command += ["--known-genes", known_genes]
+        filter_command += ["--known-genes", args.known_genes]
     
     if args.debug_chrom is not None:
         filter_command += ["--debug-chrom", args.debug_chrom, "--debug-pos", args.debug_pos]
