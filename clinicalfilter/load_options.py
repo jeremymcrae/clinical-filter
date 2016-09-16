@@ -52,7 +52,7 @@ def get_options():
     
     # New argument added by PJ to allow DNM_PP filtering to be disabled.
     parser.add_argument("--pp-dnm-threshold", dest="pp_filter", type=float,
-        default=0.9, help="Set PP_DNM threshold for filtering (defaults to >=0.9)")
+        default=0.0, help="Set PP_DNM threshold for filtering (defaults to >=0.9)")
     parser.add_argument("--maf-populations",
         default="AFR_AF,AMR_AF,ASN_AF,DDD_AF,EAS_AF,ESP_AF,EUR_AF,MAX_AF,SAS_AF,UK10K_cohort_AF",
         help="Comma separated list of population tags that can exist in the INFO"
