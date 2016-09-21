@@ -723,10 +723,10 @@ class CNVInheritance(object):
         self.log_string = "non-reported DDG2P CNV"
         gene_type = self.known_gene["status"]
         
-        if "Both DD and IF" in gene_type:
+        if "both dd and if" in gene_type:
             self.log_string = "Both DD and IF DDG2P gene"
             return True
-        elif {"Confirmed DD Gene", "Probable DD gene"} & gene_type == set():
+        elif {"confirmed dd gene", "probable dd gene"} & gene_type == set():
             return False
         
         for inh in self.known_gene["inh"]:

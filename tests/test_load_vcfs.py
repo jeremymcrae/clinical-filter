@@ -66,7 +66,7 @@ class TestLoadVCFsPy(unittest.TestCase):
             "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"]
         self.known_genes = {"ATRX": {"inheritance": {"Hemizygous": \
             {"Loss of function"}}, "start": 1, "chrom": "1", \
-            "confirmed_status": {"Confirmed DD Gene"}, "end": 20000000}}
+            "confirmed_status": {"confirmed dd gene"}, "end": 20000000}}
         
         self.vcf_loader = LoadVCFs(total_trios, maf_tags, self.known_genes, set(), None, None, )
     

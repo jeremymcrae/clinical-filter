@@ -50,7 +50,7 @@ class TestInheritancePy(unittest.TestCase):
         self.variants.append(self.create_variant(sex))
         
         # make sure we've got known genes data
-        self.known_gene = {"inh": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}
+        self.known_gene = {"inh": ["Monoallelic"], "confirmed_status": ["confirmed dd gene"]}
         
         self.inh = Autosomal(self.variants, self.trio, self.known_gene, "TEST")
     
@@ -136,7 +136,7 @@ class TestInheritancePy(unittest.TestCase):
         """ test that get_candidate_variants() works for a monoallelic variant
         """
         
-        inh = {"inh": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}
+        inh = {"inh": ["Monoallelic"], "confirmed_status": ["confirmed dd gene"]}
         var = self.create_variant(position='150', cq='stop_gained',
             geno=['0/1', '0/0', '0/0'])
         self.inh = Autosomal([var], self.trio, inh, "TEST")
@@ -156,7 +156,7 @@ class TestInheritancePy(unittest.TestCase):
         """
         
         # check a variant where the imprinting route should work
-        inh = {"inh": ["Imprinted"], "confirmed_status": ["Confirmed DD Gene"]}
+        inh = {"inh": ["Imprinted"], "confirmed_status": ["confirmed dd gene"]}
         var = self.create_variant(position='150', cq='stop_gained',
             geno=['0/1', '0/1', '0/0'])
         self.inh = Autosomal([var], self.trio, inh, "TEST")
@@ -204,7 +204,7 @@ class TestInheritancePy(unittest.TestCase):
         """ test that get_candidate_variants() works for biallelic variants
         """
         
-        inh = {"inh": ["Biallelic"], "confirmed_status": ["Confirmed DD Gene"]}
+        inh = {"inh": ["Biallelic"], "confirmed_status": ["confirmed dd gene"]}
         var1 = self.create_variant(position='150', cq='stop_gained',
             geno=['0/1', '0/1', '0/0'])
         var2 = self.create_variant(position='151', cq='stop_gained',
@@ -275,7 +275,7 @@ class TestInheritancePy(unittest.TestCase):
         # set the inheritance type, the compound het type ("compound_het"
         # for autosomal variants, and start autosomal inheritance)
         # known_genes = "Biallelic"
-        known_gene = {"inh": ["Biallelic"], "confirmed_status": ["Confirmed DD Gene"]}
+        known_gene = {"inh": ["Biallelic"], "confirmed_status": ["confirmed dd gene"]}
         self.inh = Autosomal([var1, var2, var3], self.trio, known_gene, "TEST")
         
         variants = [(), ()]

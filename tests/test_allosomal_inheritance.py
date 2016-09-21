@@ -53,7 +53,7 @@ class TestAllosomalPy(unittest.TestCase):
         self.variants = [var]
         
         # make sure we've got known genes data
-        self.known_gene = {"inh": ["Monoallelic"], "confirmed_status": ["Confirmed DD Gene"]}
+        self.known_gene = {"inh": ["Monoallelic"], "confirmed_status": ["confirmed dd gene"]}
         
         self.inh = Allosomal(self.variants, self.trio, self.known_gene, "TEST")
         self.inh.is_lof = var.child.is_lof()

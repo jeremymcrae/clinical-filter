@@ -46,7 +46,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         self.variant = self.create_variant(child_gender)
         
         # make sure we've got known genes data
-        self.known_gene = {"inh": {"Monoallelic": {"Loss of function"}}, "status": {"Confirmed DD Gene"}, "start": 5000, "end": 6000}
+        self.known_gene = {"inh": {"Monoallelic": {"Loss of function"}}, "status": {"confirmed dd gene"}, "start": 5000, "end": 6000}
         
         syndrome_regions = {("1", "1000", "2000"): 1}
         
@@ -314,7 +314,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         gene_inh = {"inh": {"Monoallelic": \
             {"Increased gene dosage"}}, "status": \
-            {"Confirmed DD Gene"}, "start": 5000, "end": 6000}
+            {"confirmed dd gene"}, "start": 5000, "end": 6000}
         
         gene = "TEST"
         inh = "Monoallelic"
@@ -335,12 +335,12 @@ class TestCNVInheritancePy(unittest.TestCase):
         # check if the variant passes if the confirmed type is "Both DD and IF",
         # even if the variant wouldn't otherwise pass
         self.inh.gene = "TEST"
-        self.inh.known_gene["status"] = {"Both DD and IF"}
+        self.inh.known_gene["status"] = {"both dd and if"}
         self.inh.known_gene["inh"][inh] = {"Loss of function"}
         self.assertTrue(self.inh.passes_ddg2p_filter(cnv))
         
         # fail on genes that don't have a robust confirmed status
-        self.inh.known_gene["status"] = {"Possible DD Gene"}
+        self.inh.known_gene["status"] = {"possible dd gene"}
         self.assertFalse(self.inh.passes_ddg2p_filter(cnv))
     
     def test_passes_gene_inheritance_surrounding_disruptive_dup(self):
@@ -349,7 +349,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         gene_inh = {"inh": {"Monoallelic": \
             {"Loss of function"}}, "status": \
-            {"Confirmed DD Gene"}, "start": 5000, "end": 6000}
+            {"confirmed dd gene"}, "start": 5000, "end": 6000}
         
         # make a gene that is loss of function, with a monoallelic inheritance
         self.inh.known_gene = gene_inh
@@ -395,7 +395,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         gene_inh = {"inh": {"Monoallelic": \
             {"Loss of Function"}, "X-linked dominant": \
             {"Loss of Function"}}, "status": \
-            {"Confirmed DD Gene"}, "start": 5000, "end": 6000}
+            {"confirmed dd gene"}, "start": 5000, "end": 6000}
         
         self.inh.known_gene = gene_inh
             
@@ -497,7 +497,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         gene_inh = {"inh": {"Biallelic": \
             {"Increased gene dosage"}}, "status": \
-            {"Confirmed DD Gene"}, "start": 5000, "end": 6000}
+            {"confirmed dd gene"}, "start": 5000, "end": 6000}
         
         self.inh.known_gene = gene_inh
         cnv = self.create_variant("female")
@@ -535,7 +535,7 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         gene_inh = {"inh": {"Hemizygous": \
             {"Increased gene dosage"}}, "status": \
-            {"Confirmed DD Gene"}, "start": 5000, "end": 6000}
+            {"confirmed dd gene"}, "start": 5000, "end": 6000}
         
         self.inh.known_gene = gene_inh
         cnv = self.create_variant("female")

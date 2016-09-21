@@ -61,7 +61,7 @@ def parse_gene_line(line, header):
     
     gene = {}
     gene['inh'] = {inheritance: set([mechanism])}
-    gene["status"] = set([status])
+    gene["status"] = set([status.lower()])
     gene["start"] = int(line[header["start"]])
     gene["end"] = int(line[header["stop"]])
     gene["chrom"] = line[header["chr"]]
@@ -96,7 +96,7 @@ def open_known_genes(path):
         return None
     
     # only include genes with sufficient DDG2P status
-    allowed = set(["Confirmed DD Gene", "Probable DD gene", "Both DD and IF"])
+    allowed = set(["confirmed dd gene", "probable dd gene", "both dd and if"])
     
     known = {}
     with io.open(path, "r", encoding="latin_1") as handle:

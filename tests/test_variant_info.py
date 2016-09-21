@@ -41,7 +41,7 @@ class TestVariantInfoPy(unittest.TestCase):
         # here are the default filtering criteria, as loaded into python
         known = {"ATRX": {"inheritance": {"Hemizygous": \
             {"Loss of function"}}, "start": "10000000", "chrom": "1", \
-            "confirmed_status": {"Confirmed DD Gene"}, "end": "20000000"}}
+            "confirmed_status": {"confirmed dd gene"}, "end": "20000000"}}
         
         self.pops = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF",
             "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"]
