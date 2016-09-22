@@ -187,6 +187,12 @@ class TestInheritancePy(unittest.TestCase):
         self.inh = Autosomal([var], self.trio, inh, "TEST")
         self.assertEqual(self.inh.get_candidate_variants(), [])
         
+        # check loss-of-function requirement for a paternally inherited variant
+        var = self.create_variant(position='150', cq='missense_variant',
+            geno=['0/1', '0/0', '0/1'])
+        self.inh = Autosomal([var], self.trio, inh, "TEST")
+        self.assertEqual(self.inh.get_candidate_variants(), [])
+        
         # check imprinting for a biallelic variant
         var = self.create_variant(position='150', cq='stop_gained',
             geno=['1/1', '0/1', '0/1'])

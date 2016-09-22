@@ -339,7 +339,7 @@ class Autosomal(Inheritance):
             report = "compound_het"
         elif inheritance == 'Imprinted':
             report = 'nothing'
-            if self.dad.is_not_ref() or self.mom.is_not_ref() and \
+            if (self.dad.is_not_ref() or self.mom.is_not_ref()) and \
                     self.child.is_lof() and self.known_gene is not None and \
                     'Imprinted' in self.known_gene['inh']:
                 self.log_string = 'possible imprinted variant'
