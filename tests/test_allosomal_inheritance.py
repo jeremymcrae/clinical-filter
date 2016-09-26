@@ -186,6 +186,20 @@ class TestAllosomalPy(unittest.TestCase):
         # and check for hemizygous inheritance
         self.assertEqual(self.inh.check_variant_without_parents("Hemizygous"), "single_variant")
     
+    def test_check_variant_without_parents_doubleton(self):
+        """ test that check_variant_without_parents() works correctly for males
+        """
+        
+        family = self.create_family('F', mom_aff='1', dad_aff='1')
+        
+        # generate a test variant
+        var = TrioGenotypes('X', '150', child=create_snv('F', "0/1"),
+            mother=create_snv("F", "0/1"), father=None)
+        
+        inh = Allosomal([var], family, self.known_gene, "TEST")
+        inh.set_trio_genotypes(var)
+        self.assertEqual(inh.check_variant_without_parents("X-linked Dominant"), "nothing")
+    
     def test_check_heterozygous_de_novo(self):
         """ test that check_heterozygous() works correctly for de novos
         """
