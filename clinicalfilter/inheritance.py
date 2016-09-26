@@ -323,9 +323,9 @@ class Autosomal(Inheritance):
             # dominant variants inherited from an unaffected parent
             parent, status = None, True
             if dad is not None:
-                parent, status = dad, self.father_affected
+                parent, status = self.dad, self.father_affected
             elif mom is not None:
-                parent, status = mom, self.mother_affected
+                parent, status = self.mom, self.mother_affected
             
             if not status and parent.is_not_ref():
                 # catch doubletons where the variant has been inherited from an
@@ -445,9 +445,9 @@ class Allosomal(Inheritance):
             # dominant variants inherited from an unaffected parent
             parent, status = None, True
             if dad is not None:
-                parent, status = dad, self.father_affected
+                parent, status = self.dad, self.father_affected
             elif mom is not None:
-                parent, status = mom, self.mother_affected
+                parent, status = self.mom, self.mother_affected
             
             if not status and parent.is_not_ref():
                 # catch doubletons where the variant has been inherited from an
