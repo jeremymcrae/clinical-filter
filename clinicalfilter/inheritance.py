@@ -319,7 +319,21 @@ class Autosomal(Inheritance):
         elif self.child.is_hom_alt() and inheritance == "Biallelic":
             return "single_variant"
         elif self.child.is_het() and inheritance == "Monoallelic":
+            # some probands have one parents genotypes available. We can exclude
+            # dominant variants inherited from an unaffected parent
+            parent, status = None, True
+            if dad is not None:
+                parent, status = dad, self.father_affected
+            elif mom is not None:
+                parent, status = mom, self.mother_affected
+            
+            if not status and parent.is_not_ref():
+                # catch doubletons where the variant has been inherited from an
+                # unaffected parent
+                return 'nothing'
+            
             return "single_variant"
+            
         elif self.child.is_het() and inheritance == "Imprinted" and \
                 self.child.is_lof() and self.known_gene is not None and \
                 'Imprinted' in self.known_gene['inh']:
@@ -427,6 +441,19 @@ class Allosomal(Inheritance):
         
         self.log_string = "allosomal without parents"
         if inheritance == "X-linked dominant":
+            # some probands have one parents genotypes available. We can exclude
+            # dominant variants inherited from an unaffected parent
+            parent, status = None, True
+            if dad is not None:
+                parent, status = dad, self.father_affected
+            elif mom is not None:
+                parent, status = mom, self.mother_affected
+            
+            if not status and parent.is_not_ref():
+                # catch doubletons where the variant has been inherited from an
+                # unaffected parent
+                return 'nothing'
+            
             return "single_variant"
         elif inheritance == "Hemizygous":
             if self.child.is_het():
