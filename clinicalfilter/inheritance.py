@@ -136,15 +136,9 @@ class Inheritance(object):
             variant: TrioGenotypes object
         """
         
-        # allow for children without parents
-        if self.trio.has_parents():
-            self.child = variant.child
-            self.mom = variant.mother
-            self.dad = variant.father
-        else:
-            self.child = variant.child
-            self.mom = None
-            self.dad = None
+        self.child = variant.child
+        self.mom = variant.mother
+        self.dad = variant.father
     
     def examine_variant(self, variant, inheritance):
         """ examines a single variant for whether or not to report it
@@ -235,10 +229,8 @@ class Inheritance(object):
             return False
         
         # now we have two different variants in the same gene
-        self.set_trio_genotypes(first)
-        mom_1, dad_1 = self.mom, self.dad
-        self.set_trio_genotypes(second)
-        mom_2, dad_2 = self.mom, self.dad
+        mom_1, dad_1 = first.mother, first.father
+        mom_2, dad_2 = second.mother, second.father
         
         # if either variant is a CNV, then we check the inheritance separately
         if first.is_cnv() or second.is_cnv():
@@ -281,8 +273,7 @@ class Inheritance(object):
         # if one of the variants is not a CNV, then check
         if not second.is_cnv():
             # set the parental genotypes for the SNV variant
-            self.set_trio_genotypes(second)
-            mom_2, dad_2 = self.mom, self.dad
+            mom_2, dad_2 = second.mother, second.father
             
             # get the inheritance state of the CNV variant
             inh = [first.child.format["INHERITANCE"], first.child.format["CIFER_INHERITANCE"]]

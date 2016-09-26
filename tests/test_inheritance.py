@@ -120,8 +120,8 @@ class TestInheritancePy(unittest.TestCase):
         self.assertEqual(self.inh.dad, var.father)
         
         # now remove the parents before re-setting the genotypes
-        del var.mother
-        del var.father
+        var.mother = None
+        var.father = None
         self.inh.trio.father = None
         self.inh.trio.mother = None
         self.inh.set_trio_genotypes(var)
@@ -456,6 +456,12 @@ class TestInheritancePy(unittest.TestCase):
         # set some variants, so we can alter them later
         var1 = self.create_variant(chrom="1", position="150", sex="F", cq="stop_gained")
         var2 = self.create_variant(chrom="1", position="160", sex="F", cq="stop_gained")
+        
+        # remove the parental genotypes
+        var1.mother = None
+        var2.mother = None
+        var1.father = None
+        var2.father = None
         
         inh = Autosomal([var1, var2], fam, self.known_gene, "TEST")
         

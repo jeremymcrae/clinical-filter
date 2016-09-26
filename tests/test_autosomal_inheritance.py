@@ -115,6 +115,46 @@ class TestAutosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.check_variant_without_parents("Monoallelic"), "nothing")
         self.assertEqual(self.inh.check_variant_without_parents("Biallelic"), "single_variant")
     
+    def test_check_variant_without_parents_doubleton(self):
+        """ test that check_variant_without_parents() works for a doubleton
+        (child and one parent).
+        """
+        
+        family = self.create_family('F', mom_aff='1', dad_aff='1')
+        
+        # generate a test variant
+        var = TrioGenotypes('1', '150', child=create_snv('F', "0/1"),
+            mother=create_snv("F", "0/1"), father=None)
+        
+        inh = Autosomal([var], family, self.known_gene, "TEST")
+        inh.set_trio_genotypes(var)
+        self.assertEqual(inh.check_variant_without_parents("Monoallelic"), "nothing")
+        
+        # now check when the single parent is also affected
+        family = self.create_family('F', mom_aff='2', dad_aff='1')
+        inh = Autosomal([var], family, self.known_gene, "TEST")
+        inh.set_trio_genotypes(var)
+        self.assertEqual(inh.check_variant_without_parents("Monoallelic"), "single_variant")
+        
+        # and check when the variant is not inherited
+        var = TrioGenotypes('1', '150', child=create_snv('F', "0/1"),
+            mother=create_snv("F", "0/0"), father=None)
+        
+        inh = Autosomal([var], family, self.known_gene, "TEST")
+        inh.set_trio_genotypes(var)
+        self.assertEqual(inh.check_variant_without_parents("Monoallelic"), "single_variant")
+        
+        # check when the variant is inherited from the father
+        family = self.create_family('F', mom_aff='1', dad_aff='1')
+        
+        # generate a test variant
+        var = TrioGenotypes('1', '150', child=create_snv('F', "0/1"),
+            mother=None, father=create_snv("F", "0/1"))
+        
+        inh = Autosomal([var], family, self.known_gene, "TEST")
+        inh.set_trio_genotypes(var)
+        self.assertEqual(inh.check_variant_without_parents("Monoallelic"), "nothing")
+    
     def test_check_heterozygous_de_novo(self):
         """ test that check_heterozygous() works correctly for de novos
         """
