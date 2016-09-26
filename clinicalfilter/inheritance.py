@@ -322,9 +322,9 @@ class Autosomal(Inheritance):
             # some probands have one parents genotypes available. We can exclude
             # dominant variants inherited from an unaffected parent
             parent, status = None, True
-            if dad is not None:
+            if self.dad is not None:
                 parent, status = self.dad, self.father_affected
-            elif mom is not None:
+            elif self.mom is not None:
                 parent, status = self.mom, self.mother_affected
             
             if not status and parent.is_not_ref():
@@ -444,9 +444,9 @@ class Allosomal(Inheritance):
             # some probands have one parents genotypes available. We can exclude
             # dominant variants inherited from an unaffected parent
             parent, status = None, True
-            if dad is not None:
+            if self.dad is not None:
                 parent, status = self.dad, self.father_affected
-            elif mom is not None:
+            elif self.mom is not None:
                 parent, status = self.mom, self.mother_affected
             
             if not status and parent.is_not_ref():
