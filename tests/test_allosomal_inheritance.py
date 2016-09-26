@@ -191,6 +191,7 @@ class TestAllosomalPy(unittest.TestCase):
         """
         
         family = self.create_family('F', mom_aff='1', dad_aff='1')
+        family.father = None
         
         # generate a test variant
         var = TrioGenotypes('X', '150', child=create_snv('F', "0/1"),
@@ -198,7 +199,15 @@ class TestAllosomalPy(unittest.TestCase):
         
         inh = Allosomal([var], family, self.known_gene, "TEST")
         inh.set_trio_genotypes(var)
-        self.assertEqual(inh.check_variant_without_parents("X-linked Dominant"), "nothing")
+        self.assertEqual(inh.check_variant_without_parents("X-linked dominant"), "nothing")
+        
+        # check the varinats passes if inherited from an affected parent
+        family = self.create_family('F', mom_aff='2', dad_aff='1')
+        family.father = None
+        
+        inh = Allosomal([var], family, self.known_gene, "TEST")
+        inh.set_trio_genotypes(var)
+        self.assertEqual(inh.check_variant_without_parents("X-linked dominant"), "single_variant")
     
     def test_check_heterozygous_de_novo(self):
         """ test that check_heterozygous() works correctly for de novos
