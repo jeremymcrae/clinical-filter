@@ -59,9 +59,10 @@ class Inheritance(object):
         
         self.father_affected = None
         self.mother_affected = None
-        if self.trio.has_parents():
-            self.father_affected = self.trio.father.is_affected()
+        if self.trio.mother is not None:
             self.mother_affected = self.trio.mother.is_affected()
+        if self.trio.father is not None:
+            self.father_affected = self.trio.father.is_affected()
         
         self.chrom_inheritance = self.variants[0].get_inheritance_type()
         
