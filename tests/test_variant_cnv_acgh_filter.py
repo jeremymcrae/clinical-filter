@@ -56,6 +56,11 @@ class TestAcghCnvPy(unittest.TestCase):
         self.var.cnv.info["MEANLR2"] = "0.2"
         self.var.cnv.info["MADL2R"] = "0"
         self.assertTrue(self.var.fails_mad_ratio())
+        
+        # check that var passes when the fields are NA
+        self.var.cnv.info["MEANLR2"] = "0.2"
+        self.var.cnv.info["MADL2R"] = "NA"
+        self.assertFalse(self.var.fails_mad_ratio())
     
     def test_fails_wscore(self):
         """ test that fails_wscore() works correctly

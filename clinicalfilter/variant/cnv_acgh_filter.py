@@ -78,6 +78,11 @@ class ACGH_CNV(object):
         
         try:
             return abs(float(self.cnv.info["MEANLR2"])/float(self.cnv.info["MADL2R"])) < 0
+        except ValueError as error:
+            if self.cnv.info['MADL2R'] == 'NA' or self.cnv.info['MEANLR2'] == 'NA':
+                return False
+            else:
+                return True
         except ZeroDivisionError:
             return True
         
