@@ -77,23 +77,20 @@ class Variant(Info):
         ''' repr function for Variant objects. SNV(...) and CNV(...) also work
         '''
         
+        def quote(value):
+            if value is not None:
+                value = '"{}"'.format(value)
+            return value
+        
         # reprocess the format dictionary back to the original text strings
         keys, sample = None, None
         if self.format is not None:
-            keys = ':'.join(sorted(self.format))
-            sample = ':'.join([ self.format[x] for x in keys.split(':') ])
-            keys = '"{}"'.format(keys)
-            sample = '"{}"'.format(sample)
+            keys = quote(':'.join(sorted(self.format)))
+            sample = quote(':'.join([ self.format[x] for x in sorted(self.format) ]))
         
-        info = self.get_info_as_string()
-        
-        gender = self.gender
-        if gender is not None:
-            gender = '"{}"'.format(gender)
-        
-        mnv_code = self.mnv_code
-        if mnv_code is not None:
-            mnv_code = '"{}"'.format(mnv_code)
+        info = quote(self.get_info_as_string())
+        gender = quote(self.gender)
+        mnv_code = quote(self.mnv_code)
         
         return '{}(chrom="{}", position={}, id="{}", ref="{}", alts="{}", ' \
             'filter="{}", info={}, format={}, sample={}, gender={}, ' \
