@@ -32,27 +32,25 @@ class Report(object):
     ''' A class to report candidate variants.
     '''
     
-    def __init__(self, output_path=None, export_vcf=None, id_mapper=None, known_genes_date=None):
+    def __init__(self, output_path=None, export_vcf=None, known_genes_date=None):
         ''' initialise the class
         
         Args:
             output_path: path string to list filtered variants in, or None
             export vcf: path string to export VCF files(s), or None
-            id_mapper: original_ID - alternate ID dictionary for study probands
             known_genes_date: date the known gene list was generated, or None
         '''
         
         self.output_path = output_path
         self.export_vcf = export_vcf
-        self.id_mapper = id_mapper
         self.known_genes_date = known_genes_date
         
         # clear the tabular output file if it exists
         if self.output_path is not None:
             with open(self.output_path, 'w') as handle:
-                handle.write('\t'.join(['proband', 'alternate_ID', 'sex',
-                    'chrom', 'position', 'gene', 'mutation_ID', 'transcript',
-                    'consequence', 'ref/alt_alleles', 'MAX_MAF', 'inheritance',
+                handle.write('\t'.join(['proband', 'sex', 'chrom', 'position',
+                    'gene', 'mutation_ID', 'transcript', 'consequence',
+                    'ref/alt_alleles', 'MAX_MAF', 'inheritance',
                     'trio_genotype', 'mom_aff', 'dad_aff', 'result', 'pp_dnm',
                     'exac_allele_count', 'GQ', 'has_parents', 'cnv_length']) + '\n')
         
@@ -87,13 +85,12 @@ class Report(object):
             path = self._get_vcf_export_path()
             self._write_vcf(path, lines)
     
-    def _get_output_line(self, candidate, family, alternate_ID):
+    def _get_output_line(self, candidate, family):
         ''' gets a tab-separated string for output
         
         Args:
             candidate: (variant, check, inheritance) tuple
             family: Family object for the trio.
-            alternate_ID: alternate ID for proband (or 'NA')
         
         Returns:
             tab-separated line in output format
@@ -150,12 +147,11 @@ class Report(object):
         result = ','.join(candidate[1])
         inh = ','.join(candidate[2])
         
-        output_line = [family.child.get_id(), alternate_ID,
-            family.child.get_gender(), var.get_chrom(),
-            str(var.get_position()), genes, var.child.get_mutation_id(),
-            transcript, consequence, alleles, max_af, inh,
-            trio_genotype, mom_aff, dad_aff, result, pp_dnm, exac_ac, gq,
-            str(family.has_parents()), cnv_length]
+        output_line = [family.child.get_id(), family.child.get_gender(),
+            var.get_chrom(), str(var.get_position()), genes,
+            var.child.get_mutation_id(), transcript, consequence, alleles,
+            max_af, inh, trio_genotype, mom_aff, dad_aff, result, pp_dnm,
+            exac_ac, gq, str(family.has_parents()), cnv_length]
         
         return '\t'.join(output_line) + '\n'
     
@@ -172,14 +168,9 @@ class Report(object):
             dad_aff = family.father.get_affected_status()
             mom_aff = family.mother.get_affected_status()
         
-        # include an alternate ID for the affected child, if it exists
-        alt_id = 'no_alternate_ID'
-        if self.id_mapper is not None and family.child.get_id() in self.id_mapper:
-            alt_id = self.id_mapper[family.child.get_id()]
-        
         with open(self.output_path, 'a') as handle:
             for var in sorted(variants):
-                line = self._get_output_line(var, family, alt_id)
+                line = self._get_output_line(var, family)
                 handle.write(line)
     
     def _get_provenance(self, provenance, member):

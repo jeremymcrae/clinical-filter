@@ -51,7 +51,6 @@ class TestFilterPy(unittest.TestCase):
         count = 1
         regions = None
         known_genes, genes_date = None, None
-        alternate_ids = None
         output_path, export_vcf = None, None
         debug_chrom, debug_pos = None, None
         pp_filter = 0.9
@@ -59,7 +58,7 @@ class TestFilterPy(unittest.TestCase):
         population_tags = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF",
             "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"]
         
-        self.finder = Filter(population_tags, count, known_genes, genes_date, alternate_ids,
+        self.finder = Filter(population_tags, count, known_genes, genes_date,
             regions, lof_sites, pp_filter, output_path, export_vcf, debug_chrom,
             debug_pos)
     

@@ -127,40 +127,6 @@ def open_known_genes(path):
     
     return known
 
-def create_person_ID_mapper(path):
-    """creates a dictionary of IDs to map between different ID systems.
-    
-    We occasionally need to convert between different ID schemas (eg between
-    DDD person IDs and DECIPHER person IDs).
-    
-    Args:
-        path: path to tab-separated file listing the alternate IDs
-    
-    Returns:
-        dictionary with current ID and alternate ID as key value pairs for
-        different individuals.
-    """
-    
-    if path is None:
-        return None
-    
-    converter = {}
-    with open(path) as handle:
-        for line in handle:
-            # don't bother to include the maternal or paternal IDs, since we
-            # only want the probands IDs
-            if ":mat" in line or ":pat" in line:
-                continue
-            
-            line = line.strip().split("\t")
-            person_id = line[0]
-            alternate_id = line[1]
-            
-            if person_id not in converter:
-                converter[person_id] = alternate_id
-    
-    return converter
-
 def open_cnv_regions(path):
     """ opens a file listing CNV regions
     

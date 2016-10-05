@@ -42,7 +42,6 @@ def get_options():
     parser.add_argument("--syndrome-regions", dest="regions", help="Path to list of CNV regions known to occur in disorders.")
     parser.add_argument("--known-genes", help="Path to table of known disease causative genes.")
     parser.add_argument("--known-genes-date", dest="genes_date", help="Date that the list of known disease causative genes was last updated, used to track the version of known-genes used for analysis.")
-    parser.add_argument("--alternate-ids", help="Path to table of alternate IDs, used to map individual IDs to their alternate study IDs.")
     parser.add_argument("-o", "--output", help="Path for analysis output in tabular format.")
     parser.add_argument("--export-vcf", help="Directory or file path for analysis output in VCF format.")
     parser.add_argument("--log", dest="loglevel", default="debug", help="Level of logging to use, choose from: debug, info, warning, error or critical.")
@@ -60,9 +59,6 @@ def get_options():
     
     args = parser.parse_args()
     
-    if args.child is not None and args.alternate_ids is not None:
-        argparse.ArgumentParser.error("You can't specify alternate IDs when using --child")
-
     if args.pp_filter < 0.0 or args.pp_filter > 1:
         argparse.ArgumentParser.error("--pp-dnm-threshold must be between 0 and 1")
     

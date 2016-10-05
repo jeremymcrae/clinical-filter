@@ -63,8 +63,8 @@ def main():
     count = sum([ y.is_affected() for x in families for y in x.children ])
     
     finder = Filter(args.populations, count, args.known_genes, args.genes_date,
-        args.alternate_ids, args.regions, args.lof_sites, args.pp_filter,
-        args.output, args.export_vcf, args.debug_chrom, args.debug_pos)
+        args.regions, args.lof_sites, args.pp_filter, args.output,
+        args.export_vcf, args.debug_chrom, args.debug_pos)
     
     for family in families:
         finder.filter_trio(family)

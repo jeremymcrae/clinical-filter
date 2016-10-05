@@ -70,7 +70,7 @@ class TestReportPy(unittest.TestCase):
         
         self.variants = [TrioGenotypes('X', '150', child, mom, dad)]
         
-        self.report = Report(None, None, None, None)
+        self.report = Report(None, None, None)
         self.report.family = self.trio
         SNV.set_populations(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF",
             "EAS_AF", "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"])
@@ -93,7 +93,7 @@ class TestReportPy(unittest.TestCase):
         
         temp = tempfile.NamedTemporaryFile(suffix='.txt', dir=self.temp_dir,
             delete=False)
-        report = Report(temp.name, None, None, None)
+        report = Report(temp.name, None, None)
         
         var = (self.variants[0], ["single_variant"], ["Monoallelic"], ["TEST"])
         var[0].child.format['GQ'] = 40
@@ -102,11 +102,11 @@ class TestReportPy(unittest.TestCase):
         with open(temp.name, 'r') as handle:
             lines = handle.readlines()
         
-        expected = ['proband\talternate_ID\tsex\tchrom\tposition\tgene\t'
+        expected = ['proband\tsex\tchrom\tposition\tgene\t'
             'mutation_ID\ttranscript\tconsequence\tref/alt_alleles\tMAX_MAF\t'
             'inheritance\ttrio_genotype\tmom_aff\tdad_aff\tresult\tpp_dnm\t'
             'exac_allele_count\tGQ\thas_parents\tcnv_length\n',
-            'child\tno_alternate_ID\tF\tX\t150\tTEST\tNA\tNA\t'
+            'child\tF\tX\t150\tTEST\tNA\tNA\t'
             'missense_variant\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\t'
             'single_variant\t0.99\tNA\t40\tTrue\tNA\n']
         
@@ -291,23 +291,22 @@ class TestReportPy(unittest.TestCase):
         """
         
         var = (self.variants[0], ["single_variant"], ["Monoallelic"], ["TEST"])
-        alt_id = "test_id"
         
         # check the output for the default variant
-        expected = "child\ttest_id\tF\tX\t150\tTEST\tNA\tNA\tmissense_variant\t" \
+        expected = "child\tF\tX\t150\tTEST\tNA\tNA\tmissense_variant\t" \
             "A/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\tsingle_variant\t0.99\tNA\tNA\tTrue\tNA\n"
-        self.assertEqual(self.report._get_output_line(var, self.trio, alt_id), expected)
+        self.assertEqual(self.report._get_output_line(var, self.trio), expected)
         
         # introduce additional info for the output line parsing, check the line
         # that is returned is expected
         var[0].child.info["PolyPhen"] = "probably_damaging(0.99)"
         var[0].child.info["SIFT"] = "deleterious(0)"
         var[0].child.info["ENST"] = "ENST00X"
-        expected = "child\ttest_id\tF\tX\t150\tTEST\tNA\tENST00X\t" \
+        expected = "child\tF\tX\t150\tTEST\tNA\tENST00X\t" \
             "missense_variant,PolyPhen=probably_damaging(0.99)," \
             "SIFT=deleterious(0)\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\t" \
             "single_variant\t0.99\tNA\tNA\tTrue\tNA\n"
-        self.assertEqual(self.report._get_output_line(var, self.trio, alt_id), expected)
+        self.assertEqual(self.report._get_output_line(var, self.trio), expected)
     
     def test__write_vcf(self):
         ''' check that _write_vcf() works correctly

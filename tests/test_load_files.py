@@ -24,8 +24,7 @@ import shutil
 
 import unittest
 from clinicalfilter.load_files import get_header_positions, \
-    parse_gene_line,  open_known_genes, create_person_ID_mapper, \
-    open_cnv_regions
+    parse_gene_line,  open_known_genes, open_cnv_regions
 
 class TestLoadFilesPy(unittest.TestCase):
     ''' test the file loading functions
@@ -213,42 +212,6 @@ class TestLoadFilesPy(unittest.TestCase):
         # has gone wrong with the data file, and likely the line-endings
         with self.assertRaises(ValueError):
             open_known_genes(self.temp.name)
-    
-    def test_create_person_ID_mapper(self):
-        ''' test that create_person_ID_mapper() works correctly
-        '''
-        
-        lines = ['sample_id\talt_id\n',
-            'sample_01\tdecipher55\n',
-            'sample_02\tdecipher77\n',]
-        
-        lines = [ x.encode('utf8') for x in lines ]
-        self.temp.writelines(lines)
-        self.temp.flush()
-        
-        self.assertEqual(create_person_ID_mapper(self.temp.name), {
-            'sample_id': 'alt_id', 'sample_01': 'decipher55',
-            'sample_02': 'decipher77'})
-    
-    def test_create_person_ID_mapper_dups_and_parents(self):
-        ''' test that create_person_ID_mapper() works with parents lines
-        '''
-        
-        # make sure we can handle duplicate lines, and lines for parental data
-        lines = ['sample_id\talt_id\n',
-            'sample_01\tdecipher55\n',
-            'sample_02\tdecipher77\n',
-            'sample_02\tdecipher77\n',
-            'sample_03\tdecipher55:pat\n',
-            'sample_04\tdecipher77:mat\n']
-        
-        lines = [ x.encode('utf8') for x in lines ]
-        self.temp.writelines(lines)
-        self.temp.flush()
-        
-        self.assertEqual(create_person_ID_mapper(self.temp.name), {
-            'sample_id': 'alt_id', 'sample_01': 'decipher55',
-            'sample_02': 'decipher77'})
     
     def test_open_cnv_regions(self):
         ''' test that open_cnv_regions() works correctly

@@ -28,8 +28,8 @@ from clinicalfilter.inheritance import Allosomal, Autosomal, CNVInheritance
 from clinicalfilter.post_inheritance_filter import PostInheritanceFilter
 from clinicalfilter.reporting import Report
 from clinicalfilter.utils import get_vcf_provenance
-from clinicalfilter.load_files import open_known_genes, \
-    create_person_ID_mapper, open_cnv_regions, open_last_base_sites
+from clinicalfilter.load_files import open_known_genes, open_cnv_regions, \
+    open_last_base_sites
 
 class Filter(object):
     """ filters trios for candidate variants that might contribute to a
@@ -37,7 +37,7 @@ class Filter(object):
     """
     
     def __init__(self, population_tags=None, count=0, known_genes=None, date=None,
-            alternate_ids=None, regions=None, lof_sites=None, pp_filter=0.0,
+            regions=None, lof_sites=None, pp_filter=0.0,
             output_path=None, export_vcf=None, debug_chrom=None, debug_pos=None):
         """ initialise the class object
         
@@ -49,7 +49,6 @@ class Filter(object):
             known_genes: path to table of genes genes known to be associated
                 with genetic disorders, or None.
             date: date of the known_genes file, or None if not using/unknown.
-            alternate_ids: path to table linking proband IDs to an alternate ID scheme.
             regions: path to a table of regions for DECIPHER CNV syndromes.
             lof_sites: path to json file of [chrom, position] coordinates in
                 genome, for modifying to a loss-of-function consequence if
@@ -69,14 +68,13 @@ class Filter(object):
         
         # open reference datasets, these return None if the paths are None
         self.known_genes = open_known_genes(known_genes)
-        self.id_mapper = create_person_ID_mapper(alternate_ids)
         self.cnv_regions = open_cnv_regions(regions)
         self.last_base = open_last_base_sites(lof_sites)
         
         self.loader = LoadVCFs(count, population_tags, self.known_genes,
               self.last_base, self.debug_chrom, self.debug_pos)
         
-        self.reporter = Report(output_path, export_vcf, self.id_mapper, date)
+        self.reporter = Report(output_path, export_vcf, date)
     
     def filter_trio(self, family):
         """ loads trio variants, and screens for candidate variants
