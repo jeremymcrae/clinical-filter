@@ -19,10 +19,9 @@ app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
 filter_code = os.path.join(app_folder, "bin", "clinical_filter.py")
 
-datafreeze = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2015-04-13"
-KNOWN_GENES = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2015-04-13/DDG2P/dd_genes_for_clinical_filter"
-ped_file = os.path.join(datafreeze, "family_relationships.txt")
-alternate_ids = os.path.join(datafreeze, "person_sanger_decipher.txt")
+DATAFREEZE = "/nfs/ddd0/ddd_scratch/final_8k_resources_candidate"
+KNOWN_GENES = "/nfs/ddd0/ddd_scratch/ddg2p_prep/candidate_clinical_filter_ddg2p_file.txt"
+ped_file = os.path.join(DATAFREEZE, "family_relationships.ped")
 syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
 LAST_BASE_PATH = "/lustre/scratch113/projects/ddd/users/jm33/last_base_sites_G.json"
 
@@ -135,7 +134,6 @@ def main():
     bjobs_preamble = ["bsub", "-q", "normal", "-o", path + ".bjob_output.txt"]
     filter_command = ["python3", filter_code, \
         "--ped", path, \
-        "--alternate-ids", alternate_ids, \
         "--output", path + ".output.txt", \
         "--export-vcf", os.getcwd(), \
         "--syndrome-regions", syndrome_regions_filename] + logging_option

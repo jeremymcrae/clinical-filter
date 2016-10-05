@@ -20,10 +20,9 @@ APP_FOLDER = os.path.join(USER_DIR, "apps", "clinical-filter")
 
 FILTER_CODE = os.path.join(APP_FOLDER, "bin", "clinical_filter.py")
 
-DATAFREEZE = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2015-04-13"
-KNOWN_GENES_PATH = "/lustre/scratch113/projects/ddd/resources/ddd_data_releases/2015-04-13/DDG2P/dd_genes_for_clinical_filter"
-ALT_IDS_PATH = os.path.join(DATAFREEZE, "person_sanger_decipher.txt")
-PED_PATH = os.path.join(DATAFREEZE, "family_relationships.txt")
+DATAFREEZE = "/nfs/ddd0/ddd_scratch/final_8k_resources_candidate"
+KNOWN_GENES = "/nfs/ddd0/ddd_scratch/ddg2p_prep/candidate_clinical_filter_ddg2p_file.txt"
+PED_PATH = os.path.join(DATAFREEZE, "family_relationships.ped")
 SYNDROMES_PATH = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
 LAST_BASE_PATH = "/lustre/scratch113/projects/ddd/users/jm33/last_base_sites_G.json"
     
@@ -234,7 +233,6 @@ def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, ignore_lof_
         "--ped", "{0}.\$LSB_JOBINDEX\.txt".format(temp_name),
         "--output", "{0}.\$LSB_JOBINDEX\.txt".format(output_name),
         "--syndrome-regions", SYNDROMES_PATH,
-        "--alternate-ids", ALT_IDS_PATH,
         "--pp-dnm-threshold", "0"] + log_options
     
     # sometimes we don't want to restrict to the DDG2P genes, then all_genes
