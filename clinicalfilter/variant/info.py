@@ -444,6 +444,8 @@ class Info(object):
                 cq = []
             elif self.mnv_code == 'modified_protein_altering_mnv':
                 cq.append('missense_variant')
+            elif self.mnv_code == 'masked_stop_gain_mnv':
+                cq.append('missense_variant')
         
         return len(set(cq) & self.missense_consequences) > 0
     

@@ -253,6 +253,11 @@ class TestVariantInfoPy(unittest.TestCase):
         
         self.var.mnv_code = 'modified_protein_altering_mnv'
         self.assertTrue(self.var.is_missense("TTN"))
+        
+        # check that masked stop gained MNVs are converted to a missense
+        self.var.consequence = ["stop_gained"]
+        self.var.mnv_code = 'masked_stop_gain_mnv'
+        self.assertTrue(self.var.is_missense())
     
     def test_correct_multiple_alt(self):
         """ test that correct_multiple_alt works correctly
