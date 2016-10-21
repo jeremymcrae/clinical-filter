@@ -19,7 +19,7 @@ app_folder = os.path.join(home_folder, "apps", "clinical-filter")
 
 filter_code = os.path.join(app_folder, "bin", "clinical_filter.py")
 
-DATAFREEZE = "/nfs/ddd0/ddd_scratch/final_8k_resources_candidate"
+DATAFREEZE = "/nfs/ddd0/Data/datafreeze/ddd_data_releases/2016-10-03"
 KNOWN_GENES = "/nfs/ddd0/ddd_scratch/ddg2p_prep/candidate_clinical_filter_ddg2p_file.txt"
 ped_file = os.path.join(DATAFREEZE, "family_relationships.ped")
 syndrome_regions_filename = "/lustre/scratch113/projects/ddd/resources/decipher_syndrome_list_20140428.txt"
