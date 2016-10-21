@@ -36,7 +36,7 @@ def get_options():
         help="path of the ped file (default=construct from DDD datasets)")
     parser.add_argument("--log", dest="loglevel",
         help="level of logging to use (default=all)")
-    parser.add_argument("--ddg2p", default=KNOWN_GENES_PATH,
+    parser.add_argument("--known-genes", default=KNOWN_GENES,
         help="optional path to the ddg2p file to use (default = current DDD DDG2P file)")
     parser.add_argument("--njobs", default=100,
         help="number of jobs you want to divide the run across")
@@ -290,7 +290,7 @@ def main():
     clean_folder('tmp_ped')
     trio_counter = split_pedigree_file(temp_name, args.ped, args.njobs,
         args.without_parents, args.use_singletons_with_parents)
-    run_array(hash_string, trio_counter, temp_name, args.ddg2p, \
+    run_array(hash_string, trio_counter, temp_name, args.known_genes, \
         args.all_genes, args.ignore_lof_tweak, log_options)
     run_cleanup(hash_string)
 
