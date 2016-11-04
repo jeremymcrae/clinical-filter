@@ -196,9 +196,14 @@ class PostInheritanceFilter(object):
         
         for (var, check, inh, hgnc) in variants:
             
+            try:
+                polyphen = self.get_polyphen_for_genes(var, hgnc)
+            except IndexError:
+                continue
+            
             # check if the variant on it's own would pass
-            passes = "benign" not in self.get_polyphen_for_genes(var, hgnc) or \
-                    var.get_trio_genotype() == var.get_de_novo_genotype()
+            passes = "benign" not in polyphen or \
+                var.get_trio_genotype() == var.get_de_novo_genotype()
             
             # check all of the other variants to see if any are in the same
             # gene, compound_het, and polyphen benign
