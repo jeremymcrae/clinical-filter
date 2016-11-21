@@ -45,7 +45,7 @@ class TestVariantPy(unittest.TestCase):
         
         # raise error for unknown gender
         with self.assertRaises(ValueError):
-            self.var.set_gender("unknown")
+            self.var._set_gender("unknown")
     
     def test_set_gender_autosomal(self):
         """test gender on autosomal chroms
@@ -54,7 +54,7 @@ class TestVariantPy(unittest.TestCase):
         # check all the legitimate gender codes
         gender_codes = ["1", "m", "M", "male", "2", "f", "F", "female"]
         for gender in gender_codes:
-            self.var.set_gender(gender)
+            self.var._set_gender(gender)
             self.assertEqual(self.var.get_inheritance_type(), "autosomal")
     
     def test_set_gender_allosomal(self):
@@ -63,18 +63,18 @@ class TestVariantPy(unittest.TestCase):
         
         # check the allosomal chroms
         self.var.chrom = "X"
-        self.var.set_gender("male")
+        self.var._set_gender("male")
         self.assertEqual(self.var.get_inheritance_type(), "XChrMale")
         
-        self.var.set_gender("female")
+        self.var._set_gender("female")
         self.assertEqual(self.var.get_inheritance_type(), "XChrFemale")
         
          # check the allosomal chroms
         self.var.chrom = "Y"
-        self.var.set_gender("male")
+        self.var._set_gender("male")
         self.assertEqual(self.var.get_inheritance_type(), "YChrMale")
         
-        self.var.set_gender("female")
+        self.var._set_gender("female")
         self.assertEqual(self.var.get_inheritance_type(), "YChrFemale")
     
     def test_set_gender_pseudoautosomal(self):
@@ -84,10 +84,10 @@ class TestVariantPy(unittest.TestCase):
         # now check a variant in the pseudoautosomal regions
         self.var.chrom = "X"
         self.var.position = 2699510
-        self.var.set_gender("male")
+        self.var._set_gender("male")
         self.assertEqual(self.var.get_inheritance_type(), "autosomal")
         
-        self.var.set_gender("female")
+        self.var._set_gender("female")
         self.assertEqual(self.var.get_inheritance_type(), "autosomal")
     
     def test_get_chrom(self):

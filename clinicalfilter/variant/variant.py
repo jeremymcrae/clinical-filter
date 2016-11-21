@@ -58,7 +58,7 @@ class Variant(Info):
         
         self.gender = None
         if gender is not None:
-            self.set_gender(gender)
+            self._set_gender(gender)
         
         self.vcf_line = None
         self.info = {}
@@ -70,7 +70,7 @@ class Variant(Info):
             self.add_format(format, sample)
         
         self.genotype = None
-        if self.format is not None and self.gender is not None:
+        if self.format is not None and self._get_gender() is not None:
             self.set_genotype()
     
     def __repr__(self):
@@ -105,7 +105,7 @@ class Variant(Info):
     def __eq__(self, other):
         return hash(self) == hash(other)
     
-    def set_gender(self, gender):
+    def _set_gender(self, gender):
         """ sets the gender of the individual for the variant
         """
         
@@ -118,7 +118,7 @@ class Variant(Info):
         
         self.set_inheritance_type(self.get_position(), self.is_male())
     
-    def get_gender(self):
+    def _get_gender(self):
         """returns the gender for a person (1, M = male, 2, F = female).
         """
         return self.gender
@@ -153,7 +153,7 @@ class Variant(Info):
         """ returns True/False for whether the person is male
         """
         
-        return self.get_gender() in self.male_codes
+        return self._get_gender() in self.male_codes
     
     def add_format(self, keys, values):
         """Parses the FORMAT column from VCF files.

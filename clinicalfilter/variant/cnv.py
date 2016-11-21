@@ -155,6 +155,41 @@ class CNV(Variant):
         
         return passes
     
+    def get_cnv_inheritance(self):
+        ''' identify the CNV inheritance state
+        
+        (ie if it was inheriated for a parent, both, neoither, or uncertain)
+        
+        Returns:
+            inheritance state as string e.g 'maternal', 'paternal' etc
+        '''
+        
+        if self.format is None:
+            return None
+        
+        inh = []
+        for key in ['INHERITANCE', 'CIFER_INHERITANCE']:
+            if key in self.format:
+                inh.append(self.format[key])
+        
+        # figure out whether the inheritance classifications indicate whether
+        # the variant is paternally, maternally, or biparentally inherited
+        paternal = any(['paternal' in x for x in inh])
+        maternal = any(['maternal' in x for x in inh])
+        biparental = any([y in x for x in inh for y in ['biparental', 'inheritedDuo']])
+        de_novo = any([y in x for x in inh for y in ['not_inherited', 'deNovo']])
+        
+        if biparental or (maternal and paternal):
+            return 'biparental'
+        elif maternal:
+            return 'maternal'
+        elif paternal:
+            return 'paternal'
+        elif de_novo:
+            return 'de_novo'
+        else:
+            return 'unknown'
+    
     def is_het(self):
         # return False
         return self.genotype in self.alt_genotypes

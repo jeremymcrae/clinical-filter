@@ -88,82 +88,95 @@ class TestCNVInheritancePy(unittest.TestCase):
         
         # check that paternally inherited CNVs that have affected fathers pass
         self.inh.trio.father.status = "2"
-        inh = ["paternal"]
-        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        cnv.child.format['INHERITANCE'] = "paternal"
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv))
         
         # check for a CIFER derived annotation
-        inh = ["paternal_inh"]
-        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        cnv.child.format['CIFER_INHERITANCE'] = "paternal_inh"
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv))
         
         # check for a list of the VICAR and CIFER inheritance annotations
-        inh = ["paternal", "paternal_inh"]
-        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        cnv.child.format['INHERITANCE'] = "paternal"
+        cnv.child.format['CIFER_INHERITANCE'] = "paternal_inh"
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv))
         
         # check when one annotation says inherited, but the other doesn't.
         # Having one parentally inherited annotation is sufficient to classify
         # the CNV as inherited.
-        inh = ["uknown", "paternal_inh"]
-        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        cnv.child.format['INHERITANCE'] = "unknown"
+        cnv.child.format['CIFER_INHERITANCE'] = "paternal_inh"
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv))
         
         # check that paternally inherited CNVs without an affected father fail
         self.inh.trio.father.status = "1"
-        self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv))
         
         # check that maternally inherited CNVs without an affected mother fail
-        inh = ["maternal"]
+        cnv.child.format['INHERITANCE'] = "unknown"
+        cnv.child.format['CIFER_INHERITANCE'] = "maternal"
         self.inh.trio.father.status = "1"
-        self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv))
         
         # check that maternally inherited CNVs on chrX in male probands pass
         # regardless of the affected status of the mother.
         self.inh.trio.child.sex = "male"
         cnv.child.chrom = "X"
-        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv))
     
     def test_inheritance_matches_parental_affected_status_biparental(self):
         """ check that biparentally inherited CNVs pass if either parent is affected
         """
         
         cnv = self.create_variant("female")
-        inh = ["biparental"]
-        self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        
+        cnv.child.format['INHERITANCE'] = "unknown"
+        cnv.child.format['CIFER_INHERITANCE'] = "biparental"
+        
+        self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv))
         self.inh.trio.father.status = "2"
-        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv))
         self.inh.trio.father.status = "1"
         self.inh.trio.mother.status = "2"
-        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv))
         
         # check that biparentally inherited CNVs pass if either parent is affected
-        inh = ["inheritedDuo"]
+        cnv.child.format['INHERITANCE'] = "inheritedDuo"
+        cnv.child.format['CIFER_INHERITANCE'] = "unknown"
         self.inh.trio.mother.status = "1"
-        self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        self.assertFalse(self.inh.inheritance_matches_parental_affected_status(cnv))
         self.inh.trio.father.status = "2"
-        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv))
         self.inh.trio.father.affected_status = "1"
         self.inh.trio.mother.status = "2"
-        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv))
     
     def test_inheritance_matches_parental_affected_status_biparental_copy_zero(self):
         """ check that biparentally inherited CNVs with a copy number of 0 pass if either parent is affected
         """
         
         cnv = self.create_variant("female")
-        inh = ["biparental"]
+        
+        cnv.child.format['INHERITANCE'] = "unknown"
+        cnv.child.format['CIFER_INHERITANCE'] = "biparental"
+        
         cnv.child.info["CNS"] = "0"
         self.inh.trio.mother.affected_status = "1"
         self.inh.trio.father.affected_status = "1"
-        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv))
     
     def test_inheritance_matches_parental_affected_status_de_novo(self):
         """ check that noninherited CNVs pass, even if neither parent is affected
         """
         
         cnv = self.create_variant("female")
-        inh = ["deNovo"]
+        
+        cnv.child.format['INHERITANCE'] = "de_novo"
+        cnv.child.format['CIFER_INHERITANCE'] = "not_inherited"
+        
         self.inh.trio.mother.affected_status = "1"
         self.inh.trio.father.affected_status = "1"
         
-        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv, inh))
+        self.assertTrue(self.inh.inheritance_matches_parental_affected_status(cnv))
     
     def test_passes_nonddg2p_filter(self):
         """ test that passes_nonddg2p_filter() works correctly

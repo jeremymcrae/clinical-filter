@@ -70,7 +70,7 @@ class TestVariantCnvPy(unittest.TestCase):
         
         # and check that we raise an error for female Y chrom CNVs
         self.var.chrom = "Y"
-        self.var.set_gender("F")
+        self.var._set_gender("F")
         with self.assertRaises(ValueError):
             self.var.set_genotype()
     
@@ -85,7 +85,7 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.chrom = "X"
         self.var.position = pseudoautosomal_region_start + 1000
         self.var.info["END"] = pseudoautosomal_region_end - 1000
-        self.var.set_gender("F")
+        self.var._set_gender("F")
         
         self.var.alt_alleles = ["<DUP>"]
         self.var.set_genotype()
@@ -200,7 +200,7 @@ class TestVariantCnvPy(unittest.TestCase):
         """
         
         self.var.chrom = "Y"
-        self.var.set_gender("F")
+        self.var._set_gender("F")
         
         self.assertFalse(self.var.passes_filters())
 

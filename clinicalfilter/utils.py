@@ -146,7 +146,7 @@ def construct_variant(line, gender, known_genes, mnvs=None):
     
     if var.is_cnv():
         # CNVs require the format values for filtering
-        var.set_gender(gender)
+        var._set_gender(gender)
         var.add_format(line[8], line[9])
         if known_genes is not None:
             var.fix_gene_IDs()

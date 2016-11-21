@@ -424,20 +424,20 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         sex = 'F'
         var = create_snv(sex, '0/1')
-        matcher = MatchCNVs([])
-        parental_vars = []
+        mom = Person('fam_id', 'mom', '0', '0', 'F', '1', '/PATH')
+        parental = []
         
         # try to get a matching variant for a mother. This will create a default
         # variant for a missing parental genotype
-        self.assertEqual(self.vcf_loader.get_parental_var(var, parental_vars,
-            'F', matcher), SNV(chrom="1", position=150, id=".", ref="A",
-                alts="G", filter="PASS", info=None, format="GT", sample="0/0",
+        self.assertEqual(self.vcf_loader.get_parental_var(var, parental, mom),
+            SNV(chrom="1", position=150, id=".", ref="A", alts="G",
+                filter="PASS", info=var.get_info_as_string(), format="GT", sample="0/0",
                 gender="female", mnv_code=None))
         
         # now see if we can pick up a  variant where it does exist
         mother_var = create_snv(sex, '0/0')
         self.assertEqual(self.vcf_loader.get_parental_var(var, [mother_var],
-            'F', matcher), mother_var)
+            mom), mother_var)
     
     def test_get_parental_var_cnv(self):
         ''' check that get_parental_var() works correctly for CNVs
@@ -445,18 +445,36 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         sex = 'F'
         var = create_cnv(sex, 'deNovo')
-        matcher = MatchCNVs([var])
+        mom = Person('fam_id', 'mom', '0', '0', 'F', '1', '/PATH')
         parental_vars = []
         
         self.assertEqual(self.vcf_loader.get_parental_var(var, parental_vars,
-            'F', matcher), CNV(chrom="1", position=150, id=".", ref="A",
-                alts="<REF>", filter="PASS", info="END=1000000000", format="GT",
-                sample="REF", gender="female", mnv_code=None))
+            mom), CNV(chrom="1", position=150, id=".", ref="A",
+                alts="<REF>", filter="PASS", info=var.get_info_as_string(), format=None,
+                sample=None, gender="female", mnv_code=None))
         
-        # now see if we can pick up a CNV where it does exist in the parent
+        # check that even if a CNV exist in the parent at a matching site, we
+        # still create a new CNV objectr for the parent
         mother_var = create_cnv(sex, 'uncertain')
         self.assertEqual(self.vcf_loader.get_parental_var(var, [mother_var],
-            'F', matcher), mother_var)
+            mom), CNV(chrom="1", position=150, id=".", ref="A",
+                alts="<REF>", filter="PASS", info=var.get_info_as_string(), format=None,
+                sample=None, gender="female", mnv_code=None))
+    
+    def test_get_parental_var_cnv_maternally_inherited(self):
+        '''
+        '''
+        
+        sex = 'F'
+        mom = Person('fam_id', 'mom', '0', '0', 'F', '1', '/PATH')
+        
+        # check that even if a CNV exist in the parent at a matching site, we
+        # still create a new CNV object for the parent
+        var = create_cnv(sex, 'maternal')
+        self.assertEqual(self.vcf_loader.get_parental_var(var, [], mom),
+            CNV(chrom="1", position=150, id=".", ref="A",
+                alts="<DUP>", filter="PASS", info=var.get_info_as_string(), format=None,
+                sample=None, gender="female", mnv_code=None))
     
     def test_filter_de_novos(self):
         """ check that filter_de_novos() works correctly
@@ -469,13 +487,9 @@ class TestLoadVCFsPy(unittest.TestCase):
         self.vcf_loader.family = family
         
         # set up an autosomal variant
-        line = ["1", "100", ".", "T", "G", "1000", "PASS", ".", "GT", "0/1"]
         gender = "M"
-        child_var = SNV(*line[:6])
-        child_var.add_info(line[7])
-        child_var.add_format(line[8], line[9])
-        child_var.set_gender(child_gender)
-        child_var.set_genotype()
+        args = ["1", "100", ".", "T", "G", "PASS", ".", "GT", "0/1", gender]
+        child_var = SNV(*args)
         
         # combine the variant into a list of TrioGenotypes
         child_vars = [child_var]

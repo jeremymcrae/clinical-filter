@@ -284,17 +284,13 @@ class Inheritance(object):
             self.set_trio_genotypes(second)
             mom_2, dad_2 = self.mom, self.dad
             
-            # get the inheritance state of the CNV variant
-            inh = [first.child.format["INHERITANCE"], first.child.format["CIFER_INHERITANCE"]]
-            paternal = any([ "paternal" in x for x in inh ])
-            maternal = any([ "maternal" in x for x in inh ])
-            
+            inh = first.child.get_cnv_inheritance()
             # If the CNV is paternally inherited, then for the other variant, we
             # need it to be inherited from the mother, and not from the father.
             # This is vice-versa if the CNV is maternally inherited.
-            if paternal:
+            if inh == 'paternal':
                 return dad_2.is_hom_ref() and mom_2.is_not_ref()
-            elif maternal:
+            elif inh == 'maternal':
                 return dad_2.is_not_ref() and mom_2.is_hom_ref()
         elif first.is_cnv() and second.is_cnv():
             return True
@@ -536,8 +532,7 @@ class CNVInheritance(object):
         
         # check that the inheritance status is consistent with the parental
         # affected status
-        inh = [variant.child.format["INHERITANCE"], variant.child.format["CIFER_INHERITANCE"]]
-        if not self.inheritance_matches_parental_affected_status(variant, inh):
+        if not self.inheritance_matches_parental_affected_status(variant):
             if self.check_compound_inheritance(variant):
                 self.log_string = "possible compound het CNV"
                 return "compound_het"
@@ -626,10 +621,6 @@ class CNVInheritance(object):
             variant: TrioGenotypes object for the CNV.
         """
         
-        # make sure the variant has an inheritance state of "unknown" for
-        # the passes_non_ddg2p_filter()
-        variant.child.format["INHERITANCE"] = "unknown"
-        
         if self.passes_nonddg2p_filter(variant):
             return "single_variant"
         elif self.known_gene is not None and self.passes_ddg2p_filter(variant):
@@ -641,7 +632,7 @@ class CNVInheritance(object):
         
         return "nothing"
     
-    def inheritance_matches_parental_affected_status(self, variant, inh):
+    def inheritance_matches_parental_affected_status(self, variant):
         """ check that the inheritance matches the parental affected status.
         
         If the variant has been inherited from the mother (ie maternally), we
@@ -652,35 +643,32 @@ class CNVInheritance(object):
         
         Args:
             variant: TrioGenotypes object for the CNV.
-            inh: list of inheritance statuses of a CNV. We have two inheritance
-                classifications, from VICAR (classified from parental likelihoods
-                from array CGH data) and CIFER (classified from exome based read
-                depths in populations). This gives lists such as:
-                [maternal, maternal_inh], [not_inherited, deNovo] etc
             
         Returns:
             True/False for whether the inheritance is consistent with the
-               parental affected statuses
+            parental affected statuses
         """
         
-        # figure out whether the inheritance classifications indicate whether
-        # the variant is paternally, maternally, or biparentally inherited
-        paternal = any(["paternal" in x for x in inh])
-        maternal = any(["maternal" in x for x in inh])
-        biparental = any([y in x for x in inh for y in ["biparental", "inheritedDuo"]])
+        inh = variant.child.get_cnv_inheritance()
         
-        if not (paternal or maternal or biparental):
+        if inh not in ['paternal', 'maternal', 'biparental']:
             # if the variant isn't inherited (or the inheritance isn't known),
             # then the parental affected statuses are irrelevant.
             return True
-        elif (paternal and self.trio.father.is_affected()) or \
-              (maternal and self.trio.mother.is_affected()) or \
-              (biparental and int(variant.child.info["CNS"]) == 0) or \
-              (biparental and \
-              (self.trio.father.is_affected() or self.trio.mother.is_affected())) or \
-              (self.trio.child.is_male() and maternal and variant.get_chrom() == "X" and not self.trio.mother.is_affected()) :
-            # if the inheritance status indiates that the CNV was inherited,
-            # the pertinent parents need to be also affected.
+        
+        # if the inheritance status indiates that the CNV was inherited,
+        # the pertinent parents need to be also affected.
+        if inh == 'paternal' and self.trio.father.is_affected():
+            return True
+        elif inh == 'maternal' and self.trio.mother.is_affected():
+            return True
+        elif inh == 'biparental' and int(variant.child.info["CNS"]) == 0:
+            return True
+        elif inh == 'biparental' and \
+              (self.trio.father.is_affected() or self.trio.mother.is_affected()):
+            return True
+        elif self.trio.child.is_male() and inh == 'maternal' and \
+                variant.get_chrom() == "X" and not self.trio.mother.is_affected():
             return True
         
         return False
@@ -692,7 +680,7 @@ class CNVInheritance(object):
             variant: TrioGenotypes object for the CNV.
         """
         
-        inh = variant.child.format["INHERITANCE"]
+        inh = variant.child.get_cnv_inheritance()
         geno = variant.child.genotype
         
         # CNVs not in known genes are check for their length. Longer CNVs are

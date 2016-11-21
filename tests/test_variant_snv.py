@@ -32,6 +32,10 @@ class TestVariantSnvPy(unittest.TestCase):
     """ unit testing of the SNV class
     """
     
+    pops = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF", "ESP_AF",
+        "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"]
+    SNV.set_populations(pops)
+    
     def setUp(self):
         """ define a default VcfInfo object
         """
@@ -44,12 +48,6 @@ class TestVariantSnvPy(unittest.TestCase):
         filt = "PASS"
         
         info = "HGNC=ATRX;CQ=missense_variant;random_tag"
-        self.pops = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", \
-            "EAS_AF", "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", \
-            "UK10K_cohort_AF"]
-        
-        SNV.set_populations(self.pops)
-        
         self.keys = "GT:DP"
         self.values = "0/1:50"
         
@@ -105,7 +103,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """
         
         self.var.add_format(self.keys, self.values)
-        self.var.set_gender("male")
+        self.var._set_gender("male")
         
         genotypes = [("0/0", 0), ("0/1", 1), ("1/1", 2)]
         
@@ -128,7 +126,7 @@ class TestVariantSnvPy(unittest.TestCase):
         
         self.var.add_format(self.keys, self.values)
         self.var.chrom = "X"
-        self.var.set_gender("male")
+        self.var._set_gender("male")
         
         genotypes = [("0/0", 0), ("1/1", 2)]
         
@@ -153,7 +151,7 @@ class TestVariantSnvPy(unittest.TestCase):
         
         self.var.add_format(self.keys, self.values)
         self.var.chrom = "X"
-        self.var.set_gender("female")
+        self.var._set_gender("female")
         
         genotypes = [("0/0", 0), ("0/1", 1), ("1/1", 2)]
         
@@ -170,7 +168,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """
         
         self.var.add_format(self.keys, self.values)
-        self.var.set_gender("male")
+        self.var._set_gender("male")
         
         het = [("0/0", False), ("0/1", True), ("1/1", False)]
         
@@ -187,7 +185,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """
         
         self.var.add_format(self.keys, self.values)
-        self.var.set_gender("male")
+        self.var._set_gender("male")
         
         hom_alt = [("0/0", False), ("0/1", False), ("1/1", True)]
         
@@ -204,7 +202,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """
         
         self.var.add_format(self.keys, self.values)
-        self.var.set_gender("male")
+        self.var._set_gender("male")
         
         hom_ref = [("0/0", True), ("0/1", False), ("1/1", False)]
         
@@ -221,7 +219,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """
         
         self.var.add_format(self.keys, self.values)
-        self.var.set_gender("male")
+        self.var._set_gender("male")
         
         not_ref = [("0/0", False), ("0/1", True), ("1/1", True)]
         
@@ -238,7 +236,7 @@ class TestVariantSnvPy(unittest.TestCase):
         """
         
         self.var.add_format(self.keys, self.values)
-        self.var.set_gender("male")
+        self.var._set_gender("male")
         
         not_alt = [("0/0", True), ("0/1", True), ("1/1", False)]
         

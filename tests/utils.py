@@ -65,7 +65,7 @@ def create_cnv(sex, genotype, cq='missense_variant', hgnc='TEST', chrom='1',
     alt = '<DUP>'
     
     svlen = 5000
-    info = 'CQ={0};HGNC={1};HGNC_ALL={1};END={2};SVLEN={3}'.format(hgnc, cq, int(pos) + svlen, svlen)
+    info = 'CQ={0};HGNC={1};HGNC_ALL={1};END={2};SVLEN={3}'.format(cq, hgnc, int(pos) + svlen, svlen)
     keys = 'INHERITANCE:DP'
     values = '{}:50'.format(genotype)
     

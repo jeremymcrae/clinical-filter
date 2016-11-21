@@ -24,7 +24,6 @@ import logging
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
-from clinicalfilter.match_cnvs import MatchCNVs
 from clinicalfilter.utils import open_vcf, get_vcf_header, exclude_header, \
     construct_variant
 from clinicalfilter.multinucleotide_variants import get_mnv_candidates
@@ -110,7 +109,7 @@ class LoadVCFs(object):
         # filtering. If we do this earlier, it slows all the unneeded variants.
         var.add_format(line[8], line[9])
         var.add_vcf_line(line)
-        var.set_gender(gender)
+        var._set_gender(gender)
         
         try:
             var.set_genotype()
@@ -211,7 +210,6 @@ class LoadVCFs(object):
         self.child_keys = set([var.get_key() for var in child])
         
         self.child_header = get_vcf_header(family.child.get_path())
-        self.cnv_matcher = MatchCNVs(child)
         
         mother = self.open_individual(family.mother, child_variants=True)
         father = self.open_individual(family.father, child_variants=True)
@@ -230,16 +228,13 @@ class LoadVCFs(object):
             list of TrioGenotypes objects for the family
         """
         
-        mom_cnvs = MatchCNVs(mother_vars)
-        dad_cnvs = MatchCNVs(father_vars)
-        
         variants = []
         for child in child_vars:
             
             mom, dad = None, None
             if family.has_parents():
-                mom = self.get_parental_var(child, mother_vars, family.mother.get_gender(), mom_cnvs)
-                dad = self.get_parental_var(child, father_vars, family.father.get_gender(), dad_cnvs)
+                mom = self.get_parental_var(child, mother_vars, family.mother)
+                dad = self.get_parental_var(child, father_vars, family.father)
             
             trio = TrioGenotypes(child.get_chrom(), child.get_position(),
                 child, mom, dad, SNV.debug_chrom, SNV.debug_pos)
@@ -248,46 +243,46 @@ class LoadVCFs(object):
         
         return variants
     
-    def get_parental_var(self, var, parental_vars, gender, matcher):
+    def get_parental_var(self, var, parental_vars, parent):
         """ get the corresponding parental variant to a childs variant, or
         create a default variant with reference genotype.
         
         Args:
             var: childs var, as Variant object
             parental_vars: list of parental variants
-            gender: gender of the parent
-            matcher: cnv matcher for parent
+            parent: Person object for the parent
         
         Returns:
             returns a Variant object, matched to the proband's variant
         """
         
         key = var.get_key()
-        default_ref = '0/0'
         
-        # if the variant is a CNV, the corresponding variant might not match
-        # the start site, so we look a variant that overlaps
-        if var.is_cnv() and matcher.has_match(var):
-            key = matcher.get_overlap_key(key)
-            
         for parental in parental_vars:
-            if key == parental.get_key():
+            if not var.is_cnv() and key == parental.get_key():
                 return parental
         
         # if the childs variant does not exist in the parents VCF, then we
         # create a default variant for the parent
+        info = var.get_info_as_string()
+        Var = SNV
+        keys, sample = 'GT', '0/0'
+        alts = ','.join(var.alt_alleles)
+        
         if var.is_cnv():
-            parental = CNV(var.chrom, var.position, var.variant_id, var.ref_allele, '<REF>', var.filter)
-            default_ref = 'REF'
-            parental.add_info('END=1000000000')
-        else:
-            parental = SNV(var.chrom, var.position, var.variant_id, var.ref_allele, ','.join(var.alt_alleles), var.filter)
+            Var = CNV
+            inh = var.get_cnv_inheritance()
+            alts = ("<REF>", )
+            if parent.is_male() and inh in ['paternal', 'biparental']:
+                alts = var.alt_alleles
+            elif parent.is_female() and inh in ['maternal', 'biparental']:
+                alts = var.alt_alleles
+            
+            alts = ','.join(alts)
+            keys, sample = None, None
         
-        parental.add_format('GT', default_ref)
-        parental.set_gender(gender)
-        parental.set_genotype()
-        
-        return parental
+        return Var(var.chrom, var.position, var.variant_id, var.ref_allele,
+            alts, var.filter, info, keys, sample, parent.get_gender())
     
     def filter_de_novos(self, variants, pp_filter):
         """ filter the de novos variants in the VCF files
