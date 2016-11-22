@@ -142,8 +142,6 @@ class LoadVCFs(object):
                 use_variant = True
             elif line[4] == "<DUP>" or line[4] == "<DEL>":
                 var = construct_variant(line, gender, self.known_genes)
-                if self.cnv_matcher.has_match(var):
-                    use_variant = True
         else:
             var = construct_variant(line, gender, self.known_genes, mnvs)
             if var.passes_filters():

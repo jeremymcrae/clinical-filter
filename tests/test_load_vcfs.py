@@ -34,7 +34,6 @@ import subprocess
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
-from clinicalfilter.match_cnvs import MatchCNVs
 from clinicalfilter.load_vcfs import LoadVCFs
 from clinicalfilter.utils import open_vcf, get_vcf_header, exclude_header, \
     construct_variant, get_vcf_provenance
@@ -308,7 +307,6 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         # in this function we look for overlap in CNVs. Set up a child CNV
         # that the parents CNV must match.
-        self.vcf_loader.cnv_matcher = MatchCNVs([test_var])
         self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
         
         # check that a parental CNV without any overlap to any childs CNVs,
