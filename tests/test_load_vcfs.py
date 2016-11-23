@@ -448,16 +448,18 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         self.assertEqual(self.vcf_loader.get_parental_var(var, parental_vars,
             mom), CNV(chrom="1", position=150, id=".", ref="A",
-                alts="<REF>", filter="PASS", info=var.get_info_as_string(), format=None,
-                sample=None, gender="female", mnv_code=None))
+                alts="<REF>", filter="PASS", info=var.get_info_as_string(),
+                format='INHERITANCE', sample='uncertain', gender="female",
+                mnv_code=None))
         
         # check that even if a CNV exist in the parent at a matching site, we
         # still create a new CNV objectr for the parent
         mother_var = create_cnv(sex, 'uncertain')
         self.assertEqual(self.vcf_loader.get_parental_var(var, [mother_var],
             mom), CNV(chrom="1", position=150, id=".", ref="A",
-                alts="<REF>", filter="PASS", info=var.get_info_as_string(), format=None,
-                sample=None, gender="female", mnv_code=None))
+                alts="<REF>", filter="PASS", info=var.get_info_as_string(),
+                format='INHERITANCE', sample='uncertain', gender="female",
+                mnv_code=None))
     
     def test_get_parental_var_cnv_maternally_inherited(self):
         '''
@@ -471,8 +473,9 @@ class TestLoadVCFsPy(unittest.TestCase):
         var = create_cnv(sex, 'maternal')
         self.assertEqual(self.vcf_loader.get_parental_var(var, [], mom),
             CNV(chrom="1", position=150, id=".", ref="A",
-                alts="<DUP>", filter="PASS", info=var.get_info_as_string(), format=None,
-                sample=None, gender="female", mnv_code=None))
+                alts="<DUP>", filter="PASS", info=var.get_info_as_string(),
+                format='INHERITANCE', sample='uncertain', gender="female",
+                mnv_code=None))
     
     def test_filter_de_novos(self):
         """ check that filter_de_novos() works correctly
