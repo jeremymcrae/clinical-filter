@@ -277,7 +277,8 @@ class LoadVCFs(object):
                 alts = var.alt_alleles
             
             alts = ','.join(alts)
-            keys, sample = None, None
+            # we need to set a format value, so CNV genotypes get set correctly
+            keys, sample = 'INHERITANCE', 'uncertain'
         
         return Var(var.chrom, var.position, var.variant_id, var.ref_allele,
             alts, var.filter, info, keys, sample, parent.get_gender())
