@@ -242,7 +242,8 @@ class SNV(Variant):
         
         # exclude variants outside genes known to be involved in genetic
         # disorders, unless there isn't any such set of genes available
-        if self.known_genes is not None and len(set(self.get_genes()) & set(self.known_genes)) == 0:
+        genes = [ l for sublist in self.get_genes() for l in sublist ]
+        if self.known_genes is not None and len(set(genes) & set(self.known_genes)) == 0:
             return (False, "HGNC")
         
         # exclude variants without PASS values, except where the fail reason is

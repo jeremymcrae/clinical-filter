@@ -81,7 +81,6 @@ class Info(object):
         
         Args:
             info_values: INFO text from a line in a VCF file
-            tags: the tags dict
         """
         
         for item in info_values.split(";"):
@@ -96,8 +95,9 @@ class Info(object):
                 key, value = item, True
             self.info[key] = value
         
-        self.set_gene_from_info()
-        self.set_consequence()
+        masked = self.get_zero_depth_alleles()
+        self.genes = self.get_gene_from_info(self.info, self.alt_alleles, masked)
+        self.consequence = self.get_consequences(self.info, self.alt_alleles, masked)
     
     def get_info_as_string(self):
         ''' reprocess the info dictionary back into a string, correctly sorted
@@ -146,39 +146,54 @@ class Info(object):
         
         return (start_position, end_position)
     
-    def set_gene_from_info(self):
+    def get_gene_from_info(self, info, alts, masked):
         """ sets a gene to the var using the info. CNVs and SNVs act differently
+        
+        Args:
+            info: dictionary of keys and values for the info fields. Contains
+                entries for HGNC, SYMBOL, ENSG, ENST, ENSP, ENSR. These are a
+                comma-separated list of gene (or transcript, protein etc)
+                symbols for the possible alt alleles. Each entry in the
+                comma-separated is a pipe-separated list of the genes (or
+                transcripts etc) that the particular allele occurs in. CNV (and
+                some SNVs in some DDD VCF versions) can also have a HGNC_ALL entry.
+                CNVs can also have NUMBERGENES, indicating the number of genes
+                that the CNV overlaps, rather than providing the full list of
+                HGNC symbols affected.
+            alts: list of alternative alleles for the variant
+            masked: list of alternative alleles that we don't consider. These
+                are identified as alt alleles with zero depth in the individual.
+                This can occur due to multi-sample calling.
+        
+        Returns:
+            list of gene lists, one per alternative allele (after removing the
+            masked alt alleles.)
         """
         
-        self.genes = None
+        genes = None
         
-        if "HGNC" in self.info or "SYMBOL" in self.info:
-            num = len(self.alt_alleles)
-            self.genes = [ self.get_genes_for_allele(x) for x in range(num) ]
-            
-            # pull out the gene list for single allele variants
-            if len(self.genes) == 1:
-                self.genes = self.genes[0]
-        
+        if "HGNC" in info or "SYMBOL" in info:
+            pos = [ i for i, x in enumerate(alts) if x not in masked ]
+            genes = [ self.get_genes_for_allele(info, i) for i in pos ]
         # some genes lack an HGNC entry, but do have an HGNC_ALL entry. The
         # HGNC_ALL entry is a "&"-separated list of Vega symbols.
-        elif self.genes is None and "HGNC_ALL" in self.info:
-            self.genes = self.info["HGNC_ALL"].split("&")
-        elif self.is_cnv() and "HGNC" not in self.info and "NUMBERGENES" in self.info:
-            if int(self.info["NUMBERGENES"]) > 0:
-                self.genes = ["."]
+        elif genes is None and "HGNC_ALL" in info:
+            genes = [info["HGNC_ALL"].split("&") * (len(alts) - len(masked))]
+        elif self.is_cnv() and "HGNC" not in info and "NUMBERGENES" in info:
+            if int(info["NUMBERGENES"]) > 0:
+                genes = [["."]]
         # If we are not using a set of known genes, we still want to check
         # variants that haven't been annotated with a HGNC, since some of these
         # have a functional VEP annotation, presumably due to difficulties in
         # identifying an HGNC symbol. We don't need to worry about this when
         # using a set of known genes, since those should all have HGNC symbols.
-        elif self.genes is None and self.known_genes is None:
-            symbol = '{0}:{1}'.format(self.chrom, self.position)
-            self.genes = [symbol]
-            if len(self.alt_alleles) > 1:
-                self.genes = [[symbol] * len(self.alt_alleles)]
+        elif genes is None and self.known_genes is None:
+            symbol = '{0}:{1}'.format(self.get_chrom(), self.get_position())
+            genes = [[symbol] * (len(alts) - len(masked))]
+        
+        return genes
     
-    def get_genes_for_allele(self, position):
+    def get_genes_for_allele(self, info, position):
         """ gets list of gene symbols for an allele, prioritising HGNC symbols.
         
         We have a variety of gene symbol sources for a variant. The INFO field
@@ -208,11 +223,11 @@ class Info(object):
         
         # set the list of fields to check, in order of their priority.
         fields = ["HGNC", "SYMBOL", "ENSG", "ENST", "ENSP", "ENSR"]
-        fields = [ x for x in fields if x in self.info ]
+        fields = [ x for x in fields if x in info ]
         
         genes = None
         for field in fields:
-            symbols = self.info[field].split(",")[position].split("|")
+            symbols = info[field].split(",")[position].split("|")
             if genes is None:
                 genes = symbols
             
@@ -252,19 +267,29 @@ class Info(object):
         
         return genes
     
-    def set_consequence(self):
-        """ makes sure a consequence field is available in the info dict
+    def get_consequences(self, info, alts, masked):
+        """ get a list of consequences for the different alt alleles
+        
+        Args:
+            info: dictionary of keys and values for the info fields. Contains
+                a 'CQ' entry, which is a comma-separated (for different alt
+                alleles) and pipe-separated (for different genes) VEP-annotated
+                consequence.
+            alts: list of alternative alleles for the variant.
+            masked: list of alternative alleles that we don't consider. These
+                are identified as alt alleles with zero depth in the individual.
+                This can occur due to multi-sample calling.
+        
+        Returns:
+            list of gene lists, one per alternative allele (after removing the
+            masked alt alleles.)
         """
         
+        pos = [ i for i, x in enumerate(alts) if x not in masked ]
         cq = None
-        if "CQ" in self.info:
-            cq = self.info["CQ"].split("|")
-        
-        if len(self.alt_alleles) > 1:
-            (cq, self.genes, enst) = self.correct_multiple_alt(cq)
-            
-            if "ENST" in self.info:
-                self.info["ENST"] = enst
+        if "CQ" in info:
+            cq = info["CQ"].split(',')
+            cq = [ cq[i].split('|') for i in pos ]
         
         # Allow for sites at the end of exons, changing from a conserved base.
         # These haven't been annotated in the VCF, so we modify the VEP
@@ -276,11 +301,12 @@ class Info(object):
         # exon continues, but those seem sufficiently rare.
         if (self.get_chrom(), self.get_position()) in self.last_base:
             required = ["missense_variant", "splice_region_variant"]
+            new = "conserved_exon_terminus_variant"
             
-            cq = [ "conserved_exon_terminus_variant" if x in required \
-                else x for x in cq ]
+            for old in required:
+                cq = [ [ z.replace(old, new) for z in x ] for x in cq ]
         
-        self.consequence = cq
+        return cq
     
     def get_per_gene_consequence(self, hgnc_symbol):
         """ find the VEP consequences for a HGNC symbol.
@@ -301,11 +327,7 @@ class Info(object):
         """
         
         if hgnc_symbol is None:
-            return self.consequence
-        
-        # find the positions of the genes that match the curent HGNC symbol.
-        # There could be multiple matches if the symbol is "".
-        pos = [ i for i, item in enumerate(self.get_genes()) if item == hgnc_symbol ]
+            return [ l for sublist in self.consequence for l in sublist ]
         
         # At one point, the VCFs lacked per gene consequences, but could have
         # multiple gene symbols (if they lacked a HGNC field but did have a
@@ -313,12 +335,24 @@ class Info(object):
         # consequence. Return the consequence as is, in order to retain the
         # same output for those VCFs.
         if len(self.get_genes()) > 1 and len(self.consequence) == 1:
-            return self.consequence
+            return self.consequence[0]
         
-        return [ self.consequence[n] for n in pos ]
+        # find the consequernce terms for the given HGNC symbol. The HGNC
+        # symbols and consequences are lists of symbols/consequences per allele.
+        # We need to look in the gene lists to first to identify the allele
+        # index position, then the nested symbol position, so we can extract the
+        # correct consequence term.
+        cq = []
+        for x, item in enumerate(self.get_genes()):
+            if hgnc_symbol not in item:
+                continue
+            
+            cq.append(self.consequence[x][item.index(hgnc_symbol)])
         
-    def correct_multiple_alt(self, cq):
-        """ gets correct consequence, HGNC and ensembl IDs for multiple alt vars
+        return cq
+    
+    def get_zero_depth_alleles(self):
+        ''' get a list of alleles with zero depth
         
         Some variants have multiple alts, so we need to select the alt with
         the most severe consequence. However, in at least one version of the
@@ -327,51 +361,18 @@ class Info(object):
         consequences recorded for zero-depth alternate alleles before finding
         the most severe.
         
-        We also correct HGNC and Ensembl transcript IDs, since otherwise the
-        multiple alt variants will contain as many repeated instances of the
-        symbols as there are alt alleles.
-        
-        Args:
-            cq: list of VEP annotated consequences
-        
         Returns:
-            tuple of ([consequence], [HGNC symbol], and [ensembl transcript ID])
-            lists
-        """
+            list of alleles with zero depth
+        '''
         
-        # we join the consequence list (which has been split by gene), so that
-        # splitting by allele can take priority
-        cq = "|".join(cq)
-        
-        # get the consequence string, then split the entries for each allele by
-        # gene
-        cq = cq.split(",")
-        cq = [x.split("|") for x in cq]
-        
-        # drop the consequence for zero-depth alleles
-        if "AC" in self.info:
-            # check if alleles are present in the individual
-            present = [ x != "0" for x in self.info["AC"].split(",") ]
+        if 'AC' in self.info:
+            # find the positions of alleles where the allele count is zero
+            pos = [ i for i, x in enumerate(self.info['AC'].split(',')) if x == '0' ]
             
-            # exclude the consequences for alleles with zero alleles
-            cq[:] = [ item for i,item in enumerate(cq) if present[i] ]
-    
-        cq = self.get_most_severe_consequence(cq)
+            # return the alleles with zero-depth ,so we can mask them out
+            return [ self.alt_alleles[i] for i in pos ]
         
-        hgnc = self.get_genes()
-        if len(hgnc) > 0:
-            lengths = [ len(x) for x in hgnc ]
-            max_len = max(lengths)
-            pos = lengths.index(max_len)
-            hgnc = hgnc[pos]
-        
-        enst = None
-        if "ENST" in self.info:
-            enst = self.info["ENST"].split(",")
-            enst = [x.split("|") for x in enst]
-            enst = "|".join(enst[0])
-        
-        return (cq, hgnc, enst)
+        return []
     
     def get_most_severe_consequence(self, consequences):
         """ get the most severe consequence from a list of vep consequence terms

@@ -76,7 +76,7 @@ class TestTrioGenotypesPy(unittest.TestCase):
         var = self.create_var(chrom='1', position='150', sex='F', child_geno='0/1')
         self.assertEqual(var.get_chrom(), '1')
         self.assertEqual(var.get_position(), 150)
-        self.assertEqual(var.get_genes(), ['TEST'])
+        self.assertEqual(var.get_genes(), [['TEST']])
         self.assertEqual(var.get_range(), (150, 150))
         self.assertEqual(var.is_cnv(), False)
         self.assertEqual(var.get_inheritance_type(), 'autosomal')

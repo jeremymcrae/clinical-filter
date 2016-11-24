@@ -320,7 +320,7 @@ class TestVariantSnvPy(unittest.TestCase):
         
         # check all the passing consequences
         for cq in vep_passing:
-            self.var.consequence = [cq]
+            self.var.consequence = [[cq]]
             self.assertTrue(self.var.passes_filters())
             
     def test_fails_consequence_filter(self):
@@ -341,7 +341,7 @@ class TestVariantSnvPy(unittest.TestCase):
         
         # check all the failing consequences
         for cq in vep_failing:
-            self.var.consequence = [cq]
+            self.var.consequence = [[cq]]
             self.assertFalse(self.var.passes_filters())
     
     def test_passes_filters_with_debug(self):

@@ -99,22 +99,25 @@ class CNV(Variant):
         (start, end) = self.get_range()
         
         genes = []
-        for gene in self.get_genes():
-            # if the gene isn't in the DDG2P set we just include it as is, in
-            # order to allow for non DDG2P variant analyses.
-            # TODO: ideally we would match against all gencode positions
-            if self.known_genes is None or gene not in self.known_genes:
-                genes.append(gene)
-            else:
-                gene_start = self.known_genes[gene]["start"]
-                gene_end = self.known_genes[gene]["end"]
-                
-                # only add the known gene if the DDG2P GENCODE positions
-                # indicate that it overlaps with the CNV, otherwise exclude it.
-                if start <= gene_end and end >= gene_start:
-                    genes.append(gene)
+        for gene_list in self.get_genes():
+            fixed = []
+            for gene in gene_list:
+                # if the gene isn't in the DDG2P set we just include it as is, in
+                # order to allow for non DDG2P variant analyses.
+                # TODO: ideally we would match against all gencode positions
+                if self.known_genes is None or gene not in self.known_genes:
+                    fixed.append(gene)
                 else:
-                    genes.append(".")
+                    gene_start = self.known_genes[gene]["start"]
+                    gene_end = self.known_genes[gene]["end"]
+                    
+                    # only add the known gene if the DDG2P GENCODE positions
+                    # indicate that it overlaps with the CNV, otherwise exclude it.
+                    if start <= gene_end and end >= gene_start:
+                        fixed.append(gene)
+                    else:
+                        fixed.append(".")
+            genes.append(fixed)
         
         self.genes = genes
     

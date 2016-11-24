@@ -145,11 +145,12 @@ class Filter(object):
         for var in variants:
             # variants (particularly CNVs) can span multiple genes, so we need
             # to check each gene separately, and then collapse duplicates later
-            for gene in var.get_genes():
-                if gene not in genes:
-                    genes[gene] = []
-                # add the variant to the gene entry
-                genes[gene].append(var)
+            for gene_list in var.get_genes():
+                for gene in gene_list:
+                    if gene not in genes:
+                        genes[gene] = []
+                    # add the variant to the gene entry
+                    genes[gene].append(var)
         
         return genes
         

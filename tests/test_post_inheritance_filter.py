@@ -255,7 +255,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         # gene symbols of None shouldn't break the code.
         var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
             info='HGNC=.|TEST;PolyPhen=probably_damaging(0.99)|benign(0.01)')
-        var.child.genes = [None, "TEST"]
+        var.child.genes = [[None, "TEST"]]
         self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["TEST"]),
             ["benign"])
     
