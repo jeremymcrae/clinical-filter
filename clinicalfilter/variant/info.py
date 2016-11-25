@@ -95,7 +95,7 @@ class Info(object):
                 key, value = item, True
             self.info[key] = value
         
-        masked = self.get_zero_depth_alleles(self.info, self.alt_alleles)
+        masked = self.get_zero_count_alleles(self.info, self.alt_alleles)
         self.genes = self.get_gene_from_info(self.info, self.alt_alleles, masked)
         self.consequence = self.get_consequences(self.info, self.alt_alleles, masked)
     
@@ -350,25 +350,34 @@ class Info(object):
         
         return cq
     
-    def get_zero_depth_alleles(self, info, alt_alleles):
-        ''' get a list of alleles with zero depth
+    def get_zero_count_alleles(self, info, alt_alleles):
+        ''' get a list of alleles with zero counts
         
         Some variants have multiple alts, so we need to select the alt with
         the most severe consequence. However, in at least one version of the
-        VCFs, one of the alts could have zero depth, which I believe resulted
+        VCFs, one of the alts could have zero counts, which I believe resulted
         from the population based multi-sample calling. We need to drop the
-        consequences recorded for zero-depth alternate alleles before finding
+        consequences recorded for zero-count alternate alleles before finding
         the most severe.
+        
+        Args:
+            info: info dictionary, which may contain an 'AC' key, where the
+                values are a comma-separated list of counts for the alternate
+                alleles. Some variants lack this field (such as CNVs).
+            alt_alleles: tuple of alt alleles
         
         Returns:
             list of alleles with zero depth
         '''
         
         if 'AC' in info:
-            # find the positions of alleles where the allele count is zero
-            pos = [ i for i, x in enumerate(info['AC'].split(',')) if x == '0' ]
+            counts = info['AC'].split(',')
+            assert len(counts) == len(alt_alleles)
             
-            # return the alleles with zero-depth ,so we can mask them out
+            # find the positions of alleles where the allele count is zero
+            pos = [ i for i, x in enumerate(counts) if x == '0' ]
+            
+            # return the alleles with zero-count ,so we can mask them out
             return [ alt_alleles[i] for i in pos ]
         
         return []

@@ -416,29 +416,29 @@ class TestVariantInfoPy(unittest.TestCase):
         with self.assertRaises(IndexError):
             self.var.get_per_gene_consequence("TTN")
     
-    def test_get_zero_depth_alleles(self):
-        ''' test that get_zero_depth_alleles() works correctly
+    def test_get_zero_count_alleles(self):
+        ''' test that get_zero_count_alleles() works correctly
         '''
         
         # check with a single allele whre it is non-zero
         info = {'AC': '10'}
         alt_alleles = ('C', )
-        self.assertEqual(self.var.get_zero_depth_alleles(info, alt_alleles), [])
+        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), [])
         
-        # check with a single allele with zero depth
+        # check with a single allele with zero count
         info = {'AC': '0'}
         alt_alleles = ('C', )
-        self.assertEqual(self.var.get_zero_depth_alleles(info, alt_alleles), ['C'])
+        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), ['C'])
         
         # check with multiallelic, where both are nonzero
         info = {'AC': '10,10'}
         alt_alleles = ('C', 'G')
-        self.assertEqual(self.var.get_zero_depth_alleles(info, alt_alleles), [])
+        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), [])
         
-        # check with multiallelic, where one has zero depth
+        # check with multiallelic, where one a has zero count
         info = {'AC': '10,0'}
         alt_alleles = ('C', 'G')
-        self.assertEqual(self.var.get_zero_depth_alleles(info, alt_alleles), ['G'])
+        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), ['G'])
         
     def test_get_allele_frequency(self):
         """ tests that number conversion works as expected
