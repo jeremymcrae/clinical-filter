@@ -43,9 +43,9 @@ class Person(object):
     
     def __repr__(self):
         return 'Person(family_id="{}", person_id="{}", dad_id="{}", ' \
-            'mom_id="{}", sex="{}", status="{}", path="{}")'.format(self.family_id,
-            self.get_id(), self.dad_id, self.mom_id, self.get_gender(),
-             self.get_affected_status(), self.get_path())
+            'mom_id="{}", sex="{}", status="{}", path="{}")'.format(
+            self.family_id, self.get_id(), self.dad_id, self.mom_id,
+            self.get_gender(), self.get_affected_status(), self.get_path())
     
     def get_id(self):
         """returns the ID for a person.
@@ -146,6 +146,8 @@ class Family(object):
     def __init__(self, family_id, children=None, mother=None, father=None):
         """ initiates the class with the ID for the family
         """
+        
+        self.child = None
         self.family_id = family_id
         self.children = children
         if self.children is None:
@@ -193,7 +195,8 @@ class Family(object):
             if sample_id != self.mother.get_id():
                 raise ValueError(self.family_id, "already has a mother")
         
-        self.mother = Person(self.family_id, sample_id, dad_id, mom_id, sex, status, path)
+        self.mother = Person(self.family_id, sample_id, dad_id, mom_id, sex,
+            status, path)
         self.mother.check_gender("2")
     
     def add_father(self, sample_id, mom_id, dad_id, sex, status, path):
@@ -202,7 +205,8 @@ class Family(object):
             if sample_id != self.father.get_id():
                 raise ValueError(self.family_id, "already has a father")
         
-        self.father = Person(self.family_id, sample_id, dad_id, mom_id, sex, status, path)
+        self.father = Person(self.family_id, sample_id, dad_id, mom_id, sex,
+            status, path)
         self.father.check_gender("1")
     
     def set_child(self):
