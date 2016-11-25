@@ -296,8 +296,8 @@ class PostInheritanceFilter(object):
             # We don't filter out de novo variants based on the ExAC hemizygous
             # count. We only apply this filter to inherited variants.
             if "Hemizygous" in inh and self.family.child.is_male() and hemi > 0 and \
-                geno != var.get_de_novo_genotype() and geno[1:] != ("NA", "NA"):
-                    inh.remove("Hemizygous")
+                  geno != var.get_de_novo_genotype() and geno[1:] != ("NA", "NA"):
+                inh.remove("Hemizygous")
             
             # filter out monoallelic variants with high ExAC het counts.
             if var.get_chrom() != "X" and het > 4 and "Monoallelic" in inh:
