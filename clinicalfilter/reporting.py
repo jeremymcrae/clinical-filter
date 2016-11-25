@@ -22,7 +22,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import logging
 import datetime
 import gzip
-import importlib
 import sys
 import os
 
@@ -41,6 +40,7 @@ class Report(object):
             known_genes_date: date the known gene list was generated, or None
         '''
         
+        self.family = None
         self.output_path = output_path
         self.export_vcf = export_vcf
         self.known_genes_date = known_genes_date
