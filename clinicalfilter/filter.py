@@ -19,12 +19,10 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
-import json
-import sys
 import logging
 
 from clinicalfilter.load_vcfs import LoadVCFs
-from clinicalfilter.inheritance import Allosomal, Autosomal, CNVInheritance
+from clinicalfilter.inheritance import Allosomal, Autosomal
 from clinicalfilter.post_inheritance_filter import PostInheritanceFilter
 from clinicalfilter.reporting import Report
 from clinicalfilter.utils import get_vcf_provenance
