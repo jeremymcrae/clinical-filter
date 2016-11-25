@@ -170,7 +170,7 @@ def get_vcf_provenance(person):
     path = person.get_path()
     
     # get the SHA1 hash of the VCF file (in a memory efficient manner)
-    BLOCKSIZE=65536
+    BLOCKSIZE = 65536
     checksum = hashlib.sha1()
     with open(path, "rb") as handle:
         buf = handle.read(BLOCKSIZE)
