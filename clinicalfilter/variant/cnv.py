@@ -34,9 +34,9 @@ class CNV(Variant):
     debug_pos = None
     
     @classmethod
-    def set_debug(cls_obj, chrom, pos):
-        cls_obj.debug_chrom = chrom
-        cls_obj.debug_pos = pos
+    def set_debug(cls, chrom, pos):
+        cls.debug_chrom = chrom
+        cls.debug_pos = pos
     
     def is_cnv(self):
         """ checks whether the variant is for a CNV
