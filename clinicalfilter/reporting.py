@@ -162,12 +162,6 @@ class Report(object):
             variants: list of (variant, check, inheritance) tuples
         '''
         
-        # get the affected status of the parents
-        dad_aff, mom_aff = 'NA', 'NA'
-        if family.has_parents():
-            dad_aff = family.father.get_affected_status()
-            mom_aff = family.mother.get_affected_status()
-        
         with open(self.output_path, 'a') as handle:
             for var in sorted(variants):
                 line = self._get_output_line(var, family)
