@@ -24,7 +24,7 @@ from collections import namedtuple
 
 import tabix
 
-from clinicalfilter.utils import open_vcf, exclude_header,get_vcf_header
+from clinicalfilter.utils import open_vcf, exclude_header, get_vcf_header
 
 coding_cq = set(["transcript_ablation", "splice_donor_variant",
     "splice_acceptor_variant", "stop_gained", "frameshift_variant",
@@ -140,7 +140,7 @@ def parse_vcf_line(line, Variant):
         namedtuple, with the correct entries filled in from the VCF line
     '''
     
-    chrom, pos, id, ref, alts, qual, filter, info_str = line[0:8]
+    chrom, pos, var_id, ref, alts, qual, status, info_str = line[0:8]
     pos = int(pos)
     alts = alts.split(',')
     
@@ -153,7 +153,7 @@ def parse_vcf_line(line, Variant):
             key, value = item, True
         info[key] = value
     
-    return Variant(chrom, pos, id, ref, alts, qual, filter, info)
+    return Variant(chrom, pos, var_id, ref, alts, qual, status, info)
 
 def get_matches(vcf, pair):
     ''' find VCF lines matching a pair of coordinate tuples
@@ -249,12 +249,12 @@ def same_aa(vcf, pairs):
     for pair in pairs:
         
         aa = []
-        for x in get_matches(vcf, pair):
+        for var in get_matches(vcf, pair):
             # splice_region variants can be outside CDS, make these fail
-            if 'Protein_position' not in x.info:
+            if 'Protein_position' not in var.info:
                 aa += [1, 2]
             else:
-                aa.append(x.info['Protein_position'])
+                aa.append(var.info['Protein_position'])
         
         if len(set(aa)) == 1:
             cleaned.append(pair)
@@ -287,8 +287,8 @@ def get_codons(var1, var2, pattern):
         MNV codon.
     '''
     
-    alt_1 = var1.alts[0]
-    alt_2 = var2.alts[0]
+    # alt_1 = var1.alts[0]
+    # alt_2 = var2.alts[0]
     
     # the codon sequences are in the info 'Codons' field, which can include
     # multiple transcripts ('|' separared). So far, alternate transcripts were
@@ -372,7 +372,7 @@ def check_mnv_consequence(var1, var2, pattern):
     else:
         if ref == snv1 == snv2 and ref != mnv:
             change = 'modified_protein_altering_mnv'
-        elif ref == mnv and (ref != snv1 or start_aa != snv2):
+        elif ref == mnv and (ref != snv1 or snv1 != snv2):
             change = "modified_synonymous_mnv"
         elif mnv == '*':
             change = 'modified_stop_gained_mnv'
