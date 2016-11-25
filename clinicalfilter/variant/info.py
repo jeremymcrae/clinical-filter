@@ -95,7 +95,7 @@ class Info(object):
                 key, value = item, True
             self.info[key] = value
         
-        masked = self.get_zero_depth_alleles()
+        masked = self.get_zero_depth_alleles(self.info, self.alt_alleles)
         self.genes = self.get_gene_from_info(self.info, self.alt_alleles, masked)
         self.consequence = self.get_consequences(self.info, self.alt_alleles, masked)
     
@@ -258,14 +258,13 @@ class Info(object):
         """ split a gene string into list of gene names
         
         Returns:
-            list of gene IDs
+            list of gene ID lists, one per allele
         """
         
-        genes = self.genes
         if self.genes is None:
-            genes = []
+            return []
         
-        return genes
+        return self.genes
     
     def get_consequences(self, info, alts, masked):
         """ get a list of consequences for the different alt alleles
@@ -351,7 +350,7 @@ class Info(object):
         
         return cq
     
-    def get_zero_depth_alleles(self):
+    def get_zero_depth_alleles(self, info, alt_alleles):
         ''' get a list of alleles with zero depth
         
         Some variants have multiple alts, so we need to select the alt with
@@ -365,12 +364,12 @@ class Info(object):
             list of alleles with zero depth
         '''
         
-        if 'AC' in self.info:
+        if 'AC' in info:
             # find the positions of alleles where the allele count is zero
-            pos = [ i for i, x in enumerate(self.info['AC'].split(',')) if x == '0' ]
+            pos = [ i for i, x in enumerate(info['AC'].split(',')) if x == '0' ]
             
             # return the alleles with zero-depth ,so we can mask them out
-            return [ self.alt_alleles[i] for i in pos ]
+            return [ alt_alleles[i] for i in pos ]
         
         return []
     

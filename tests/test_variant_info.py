@@ -54,28 +54,62 @@ class TestVariantInfoPy(unittest.TestCase):
         info = "HGNC=ATRX;CQ=missense_variant;random_tag"
         self.var = SNV(chrom, pos, snp_id, ref, alt, filt, info=info)
     
-    def test_set_consequence(self):
-        """ test that set_consequence works correctly
+    def test_get_consequence(self):
+        """ test that get_consequence works correctly
         """
+        
+        info = {'CQ': 'missense_variant'}
+        alt_alleles = ('C',)
         
         # check that in the absence of any known conserved final exon positions,
         # the consequence is unchanged.
-        consequence = self.var.get_consequences(self.var.info, self.var.alt_alleles, [])
-        self.assertEqual(consequence, [["missense_variant"]])
+        self.assertEqual(self.var.get_consequences(info, alt_alleles, []),
+            [['missense_variant']])
+        
+        info = {'CQ': 'missense_variant|stop_gained'}
+        self.assertEqual(self.var.get_consequences(info, alt_alleles, []),
+            [['missense_variant', 'stop_gained']])
+        
+    def test_get_consequence_last_base(self):
+        '''check get_consequence() works with last base of exon changes
+        '''
+        
+        info = {'CQ': 'missense_variant'}
+        alt_alleles = ('C',)
         
         # Now check that if the variant is at a position where it is a final
         # base in an exon with a conserved base, the consequence gets converted.
         self.var.last_base = set([("1", 15000000)])
-        consequence = self.var.get_consequences(self.var.info, self.var.alt_alleles, [])
-        self.assertEqual(consequence, [["conserved_exon_terminus_variant"]])
+        self.assertEqual(self.var.get_consequences(info, alt_alleles, []),
+            [["conserved_exon_terminus_variant"]])
         
         # If we have a variant in multiple genes, check that it only alters the
         # missense/splice_region variants, and doesn't alter synonymous variants
         # (since these will be in transcripts where the variant is distant from
         # an exon boundary.)
-        self.var.info["CQ"] = "missense_variant|synonymous_variant"
-        consequence =self.var.get_consequences(self.var.info, self.var.alt_alleles, [])
-        self.assertEqual(consequence, [["conserved_exon_terminus_variant", "synonymous_variant"]])
+        info["CQ"] = "missense_variant|synonymous_variant"
+        self.assertEqual(self.var.get_consequences(info, alt_alleles, []),
+            [["conserved_exon_terminus_variant", "synonymous_variant"]])
+    
+    def test_get_consequence_multiallelic(self):
+        ''' test that get_consequence works correctly with multiple alleles
+        '''
+        
+        info = {'CQ': 'missense_variant,synonymous_variant'}
+        alt_alleles = ('C', 'G')
+        
+        self.assertEqual(self.var.get_consequences(info, alt_alleles, []),
+            [['missense_variant'], ['synonymous_variant']])
+        
+    def test_get_consequence_multiallelic_with_masked(self):
+        ''' test that get_consequence works correctly with multiple alleles
+        '''
+        
+        info = {'CQ': 'missense_variant,synonymous_variant'}
+        alt_alleles = ('C', 'G')
+        
+        self.assertEqual(self.var.get_consequences(info, alt_alleles, ['G']),
+            [['missense_variant']])
     
     def test_get_gene_from_info(self):
         """ test that test_get_gene_from_info() works correctly
@@ -116,6 +150,65 @@ class TestVariantInfoPy(unittest.TestCase):
         self.var.info["ENSG"] = "A|.|C"
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
         self.assertEqual(genes, [["Z", None, "C"]])
+    
+    def test_get_gene_from_info_multi_alts(self):
+        ''' check check get_gene_from_info() when we have multiple alleles
+        '''
+        
+        info = self.var.info
+        alt_alleles = ('G', 'C')
+        info['HGNC'] = 'D,E'
+        info['SYMBOL'] = 'D,E'
+        info['ENSG'] = 'D,E'
+        info['ENST'] = 'D,E'
+        info['ENSP'] = 'D,E'
+        info['ENSR'] = 'D,E'
+        
+        self.assertEqual(self.var.get_gene_from_info(info, alt_alleles,  []),
+            [['D'], ['E']])
+        
+        # if we have more alleles than the available symbols, we get an error
+        # NOTE: this doesn't check if we have fewer alleles than symbols
+        alt_alleles = ('G', 'T', 'C')
+        with self.assertRaises(IndexError):
+            self.var.get_gene_from_info(info, alt_alleles, [])
+        
+    def test_get_gene_from_info_multi_alts_multi_symbols(self):
+        ''' check get_gene_from_info() when we have multiple symbols per allele
+        '''
+        
+        info = self.var.info
+        alt_alleles = ('G', 'C')
+        info['HGNC'] = 'D|X,E|Y'
+        info['SYMBOL'] = 'D|X,E|Y'
+        info['ENSG'] = 'D|X,E|Y'
+        info['ENST'] = 'D|X,E|Y'
+        info['ENSP'] = 'D|X,E|Y'
+        info['ENSR'] = 'D|X,E|Y'
+        
+        self.assertEqual(self.var.get_gene_from_info(info, alt_alleles, []),
+            [['D', 'X'], ['E', 'Y']])
+        
+    def test_get_gene_from_info_multi_alts_masked_alt(self):
+        ''' check get_gene_from_info() when we mask alt alleles
+        '''
+        
+        info = self.var.info
+        alt_alleles = ('G', 'C')
+        info['HGNC'] = 'D|X,E|Y'
+        info['SYMBOL'] = 'D|X,E|Y'
+        info['ENSG'] = 'D|X,E|Y'
+        info['ENST'] = 'D|X,E|Y'
+        info['ENSP'] = 'D|X,E|Y'
+        info['ENSR'] = 'D|X,E|Y'
+        
+        # mask one allele
+        self.assertEqual(self.var.get_gene_from_info(info, alt_alleles, ['C']),
+            [['D', 'X']])
+        
+        # mask both alleles
+        self.assertEqual(self.var.get_gene_from_info(info, alt_alleles, ['C', 'G']),
+            [])
     
     def test_get_gene_from_info_missing_gene(self):
         ''' check the gene symbol is the genome pos when we lack any other info
@@ -322,6 +415,30 @@ class TestVariantInfoPy(unittest.TestCase):
         # check that this now raises an error
         with self.assertRaises(IndexError):
             self.var.get_per_gene_consequence("TTN")
+    
+    def test_get_zero_depth_alleles(self):
+        ''' test that get_zero_depth_alleles() works correctly
+        '''
+        
+        # check with a single allele whre it is non-zero
+        info = {'AC': '10'}
+        alt_alleles = ('C', )
+        self.assertEqual(self.var.get_zero_depth_alleles(info, alt_alleles), [])
+        
+        # check with a single allele with zero depth
+        info = {'AC': '0'}
+        alt_alleles = ('C', )
+        self.assertEqual(self.var.get_zero_depth_alleles(info, alt_alleles), ['C'])
+        
+        # check with multiallelic, where both are nonzero
+        info = {'AC': '10,10'}
+        alt_alleles = ('C', 'G')
+        self.assertEqual(self.var.get_zero_depth_alleles(info, alt_alleles), [])
+        
+        # check with multiallelic, where one has zero depth
+        info = {'AC': '10,0'}
+        alt_alleles = ('C', 'G')
+        self.assertEqual(self.var.get_zero_depth_alleles(info, alt_alleles), ['G'])
         
     def test_get_allele_frequency(self):
         """ tests that number conversion works as expected
