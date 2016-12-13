@@ -22,6 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import unittest
 
 from clinicalfilter.variant.snv import SNV
+from clinicalfilter.variant.cnv import CNV
 
 class TestVariantInfoPy(unittest.TestCase):
     """  unit testing of the VcfInfo class
@@ -351,6 +352,20 @@ class TestVariantInfoPy(unittest.TestCase):
         self.var.consequence = [["stop_gained"]]
         self.var.mnv_code = 'masked_stop_gain_mnv'
         self.assertTrue(self.var.is_missense())
+    
+    def test_is_missense_cnv(self):
+        ''' test that is_missense() works correctly for CNVs
+        '''
+        
+        chrom, pos, var_id = '1', '15000000', '.'
+        ref, alt, status = 'A', 'G', 'PASS'
+        info = 'HGNC=ATRX;CQ=coding_sequence_variant;random_tag'
+        
+        snv = SNV(chrom, pos, var_id, ref, alt, status, info=info)
+        cnv = CNV(chrom, pos, var_id, ref, alt, status, info=info)
+        
+        self.assertTrue(cnv.is_missense())
+        self.assertFalse(snv.is_missense())
     
     def test_get_most_severe_consequence(self):
         """ test that get_most_severe_consequence works correctly

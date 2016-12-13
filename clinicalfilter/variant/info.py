@@ -456,7 +456,14 @@ class Info(object):
             elif self.mnv_code == 'masked_stop_gain_mnv':
                 cq.append('missense_variant')
         
-        return len(set(cq) & self.missense_consequences) > 0
+        # CNVs can be problematic to assign VEP consequences to. Some CNVs are
+        # annotated as 'coding_sequence_variant', a term which historically is
+        # used in anomalous situations. SNVs no longer have a problem with this.
+        missense = set(self.missense_consequences)
+        if self.is_cnv():
+            missense.add('coding_sequence_variant')
+        
+        return len(set(cq) & missense) > 0
     
     def get_allele_frequency(self, values):
         """ extracts the allele frequency float from a VCF string
