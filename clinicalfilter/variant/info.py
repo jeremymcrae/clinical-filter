@@ -469,7 +469,8 @@ class Info(object):
         
         cq = self.get_per_gene_consequence(hgnc_symbol)
         
-        return len(set(cq) - self.synonymous_consequences) == 0
+        return not self.is_lof(hgnc_symbol) and not self.is_missense(hgnc_symbol) and \
+            len(set(cq) & self.synonymous_consequences) > 0
     
     def get_allele_frequency(self, values):
         """ extracts the allele frequency float from a VCF string
