@@ -317,6 +317,11 @@ def get_codons(var1, var2, pattern):
     var1 = codons_1[1]
     var2 = codons_2[1]
     
+    # make sure that we only examine codons with three bases (this can be false
+    # in transcripts with incomplete 3' ends).
+    assert len(var1) == 3
+    assert len(var2) == 3
+    
     # get the positions of the modified bases, which is shown by the capitalised
     # base in the codon sequence e.g. 'tGt' or 'Agg'.
     var1_pos = pattern.search(var1, 0).start()

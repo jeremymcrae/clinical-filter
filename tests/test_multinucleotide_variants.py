@@ -538,6 +538,19 @@ class TestMNVChecksPy(unittest.TestCase):
         with self.assertRaises(AttributeError):
             get_codons(var1, var2, self.pattern)
     
+    def test_get_codons_short_codon(self):
+        ''' test that get_codons() raises an error the codons are not 3bp long.
+        '''
+        
+        var1 = make_vcf_line(extra='Codons=aG/aT').split('\t')
+        var2 = make_vcf_line(extra='Codons=Ag/Gg').split('\t')
+        
+        var1 = parse_vcf_line(var1, self.Variant)
+        var2 = parse_vcf_line(var2, self.Variant)
+        
+        with self.assertRaises(AssertionError):
+            get_codons(var1, var2, self.pattern)
+    
     def test_check_minv_consequence_unmodified_synonymous(self):
         ''' test that get_mnv_consequence() works correctly
         '''
