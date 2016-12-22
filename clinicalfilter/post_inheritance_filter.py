@@ -244,7 +244,7 @@ class PostInheritanceFilter(object):
         # get a list of the variants in the gene
         compound_vars = [ x[0] for x in variants if hgnc in x[3] and "compound_het" in x[1] ]
         
-        if len(compound_vars) == 0:
+        if len(compound_vars) < 2:
             return False
         
         # run through the variants, find all the variants that are not benign,
