@@ -400,7 +400,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         # check that single variants in the same gene still return True
         variants = [(snv_1, ["compound_het"], ["Biallelic"], ["ATRX"]), \
             (snv_2, ["single_variant"], ["Biallelic"], ["ATRX"])]
-        self.assertTrue(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
+        self.assertFalse(self.post_filter.has_compound_match(snv_1, "ATRX", variants))
     
     def test_has_compound_match_proband_only(self):
         """ check that has_compound_match() works correctly without parents
