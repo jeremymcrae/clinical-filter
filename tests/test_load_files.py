@@ -66,14 +66,14 @@ class TestLoadFilesPy(unittest.TestCase):
         '''
         
         header = {'gene': 0, 'chr': 1, 'start': 2, 'stop': 3, 'type': 4,
-            'mode': 5, 'mech': 6}
+            'mode': 5, 'mech': 6, 'hgnc_id': 7}
         
         line = ['TEST', 'chr1', '1000', '2000', 'confirmed dd gene',
-            'Biallelic', 'Loss-of-function']
+            'Biallelic', 'Loss-of-function', '1001']
         
-        self.assertEqual(parse_gene_line(line, header), ('TEST', {
+        self.assertEqual(parse_gene_line(line, header), ('1001', {
             'chrom': 'chr1', 'start': 1000, 'end': 2000,
-            'status': set(['confirmed dd gene']),
+            'symbol': 'TEST', 'status': set(['confirmed dd gene']),
             'inh': {'Biallelic': set(['Loss-of-function'])}}))
     
     def test_parse_gene_line_both_mechanism(self):
@@ -81,13 +81,13 @@ class TestLoadFilesPy(unittest.TestCase):
         '''
         
         header = {'gene': 0, 'chr': 1, 'start': 2, 'stop': 3, 'type': 4,
-            'mode': 5, 'mech': 6}
+            'mode': 5, 'mech': 6, 'hgnc_id': 7}
         line = ['TEST', 'chr1', '1000', '2000', 'confirmed dd gene',
-            'Both', 'Loss-of-function']
+            'Both', 'Loss-of-function', '1001']
         
-        self.assertEqual(parse_gene_line(line, header), ('TEST', {
+        self.assertEqual(parse_gene_line(line, header), ('1001', {
             'chrom': 'chr1', 'start': 1000, 'end': 2000,
-            'status': set(['confirmed dd gene']),
+            'symbol': 'TEST', 'status': set(['confirmed dd gene']),
             'inh': {'Biallelic': set(['Loss-of-function']),
                 'Monoallelic': set(['Loss-of-function']),
                 'Both': set(['Loss-of-function'])}}))
@@ -96,17 +96,17 @@ class TestLoadFilesPy(unittest.TestCase):
         ''' test that open_known_genes() works correctly
         '''
         
-        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech']
+        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech', 'hgnc_id']
         line = ['TEST', '1', '1000', '2000', 'confirmed dd gene',
-            'Monoallelic', 'Loss-of-function']
+            'Monoallelic', 'Loss-of-function', '1001']
         
         self.temp.write(('\t'.join(header) + '\n').encode('utf8'))
         self.temp.write(('\t'.join(line) + '\n').encode('utf8'))
         self.temp.flush()
         
         self.assertEqual(open_known_genes(self.temp.name),
-            {'TEST': {'chrom': '1', 'start': 1000, 'end': 2000,
-                'status': set(['confirmed dd gene']),
+            {'1001': {'chrom': '1', 'start': 1000, 'end': 2000,
+                'symbol': 'TEST', 'status': set(['confirmed dd gene']),
                 'inh': {'Monoallelic': set(['Loss-of-function'])}}
             })
     
@@ -114,11 +114,11 @@ class TestLoadFilesPy(unittest.TestCase):
         ''' test that open_known_genes() works correctly for genes with >1 modes
         '''
         
-        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech']
+        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech', 'hgnc_id']
         line1 = ['TEST', '1', '1000', '2000', 'confirmed dd gene',
-            'Monoallelic', 'Loss-of-function']
+            'Monoallelic', 'Loss-of-function', '1001']
         line2 = ['TEST', '1', '1000', '2000', 'confirmed dd gene',
-            'Biallelic', 'Loss-of-function']
+            'Biallelic', 'Loss-of-function', '1001']
         
         self.temp.write(('\t'.join(header) + '\n').encode('utf8'))
         self.temp.write(('\t'.join(line1) + '\n').encode('utf8'))
@@ -126,8 +126,8 @@ class TestLoadFilesPy(unittest.TestCase):
         self.temp.flush()
         
         self.assertEqual(open_known_genes(self.temp.name),
-            {'TEST': {'chrom': '1', 'start': 1000, 'end': 2000,
-                'status': set(['confirmed dd gene']),
+            {'1001': {'chrom': '1', 'start': 1000, 'end': 2000,
+                'symbol': 'TEST', 'status': set(['confirmed dd gene']),
                 'inh': {'Monoallelic': set(['Loss-of-function']),
                      'Biallelic': set(['Loss-of-function'])}}
             })
@@ -136,11 +136,11 @@ class TestLoadFilesPy(unittest.TestCase):
         ''' test that open_known_genes() works correctly for genes with >1 mechs
         '''
         
-        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech']
+        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech', 'hgnc_id']
         line1 = ['TEST', '1', '1000', '2000', 'confirmed dd gene',
-            'Monoallelic', 'Loss-of-function']
+            'Monoallelic', 'Loss-of-function', '1001']
         line2 = ['TEST', '1', '1000', '2000', 'confirmed dd gene',
-            'Monoallelic', 'Activating']
+            'Monoallelic', 'Activating', '1001']
         
         self.temp.write(('\t'.join(header) + '\n').encode('utf8'))
         self.temp.write(('\t'.join(line1) + '\n').encode('utf8'))
@@ -148,8 +148,8 @@ class TestLoadFilesPy(unittest.TestCase):
         self.temp.flush()
         
         self.assertEqual(open_known_genes(self.temp.name),
-            {'TEST': {'chrom': '1', 'start': 1000, 'end': 2000,
-                'status': set(['confirmed dd gene']),
+            {'1001': {'chrom': '1', 'start': 1000, 'end': 2000,
+                'symbol': 'TEST', 'status': set(['confirmed dd gene']),
                 'inh': {'Monoallelic': set(['Loss-of-function', 'Activating'])}}
             })
     
@@ -157,11 +157,11 @@ class TestLoadFilesPy(unittest.TestCase):
         ''' test that open_known_genes() works correctly for multiple genes
         '''
         
-        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech']
+        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech', 'hgnc_id']
         line1 = ['TEST', '1', '1000', '2000', 'confirmed dd gene',
-            'Monoallelic', 'Loss-of-function']
+            'Monoallelic', 'Loss-of-function', '1001']
         line2 = ['TEST2', '1', '3000', '4000', 'confirmed dd gene',
-            'Monoallelic', 'Loss-of-function']
+            'Monoallelic', 'Loss-of-function', '2001']
         
         self.temp.write(('\t'.join(header) + '\n').encode('utf8'))
         self.temp.write(('\t'.join(line1) + '\n').encode('utf8'))
@@ -169,11 +169,11 @@ class TestLoadFilesPy(unittest.TestCase):
         self.temp.flush()
         
         self.assertEqual(open_known_genes(self.temp.name),
-            {'TEST': {'chrom': '1', 'start': 1000, 'end': 2000,
-                'status': set(['confirmed dd gene']),
+            {'1001': {'chrom': '1', 'start': 1000, 'end': 2000,
+                'symbol': 'TEST', 'status': set(['confirmed dd gene']),
                 'inh': {'Monoallelic': set(['Loss-of-function'])}},
-            'TEST2': {'chrom': '1', 'start': 3000, 'end': 4000,
-                'status': set(['confirmed dd gene']),
+            '2001': {'chrom': '1', 'start': 3000, 'end': 4000,
+                'symbol': 'TEST2', 'status': set(['confirmed dd gene']),
                 'inh': {'Monoallelic': set(['Loss-of-function'])}}
             })
     
@@ -181,11 +181,11 @@ class TestLoadFilesPy(unittest.TestCase):
         ''' test that open_known_genes() filters out genes without a good status
         '''
         
-        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech']
+        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech', 'hgnc_id']
         line1 = ['TEST', '1', '1000', '2000', 'possible dd gene',
-            'Monoallelic', 'Loss-of-function']
+            'Monoallelic', 'Loss-of-function', '1001']
         line2 = ['TEST2', '1', '3000', '4000', 'confirmed dd gene',
-            'Monoallelic', 'Loss-of-function']
+            'Monoallelic', 'Loss-of-function', '2001']
         
         self.temp.write(('\t'.join(header) + '\n').encode('utf8'))
         self.temp.write(('\t'.join(line1) + '\n').encode('utf8'))
@@ -193,8 +193,8 @@ class TestLoadFilesPy(unittest.TestCase):
         self.temp.flush()
         
         self.assertEqual(open_known_genes(self.temp.name),
-            {'TEST2': {'chrom': '1', 'start': 3000, 'end': 4000,
-                'status': set(['confirmed dd gene']),
+            {'2001': {'chrom': '1', 'start': 3000, 'end': 4000,
+                'symbol': 'TEST2', 'status': set(['confirmed dd gene']),
                 'inh': {'Monoallelic': set(['Loss-of-function'])}}
             })
     
@@ -202,7 +202,7 @@ class TestLoadFilesPy(unittest.TestCase):
         ''' test that open_known_genes() works correctly when we can't find any genes
         '''
         
-        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech']
+        header = ['gene', 'chr', 'start', 'stop', 'type', 'mode', 'mech', 'hgnc_id']
         
         self.temp.write(('\t'.join(header) + '\n').encode('utf8'))
         self.temp.flush()

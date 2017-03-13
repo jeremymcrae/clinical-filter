@@ -55,6 +55,8 @@ class Info(object):
         "inframe_insertion", "inframe_deletion", "missense_variant", \
         "transcript_amplification", "protein_altering_variant"])
     
+    synonymous_consequences = set(["synonymous_variant"])
+    
     # create static variables (set before creating any class instances)
     known_genes = None
     last_base = set([])
@@ -172,14 +174,14 @@ class Info(object):
         
         genes = None
         
-        if "HGNC" in info or "SYMBOL" in info:
+        if "HGNC_ID" in info or "HGNC" in info or "SYMBOL" in info:
             pos = [ i for i, x in enumerate(alts) if x not in masked ]
             genes = [ self.get_genes_for_allele(info, i) for i in pos ]
         # some genes lack an HGNC entry, but do have an HGNC_ALL entry. The
         # HGNC_ALL entry is a "&"-separated list of Vega symbols.
         elif genes is None and "HGNC_ALL" in info:
             genes = [info["HGNC_ALL"].split("&") * (len(alts) - len(masked))]
-        elif self.is_cnv() and "HGNC" not in info and "NUMBERGENES" in info:
+        elif self.is_cnv() and "HGNC_ID" not in info and "NUMBERGENES" in info:
             if int(info["NUMBERGENES"]) > 0:
                 genes = [["."]]
         # If we are not using a set of known genes, we still want to check
@@ -197,7 +199,8 @@ class Info(object):
         """ gets list of gene symbols for an allele, prioritising HGNC symbols.
         
         We have a variety of gene symbol sources for a variant. The INFO field
-        can contain HGNC, SYMBOL, ENSG, ENST, ENSP and ENSR. HGNC is HGNC gene
+        can contain HGNC_ID, HGNC, SYMBOL, ENSG, ENST, ENSP and ENSR. HGNC_ID is
+        the stable HGNC ID associated with the gene (from VEP), HGNC is HGNC gene
         symbol, SYMBOL is VEGA-derived gene symbol, ENSG is Ensembl gene ID,
         ENST is Ensembl transcript ID, ENSP is Ensembl protein ID, and ENSR is
         Ensembl regulatory ID.
@@ -217,12 +220,12 @@ class Info(object):
                 comma-separated list.
         
         Returns:
-            list of gene symbols, filled in from the HGNC, SYMBOL, ENSG fields
-            where available.
+            list of gene symbols, filled in from the HGNC_ID, HGNC, SYMBOL, ENSG
+            fields where available.
         """
         
         # set the list of fields to check, in order of their priority.
-        fields = ["HGNC", "SYMBOL", "ENSG", "ENST", "ENSP", "ENSR"]
+        fields = ["HGNC_ID", "HGNC", "SYMBOL", "ENSG", "ENST", "ENSP", "ENSR"]
         fields = [ x for x in fields if x in info ]
         
         genes = None
@@ -464,6 +467,18 @@ class Info(object):
             missense.add('coding_sequence_variant')
         
         return len(set(cq) & missense) > 0
+    
+    def is_synonymous(self, hgnc_symbol=None):
+        """ checks if a variant has a missense-styled consequence
+        """
+        
+        if self.consequence is None:
+            return False
+        
+        cq = self.get_per_gene_consequence(hgnc_symbol)
+        
+        return not self.is_lof(hgnc_symbol) and not self.is_missense(hgnc_symbol) and \
+            len(set(cq) & self.synonymous_consequences) > 0
     
     def get_allele_frequency(self, values):
         """ extracts the allele frequency float from a VCF string

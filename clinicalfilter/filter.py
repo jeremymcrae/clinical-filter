@@ -135,7 +135,7 @@ class Filter(object):
             variants: list of TrioGenotypes objects
         
         Returns:
-            dictionary of variants indexed by HGNC symbols
+            dictionary of variants indexed by HGNC ID
         """
         
         # organise the variants into entries for each gene
@@ -230,10 +230,10 @@ class Filter(object):
                 unique_vars[key][1] += [x for x in result if x not in unique_vars[key][1]]
                 unique_vars[key][2] += [x for x in inh if x not in unique_vars[key][2]]
                 
-                # add the HGNC symbols that are unique to the current variant
+                # add the gene IDs that are unique to the current variant
                 # to the merged variant
-                hgnc = [x for x in hgnc if x not in unique_vars[key][3]]
-                unique_vars[key][3] += hgnc
+                genes = [x for x in hgnc if x not in unique_vars[key][3]]
+                unique_vars[key][3] += genes
                 
         unique_vars = [tuple(unique_vars[x]) for x in unique_vars]
         

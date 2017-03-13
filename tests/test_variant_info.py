@@ -40,8 +40,8 @@ class TestVariantInfoPy(unittest.TestCase):
         filt = "PASS"
         
         # here are the default filtering criteria, as loaded into python
-        known = {"ATRX": {"inheritance": {"Hemizygous": \
-            {"Loss of function"}}, "start": "10000000", "chrom": "1", \
+        known = {"1001": {"inh": {'symbol': 'ATRX', "Hemizygous":
+            {"Loss of function"}}, "start": "10000000", "chrom": "1",
             "confirmed_status": {"confirmed dd gene"}, "end": "20000000"}}
         
         self.pops = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF",
@@ -52,7 +52,7 @@ class TestVariantInfoPy(unittest.TestCase):
         SNV.set_populations(self.pops)
         
         # set up a SNV object, since SNV inherits Info
-        info = "HGNC=ATRX;CQ=missense_variant;random_tag"
+        info = "HGNC_ID=1001;CQ=missense_variant;random_tag"
         self.var = SNV(chrom, pos, snp_id, ref, alt, filt, info=info)
     
     def test_get_consequence(self):
@@ -117,38 +117,38 @@ class TestVariantInfoPy(unittest.TestCase):
         """
         
         # check for when a HGNC key exists
-        self.var.info["HGNC"] = "A"
+        self.var.info["HGNC_ID"] = "A"
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
         self.assertEqual(genes, [["A"]])
         
         # check for when a HGNC key doesn't exist
-        del self.var.info["HGNC"]
+        del self.var.info["HGNC_ID"]
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
         self.assertIsNone(genes)
         
         # check for multiple gene symbols
-        self.var.info["HGNC"] = "A|B|C"
+        self.var.info["HGNC_ID"] = "A|B|C"
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
         self.assertEqual(genes, [["A", "B", "C"]])
         
         # check for multiple gene symbols, when some are missing
-        self.var.info["HGNC"] = "|.|C"
+        self.var.info["HGNC_ID"] = "|.|C"
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
         self.assertEqual(genes, [[None, None, "C"]])
         
         # check for multiple gene symbols, when some missing symbols have
         # alternates in other symbol fields.
-        self.var.info["HGNC"] = ".|.|C"
-        self.var.info["SYMBOL"] = "Z|.|C"
+        self.var.info["HGNC_ID"] = ".|.|C"
+        self.var.info["HGNC"] = "Z|.|C"
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
         self.assertEqual(genes, [["Z", None, "C"]])
         
         # Check that including alternate symbols has the correct precendence
         # order. Note that doing this properly would require checking all of the
         # possible order combinations.
-        self.var.info["HGNC"] = ".|.|C"
-        self.var.info["SYMBOL"] = "Z|.|C"
-        self.var.info["ENSG"] = "A|.|C"
+        self.var.info["HGNC_ID"] = ".|.|C"
+        self.var.info["HGNC"] = "Z|.|C"
+        self.var.info["SYMBOL"] = "A|.|C"
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
         self.assertEqual(genes, [["Z", None, "C"]])
     
@@ -158,6 +158,7 @@ class TestVariantInfoPy(unittest.TestCase):
         
         info = self.var.info
         alt_alleles = ('G', 'C')
+        info['HGNC_ID'] = 'D,E'
         info['HGNC'] = 'D,E'
         info['SYMBOL'] = 'D,E'
         info['ENSG'] = 'D,E'
@@ -180,6 +181,7 @@ class TestVariantInfoPy(unittest.TestCase):
         
         info = self.var.info
         alt_alleles = ('G', 'C')
+        info['HGNC_ID'] = 'D|X,E|Y'
         info['HGNC'] = 'D|X,E|Y'
         info['SYMBOL'] = 'D|X,E|Y'
         info['ENSG'] = 'D|X,E|Y'
@@ -196,6 +198,7 @@ class TestVariantInfoPy(unittest.TestCase):
         
         info = self.var.info
         alt_alleles = ('G', 'C')
+        info['HGNC_ID'] = 'D|X,E|Y'
         info['HGNC'] = 'D|X,E|Y'
         info['SYMBOL'] = 'D|X,E|Y'
         info['ENSG'] = 'D|X,E|Y'
@@ -220,7 +223,7 @@ class TestVariantInfoPy(unittest.TestCase):
         self.var.genes = None
         
         # remove the only possibly source of the gene symbol
-        del self.var.info["HGNC"]
+        del self.var.info["HGNC_ID"]
         
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
         self.assertEqual(genes, [["1:15000000"]])
@@ -230,20 +233,20 @@ class TestVariantInfoPy(unittest.TestCase):
         '''
         
         # check simple case with single HGNC symbol
-        self.var.info['HGNC'] = 'ATRX'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), ['ATRX'])
+        self.var.info['HGNC_ID'] = '1001'
+        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), ['1001'])
         
         # check simple case with missing symbols
-        self.var.info['HGNC'] = '.'
+        self.var.info['HGNC_ID'] = '.'
         self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), [None])
         
         # check with multiple HGNC symbols
-        self.var.info['HGNC'] = 'ATRX|TEST'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), ['ATRX', 'TEST'])
+        self.var.info['HGNC_ID'] = '1001|2001'
+        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), ['1001', '2001'])
         
         # check with multiple HGNC symbols, across multiple alleles
-        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|TEST'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['ATRX', 'TEST'])
+        self.var.info['HGNC_ID'] = '333|444,1001|2001'
+        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['1001', '2001'])
         
         # check that we raise an error if we try to select a gene symbol for an
         # allele that does not exist
@@ -254,7 +257,7 @@ class TestVariantInfoPy(unittest.TestCase):
         ''' check that get_genes_for_allele() works when we lack any symbols
         '''
         
-        del self.var.info['HGNC']
+        del self.var.info['HGNC_ID']
         self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), None)
         
     def test_get_genes_for_allele_priority(self):
@@ -262,29 +265,28 @@ class TestVariantInfoPy(unittest.TestCase):
         '''
         
         # check alternate gene symbols, first when the HGNC field is full
-        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|TEST'
-        self.var.info['SYMBOL'] = 'AAAA|BBBB,ATRX|CHANGED'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['ATRX', 'TEST'])
+        self.var.info['HGNC_ID'] = 'AAAA|BBBB,1001|2001'
+        self.var.info['HGNC'] = 'AAAA|BBBB,1001|3333'
+        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['1001', '2001'])
         
         # now give one of the HGNC symbols a missing code, so that the gene
         # symbol has to be filled in from another source
-        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|.'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['ATRX', 'CHANGED'])
+        self.var.info['HGNC_ID'] = 'AAAA|BBBB,1001|.'
+        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['1001', '3333'])
         
         # and catch the other 'missing' code
-        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['ATRX', 'CHANGED'])
+        self.var.info['HGNC_ID'] = 'AAAA|BBBB,1001|'
+        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['1001', '3333'])
         
         # check without the HGNC symbol field
-        del self.var.info['HGNC']
-        self.var.info['SYMBOL'] = 'TEST'
+        del self.var.info['HGNC_ID']
+        self.var.info['HGNC'] = 'TEST'
         self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), ['TEST'])
         
         # check that we avoid an error if the fields are not the same lengths
-        self.var.info['HGNC'] = 'TEST|.'
+        self.var.info['HGNC_ID'] = '1001|.'
         self.var.info['ENSR'] = 'TEST'
-        del self.var.info['SYMBOL']
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), ['TEST', None])
+        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), ['1001', None])
     
     def test_is_lof(self):
         """ test that is_lof() works correctly
@@ -421,7 +423,7 @@ class TestVariantInfoPy(unittest.TestCase):
         # check that the earlier VCFs with single consequences but multiple
         # symbols from HGNC_ALL give the same consequence for all genes.
         info = "HGNC_ALL=ATRX&TTN;CQ=missense_variant;random_tag"
-        del self.var.info["HGNC"]
+        del self.var.info["HGNC_ID"]
         self.var.add_info(info)
         
         self.assertEqual(self.var.get_per_gene_consequence("ATRX"),

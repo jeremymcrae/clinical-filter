@@ -55,45 +55,8 @@ class TestAllosomalPy(unittest.TestCase):
         # make sure we've got known genes data
         self.known_gene = {"inh": ["Monoallelic"], "confirmed_status": ["confirmed dd gene"]}
         
-        self.inh = Allosomal(self.variants, self.trio, self.known_gene, "TEST")
+        self.inh = Allosomal(self.variants, self.trio, self.known_gene, "1001")
         self.inh.is_lof = var.child.is_lof()
-    
-    def create_snv(self, gender, genotype):
-        """ create a default variant
-        """
-        
-        chrom = "X"
-        pos = "15000000"
-        snp_id = "."
-        ref = "A"
-        alt = "G"
-        filt = "PASS"
-        
-        info = "HGNC=TEST;CQ=missense_variant;random_tag"
-        format_keys = "GT:DP"
-        sample_values = genotype + ":50"
-        
-        # set up a SNV object, since SNV inherits VcfInfo
-        return SNV(chrom, pos, snp_id, ref, alt, filt, info, format_keys,
-            sample_values, gender)
-        
-    def create_cnv(self, gender, inh, chrom, pos):
-        """ create a default variant
-        """
-        
-        snp_id = "."
-        ref = "A"
-        alt = "<DUP>"
-        filt = "PASS"
-        
-        info = "HGNC=TEST;HGNC_ALL=TEST;END=16000000;SVLEN=5000"
-        format_keys = "INHERITANCE:DP"
-        sample_values = inh + ":50"
-        
-        # set up a SNV object, since SNV inherits VcfInfo
-        return CNV(chrom, pos, snp_id, ref, alt, filt, info, format_keys,
-            sample_values, gender)
-        
     
     def create_family(self, child_gender, mom_aff, dad_aff):
         """ create a default family, with optional gender and parental statuses
@@ -135,26 +98,26 @@ class TestAllosomalPy(unittest.TestCase):
         """ test that check_variant_without_parents() works correctly for female
         """
         
-        var = TrioGenotypes('X', 100, self.create_snv('F', "1/0"), None, None)
+        var = TrioGenotypes('X', 100, create_snv('F', "1/0"), None, None)
         self.inh.set_trio_genotypes(var)
         
         # check for X-linked dominant inheritance
         self.assertEqual(self.inh.check_variant_without_parents("X-linked dominant"), "single_variant")
         self.assertEqual(self.inh.log_string, "allosomal without parents")
         
-        var = TrioGenotypes('X', 100, self.create_snv('F', "1/1"),
-            self.create_snv('F', "0/0"), self.create_snv('M', "0/0"))
+        var = TrioGenotypes('X', 100, create_snv('F', "1/1"),
+            create_snv('F', "0/0"), create_snv('M', "0/0"))
         self.inh.set_trio_genotypes(var)
         self.assertEqual(self.inh.check_variant_without_parents("X-linked dominant"), "single_variant")
         
         # and check for hemizygous inheritance
-        var = TrioGenotypes('X', 100, self.create_snv('F', "1/0"),
-            self.create_snv('F', "0/0"), self.create_snv('M', "0/0"))
+        var = TrioGenotypes('X', 100, create_snv('F', "1/0"),
+            create_snv('F', "0/0"), create_snv('M', "0/0"))
         self.inh.set_trio_genotypes(var)
         self.assertEqual(self.inh.check_variant_without_parents("Hemizygous"), "hemizygous")
         
-        var = TrioGenotypes('X', 100, self.create_snv('F', "1/1"),
-            self.create_snv('F', "0/0"), self.create_snv('M', "0/0"))
+        var = TrioGenotypes('X', 100, create_snv('F', "1/1"),
+            create_snv('F', "0/0"), create_snv('M', "0/0"))
         self.inh.set_trio_genotypes(var)
         self.assertEqual(self.inh.check_variant_without_parents("Hemizygous"), "single_variant")
     
@@ -162,7 +125,7 @@ class TestAllosomalPy(unittest.TestCase):
         """ test that check_variant_without_parents() works correctly for males
         """
         
-        var = TrioGenotypes('X', 100, self.create_snv('M', "1/1"), None, None)
+        var = TrioGenotypes('X', 100, create_snv('M', "1/1"), None, None)
         trio = self.create_family('male', '1', '1')
         
         self.inh = Allosomal([var], trio, self.known_gene, "TEST")
@@ -180,8 +143,8 @@ class TestAllosomalPy(unittest.TestCase):
         
         # all of these tests are run for female X chrom de novos, since male
         # X chrom hets don't exist
-        var = TrioGenotypes('X', 100, self.create_snv('F', "1/0"),
-            self.create_snv('F', "0/0"), self.create_snv('M', "0/0"))
+        var = TrioGenotypes('X', 100, create_snv('F', "1/0"),
+            create_snv('F', "0/0"), create_snv('M', "0/0"))
         self.inh.set_trio_genotypes(var)
         
         # check for X-linked dominant inheritance
@@ -201,8 +164,8 @@ class TestAllosomalPy(unittest.TestCase):
         genos = {'0': '0/0', '1': '1/0', '2': '1/1'}
         
         for (child, mom, dad) in ["102", "110", "112", "122"]:
-            var = TrioGenotypes('X', 100, self.create_snv('F', genos[child]),
-                self.create_snv('F', genos[mom]), self.create_snv('M', genos[dad]))
+            var = TrioGenotypes('X', 100, create_snv('F', genos[child]),
+                create_snv('F', genos[mom]), create_snv('M', genos[dad]))
             self.inh.set_trio_genotypes(var)
             
             self.inh.check_heterozygous("X-linked dominant")
@@ -213,8 +176,8 @@ class TestAllosomalPy(unittest.TestCase):
         """
         
         # check that trio with het affected mother is captured
-        var = TrioGenotypes('X', 100, self.create_snv('F', "1/0"),
-            self.create_snv('F', "1/0"), self.create_snv('M', "0/0"))
+        var = TrioGenotypes('X', 100, create_snv('F', "1/0"),
+            create_snv('F', "1/0"), create_snv('M', "0/0"))
         self.inh.set_trio_genotypes(var)
         
         self.inh.mother_affected = True
@@ -223,8 +186,8 @@ class TestAllosomalPy(unittest.TestCase):
         
         # check that when the other parent is also non-ref, the variant is no
         # longer captured, unless the parent is affected
-        var = TrioGenotypes('X', 100, self.create_snv('F', "1/0"),
-            self.create_snv('F', "1/0"), self.create_snv('M', "1/1"))
+        var = TrioGenotypes('X', 100, create_snv('F', "1/0"),
+            create_snv('F', "1/0"), create_snv('M', "1/1"))
         self.inh.set_trio_genotypes(var)
         self.assertEqual(self.inh.check_heterozygous("X-linked dominant"), "nothing")
         self.assertEqual(self.inh.log_string, "variant not compatible with being causal")
@@ -241,8 +204,8 @@ class TestAllosomalPy(unittest.TestCase):
         """
         
         # set the father as non-ref genotype and unaffected
-        var = TrioGenotypes('X', 100, self.create_snv('F', "1/0"),
-            self.create_snv('F', "0/0"), self.create_snv('M', "1/1"))
+        var = TrioGenotypes('X', 100, create_snv('F', "1/0"),
+            create_snv('F', "0/0"), create_snv('M', "1/1"))
         self.inh.set_trio_genotypes(var)
         
         # check that the het proband, with het unaffected father is passes
@@ -256,8 +219,8 @@ class TestAllosomalPy(unittest.TestCase):
         
         # check that when the other parent is also non-ref, the variant is no
         # longer captured, unless the parent is affected
-        var = TrioGenotypes('X', 100, self.create_snv('F', "1/0"),
-            self.create_snv('F', "1/0"), self.create_snv('M', "1/1"))
+        var = TrioGenotypes('X', 100, create_snv('F', "1/0"),
+            create_snv('F', "1/0"), create_snv('M', "1/1"))
         self.inh.set_trio_genotypes(var)
         
         self.assertEqual(self.inh.check_heterozygous("X-linked dominant"), "nothing")
@@ -272,8 +235,8 @@ class TestAllosomalPy(unittest.TestCase):
         """
         
         # check for trio with de novo on male X chrom
-        var = TrioGenotypes('X', 100, self.create_snv('M', "1/1"),
-            self.create_snv('F', "0/0"), self.create_snv('M', "0/0"))
+        var = TrioGenotypes('X', 100, create_snv('M', "1/1"),
+            create_snv('F', "0/0"), create_snv('M', "0/0"))
         
         trio = self.create_family('male', '1', '1')
         self.inh = Allosomal([var], trio, self.known_gene, "TEST")
@@ -283,8 +246,8 @@ class TestAllosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.log_string, "male X chrom de novo")
         
         # check for trio = 210, with unaffected mother
-        var = TrioGenotypes('X', 100, self.create_snv('M', "1/1"),
-            self.create_snv('F', "1/0"), self.create_snv('M', "0/0"))
+        var = TrioGenotypes('X', 100, create_snv('M', "1/1"),
+            create_snv('F', "1/0"), create_snv('M', "0/0"))
         self.inh.set_trio_genotypes(var)
         
         self.assertEqual(self.inh.check_homozygous("X-linked dominant"), "single_variant")
@@ -296,8 +259,8 @@ class TestAllosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.log_string, "male X chrom inherited from het mother or hom affected mother")
         
         # check for trio = 220, with affected mother
-        var = TrioGenotypes('X', 100, self.create_snv('M', "1/1"),
-            self.create_snv('F', "1/1"), self.create_snv('M', "0/0"))
+        var = TrioGenotypes('X', 100, create_snv('M', "1/1"),
+            create_snv('F', "1/1"), create_snv('M', "0/0"))
         self.inh.set_trio_genotypes(var)
         self.assertEqual(self.inh.check_homozygous("X-linked dominant"), "single_variant")
         self.assertEqual(self.inh.log_string, "male X chrom inherited from het mother or hom affected mother")

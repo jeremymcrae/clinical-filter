@@ -51,9 +51,10 @@ def parse_gene_line(line, header):
         header: dictionary of column positions indexed by column name
     
     Returns:
-        HGNC symbol and dictionary entry for gene
+        HGNC ID and dictionary entry for gene
     """
     
+    hgnc_id = line[header["hgnc_id"]]
     symbol = line[header["gene"]]
     status = line[header["type"]]
     inheritance = line[header["mode"]]
@@ -61,6 +62,7 @@ def parse_gene_line(line, header):
     
     gene = {}
     gene['inh'] = {inheritance: set([mechanism])}
+    gene["symbol"] = symbol
     gene["status"] = set([status.lower()])
     gene["start"] = int(line[header["start"]])
     gene["end"] = int(line[header["stop"]])
@@ -74,7 +76,7 @@ def parse_gene_line(line, header):
         gene["inh"]["Monoallelic"] = set([mechanism])
         gene["inh"]["Biallelic"] = set([mechanism])
     
-    return symbol, gene
+    return hgnc_id, gene
 
 def open_known_genes(path):
     """Loads list of known disease causative genes.
@@ -101,26 +103,26 @@ def open_known_genes(path):
     known = {}
     with io.open(path, "r", encoding="latin_1") as handle:
         # get the positions of the columns in the list of header labels
-        columns = ["gene", "type", "mode", "mech", "start", "stop", "chr"]
+        columns = ["gene", "type", "mode", "mech", "start", "stop", "chr", "hgnc_id"]
         header = get_header_positions(handle, columns)
         
         for line in handle:
             line = line.strip().split("\t")
-            symbol, gene = parse_gene_line(line, header)
+            hgnc_id, gene = parse_gene_line(line, header)
             
             if len(gene['status'] & allowed) == 0:
                 continue
             
-            if symbol not in known:
-                known[symbol] = gene
+            if hgnc_id not in known:
+                known[hgnc_id] = gene
             else:
                 for mode in gene['inh']:
-                    if mode not in known[symbol]['inh']:
-                        known[symbol]['inh'][mode] = set()
-                    known[symbol]['inh'][mode] |= gene['inh'][mode]
+                    if mode not in known[hgnc_id]['inh']:
+                        known[hgnc_id]['inh'][mode] = set()
+                    known[hgnc_id]['inh'][mode] |= gene['inh'][mode]
                 
                 # merge entries for genes with multiple modes or mechanisms
-                known[symbol]['status'] |= gene['status']
+                known[hgnc_id]['status'] |= gene['status']
     
     if len(known) == 0:
         raise ValueError("No genes found in the file, check the line endings")

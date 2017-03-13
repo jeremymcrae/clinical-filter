@@ -52,7 +52,7 @@ class TestInheritancePy(unittest.TestCase):
         # make sure we've got known genes data
         self.known_gene = {"inh": ["Monoallelic"], "confirmed_status": ["confirmed dd gene"]}
         
-        self.inh = Autosomal(self.variants, self.trio, self.known_gene, "TEST")
+        self.inh = Autosomal(self.variants, self.trio, self.known_gene, "1001")
     
     def create_variant(self, chrom="1", position="150", sex='F', cq=None,
             geno=['0/1', '0/0', '0/0']):
