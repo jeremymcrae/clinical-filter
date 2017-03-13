@@ -96,6 +96,9 @@ class CNV(Variant):
         (currently the DDG2P set).
         """
         
+        if self.known_genes is None:
+            return
+        
         (start, end) = self.get_range()
         
         genes = []

@@ -52,7 +52,6 @@ class LoadVCFs(object):
         self.family = None
         self.counter = 0
         self.probands_n = probands_n
-        self.known_genes = known_genes
         
         # define several parameters of the variant classes, before we have
         # initialised any class objects
@@ -141,9 +140,9 @@ class LoadVCFs(object):
             if key in self.child_keys:
                 use_variant = True
             elif line[4] == "<DUP>" or line[4] == "<DEL>":
-                var = construct_variant(line, gender, self.known_genes)
+                var = construct_variant(line, gender)
         else:
-            var = construct_variant(line, gender, self.known_genes, mnvs)
+            var = construct_variant(line, gender, mnvs)
             if var.passes_filters():
                 use_variant = True
             
@@ -184,7 +183,7 @@ class LoadVCFs(object):
             
             # check if we want to include the variant or not
             if self.include_variant(line, child_variants, gender, mnvs):
-                var = construct_variant(line, gender, self.known_genes, mnvs)
+                var = construct_variant(line, gender, mnvs)
                 self.add_single_variant(variants, var, gender, line)
         
         vcf.close()

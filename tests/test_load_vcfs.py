@@ -254,7 +254,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         gender = "M"
         test_var = SNV(*line[:6])
         
-        variant = construct_variant(line, gender, self.known_genes)
+        variant = construct_variant(line, gender)
         
         self.assertEqual(variant.get_key(), test_var.get_key())
         # initally constructing a SNV shouldn't affect the format variable
@@ -266,7 +266,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         test_var = CNV(*line[:6])
         test_var.add_info(line[7])
         
-        variant = construct_variant(line, gender, self.known_genes)
+        variant = construct_variant(line, gender)
         
         self.assertEqual(variant.get_key(), test_var.get_key())
         self.assertNotEqual(variant.format, None)
