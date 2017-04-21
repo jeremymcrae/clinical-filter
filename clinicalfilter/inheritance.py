@@ -477,7 +477,7 @@ class Allosomal(Inheritance):
                     and not self.mother_affected:
                 self.log_string = "inherited variant in X-linked over-dominant gene, but from unaffected mother"
                 return "nothing"
-            elif (self.mom.is_het() and not self.mother_affected) or \
+            elif (self.mom.is_het()) or \
                  (self.mom.is_hom_alt() and self.mother_affected):
                 self.log_string = "male X chrom inherited from het mother or hom affected mother"
                 return "single_variant"
