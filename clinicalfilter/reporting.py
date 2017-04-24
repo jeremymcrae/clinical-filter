@@ -238,6 +238,14 @@ class Report(object):
         header.append('##INFO=<ID=ClinicalFilterReportableHGNC,Number=.,'
             'Type=String,Description="The HGNC symbol which the variant was '
             'identified as being reportable for.">\n')
+        header.append('##INFO=<ID=CANDIDATE_MNV,Number=.,Type=String,'
+            'Description="Code for candidate multinucleotide variants. Field is '
+            'only included if the translated MNV differs from both of the SNV '
+            'translations. There are five possibilities: alternate_residue_mnv='
+            'MNV translates to a residue not in SNVs, masked_stop_gain_mnv='
+            'MNV masks a stop gain, modified_stop_gained_mnv=MNV introduces a '
+            'stop gain, modified_synonymous_mnv=MNV reverts to synonymous, '
+            'modified_protein_altering_mnv=synonymous SNVs but missense MNV.">\n')
         header.append('##FORMAT=<ID=INHERITANCE_GENOTYPE,Number=.,Type=String,'
             'Description="The 012 coded genotypes for a trio (child, mother, '
             'father).">\n')
