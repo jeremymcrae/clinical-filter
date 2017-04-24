@@ -132,16 +132,18 @@ class TestReportPy(unittest.TestCase):
         # use a folder to place the VCFG file in, which means we join the
         # proband ID to get a full path
         self.report.export_vcf = os.getcwd()
-        self.assertEqual(self.report._get_vcf_export_path(),
+        self.assertEqual(self.report._get_vcf_export_path(self.trio),
             os.path.join(os.getcwd(), "child.vcf.gz"))
         
         # define an un-usable directory, to raise an error
         self.report.export_vcf = os.getcwd() + "asjhfgasjhfg"
-        self.assertRaises(ValueError, self.report._get_vcf_export_path)
+        with self.assertRaises(ValueError):
+            self.report._get_vcf_export_path(self.trio)
         
         # define a specific path for a VCF file, which is returned directly
         self.report.export_vcf = os.path.join(os.getcwd(), "sample_id.vcf.gz")
-        self.assertEqual(self.report._get_vcf_export_path(), self.report.export_vcf)
+        self.assertEqual(self.report._get_vcf_export_path(self.trio),
+            self.report.export_vcf)
     
     def test__make_vcf_header(self):
         """ check that _make_vcf_header() works correctly
@@ -304,7 +306,7 @@ class TestReportPy(unittest.TestCase):
             'PASS', 'HGNC_ID=1001;CQ=missense_variant;EUR_AF=0.0005',
             'GT:DP', '0/1:50'])
         
-        self.assertEqual(self.report._get_vcf_lines([var], header, provenance), vcf_lines + line)
+        self.assertEqual(list(self.report._get_vcf_lines([var], header, provenance)), vcf_lines + line)
     
     def test__get_output_line(self):
         """ check that _get_output_line() works correctly

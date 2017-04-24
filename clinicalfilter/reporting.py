@@ -82,7 +82,7 @@ class Report(object):
         # export the results in vcf format
         if self.export_vcf is not None:
             lines = self._get_vcf_lines(variants, vcf_header, vcf_provenance)
-            path = self._get_vcf_export_path()
+            path = self._get_vcf_export_path(family)
             self._write_vcf(path, lines)
     
     def _get_output_line(self, candidate, family):
@@ -188,7 +188,7 @@ class Report(object):
         
         return [sample_id, checksum, basename, date]
     
-    def _get_vcf_export_path(self):
+    def _get_vcf_export_path(self, family):
         ''' get the path for writing a VCF file
         
         Since we optionally define a folder, or path for exporting, we need to
@@ -199,7 +199,7 @@ class Report(object):
         '''
         
         vcf_path = self.export_vcf
-        proband_filename = self.family.child.get_id() + ".vcf.gz"
+        proband_filename = family.child.get_id() + ".vcf.gz"
         # check if we have named what looks like a VCF file
         if 'vcf' in vcf_path[-7:] or vcf_path.endswith('gz'):
             # make sure we haven't named a nonexistent folder
@@ -307,11 +307,12 @@ class Report(object):
             header: list of header lines from the proband's VCF file
             vcf_provenance: list of (checksum, path, date) tuples for family
         
-        Returns:
-            full list of lines for a VCF file
+        Yields:
+            lines for a VCF file
         '''
         
-        vcf_lines = self._make_vcf_header(header, vcf_provenance)
+        for line in self._make_vcf_header(header, vcf_provenance):
+            yield line
         
         for candidate in sorted(variants):
             var = candidate[0]
@@ -340,16 +341,22 @@ class Report(object):
                 vcf_line[8] += ':INHERITANCE_GENOTYPE'
                 vcf_line[9] += ':' + trio_genotype
             
-            vcf_lines.append('\t'.join(vcf_line) + '\n')
-        
-        return vcf_lines
+            # include inheritance fields in parental sample data. This assumes
+            # the the first sample in the VCF samples is the proband.
+            for x in range(10, len(vcf_line)):
+                blank = ':'
+                if not var.is_cnv():
+                    blank = '::'
+                vcf_line[x + 1] += blank
+            
+            yield '\t'.join(vcf_line) + '\n'
     
     def _write_vcf(self, path, lines):
         ''' writes a set of lines to a gzip file
         
         Args:
             path: path to write a file to
-            lines: list of lines for a VCF file
+            lines: iterator of lines for a VCF file
         '''
         
         with gzip.open(path, 'w') as handle:
