@@ -290,10 +290,10 @@ class TestAllosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.check_homozygous("X-linked dominant"), "single_variant")
         self.assertEqual(self.inh.log_string, "male X chrom inherited from het mother or hom affected mother")
         
-        # check for trio = 210, with affected mother, which should not pass
+        # check for trio = 210, with affected mother, which should also pass
         self.inh.mother_affected = True
-        self.assertEqual(self.inh.check_homozygous("X-linked dominant"), "nothing")
-        self.assertEqual(self.inh.log_string, "variant not compatible with being causal")
+        self.assertEqual(self.inh.check_homozygous("X-linked dominant"), "single_variant")
+        self.assertEqual(self.inh.log_string, "male X chrom inherited from het mother or hom affected mother")
         
         # check for trio = 220, with affected mother
         var = TrioGenotypes('X', 100, self.create_snv('M', "1/1"),
