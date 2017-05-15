@@ -136,8 +136,8 @@ class Person(object):
         """ get a unique hash for the object from the sample strings
         """
         
-        return hash(tuple([self.get_id(), self.get_path(),
-            self.get_affected_status(), self.get_gender()]))
+        return hash(tuple([self.get_id(), self.get_affected_status(), 
+            self.get_gender()]))
 
 class Family(object):
     """creates a family, with VCF paths, IDs, and affected statuses
