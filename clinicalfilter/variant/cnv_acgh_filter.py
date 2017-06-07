@@ -77,7 +77,7 @@ class ACGH_CNV(object):
         """
         
         try:
-            return abs(float(self.cnv.info["MEANLR2"])/float(self.cnv.info["MADL2R"])) < 15
+            return abs(float(self.cnv.info["MEANLR2"])/float(self.cnv.info["MADL2R"])) < 10
         except ValueError as error:
             if self.cnv.info['MADL2R'] == 'NA' or self.cnv.info['MEANLR2'] == 'NA':
                 return False
