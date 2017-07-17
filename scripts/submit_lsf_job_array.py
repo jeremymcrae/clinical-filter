@@ -80,7 +80,7 @@ def is_singleton_without_parents(family):
     return child.mom_id != '0' and child.dad_id != '0' and \
         (family.mother is None or family.father is None)
 
-def split_pedigree_file(tempname, ped_path, number_of_jobs, exclude_parents, use_singletons_with_parents):
+def split_pedigree_file(tempdir, ped_path, number_of_jobs, exclude_parents, use_singletons_with_parents):
     """ split the ped file into multiple smaller ped files
     
     Args:
@@ -118,7 +118,7 @@ def split_pedigree_file(tempname, ped_path, number_of_jobs, exclude_parents, use
             families_n = 1
         
         if families_n == 1:
-            output_file = open("{0}.{1}.txt".format(tempname, files_n), "w")
+            output_file = open(os.path.join(tempdir, "{}.ped".format(files_n)), "w")
         
         for person in family:
             if person is None:
@@ -131,12 +131,6 @@ def split_pedigree_file(tempname, ped_path, number_of_jobs, exclude_parents, use
             output_file.write(line)
     
     return files_n
-
-def clean_folder(string):
-    ''' clean the folder of old job array files'''
-    
-    for path in glob.glob(string + "*"):
-        os.remove(path)
 
 def get_random_string():
     """ make a random string, which we can use for bsub job IDs, so that
@@ -184,7 +178,7 @@ def submit_bsub_job(command, job_id=None, dependent_id=None, memory=None, requeu
     if job_id is None:
         job_id = get_random_string()
     
-    job = "-J \"{0}\"".format(job_id)
+    job = "-J \"{}\"".format(job_id)
     
     mem = ""
     if memory is not None:
@@ -192,15 +186,15 @@ def submit_bsub_job(command, job_id=None, dependent_id=None, memory=None, requeu
     
     requeue = ""
     if requeue_code is not None:
-        requeue = "-Q 'EXCLUDE({0})'".format(requeue_code)
+        requeue = "-Q 'EXCLUDE({})'".format(requeue_code)
     
     dependent = ""
     if dependent_id is not None:
         if type(dependent_id) == list:
             dependent_id = " && ".join(dependent_id)
-        dependent = "-w '{0}'".format(dependent_id)
+        dependent = "-w '{}'".format(dependent_id)
     
-    log = "bjob_output.txt"
+    log = "output.job"
     if logfile is not None:
         log = logfile
     
@@ -210,7 +204,7 @@ def submit_bsub_job(command, job_id=None, dependent_id=None, memory=None, requeu
     command = " ".join(preamble + command)
     subprocess.call(command, shell=True)
 
-def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, ignore_lof_tweak, log_options):
+def run_array(hash_string, n_jobs, tempdir, genes_path, all_genes, ignore_lof_tweak, log_options):
     """ runs clinical filtering, split across multiple compute jobs
     
     Args:
@@ -225,13 +219,12 @@ def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, ignore_lof_
     """
     
     # set up run parameters
-    job_id = "{0}[1-{1}]".format(hash_string, n_jobs)
-    bjob_output_name = "{0}.bjob_output".format(temp_name)
-    output_name = "{0}.output".format(temp_name)
+    job_id = "{}[1-{}]".format(hash_string, n_jobs)
+    job_output = os.path.join(tempdir, "%I.job")
     
     command = ["python3", FILTER_CODE,
-        "--ped", "{0}.\$LSB_JOBINDEX\.txt".format(temp_name),
-        "--output", "{0}.\$LSB_JOBINDEX\.txt".format(output_name),
+        "--ped", os.path.join(tempdir, "\$LSB_JOBINDEX\.ped"),
+        "--output", os.path.join(tempdir, "\$LSB_JOBINDEX\.output.txt"),
         "--syndrome-regions", SYNDROMES_PATH,
         "--pp-dnm-threshold", "0"] + log_options
     
@@ -243,36 +236,35 @@ def run_array(hash_string, n_jobs, temp_name, genes_path, all_genes, ignore_lof_
     if not ignore_lof_tweak:
         command += ["--lof-sites", LAST_BASE_PATH]
     
-    submit_bsub_job(command, job_id=job_id, logfile=bjob_output_name + ".%I.txt", memory=150)
+    submit_bsub_job(command, job_id=job_id, logfile=job_output)
 
-def run_cleanup(hash_string):
+def run_cleanup(hash_string, tempdir):
     """ runs a lsf job to clean up the files
     """
     
     date = time.strftime("%Y-%m-%d", time.localtime())
-    output_name = "tmp_ped.{0}.output".format(hash_string)
     merged_output = "clinical_reporting.{}.txt".format(date)
     merged_log = "clinical_reporting.{}.log".format(date)
     
     # merge the array output after the array finishes
-    merge_id = "merge1_{0}".format(hash_string)
-    command = ["head", "-n", "1", output_name + ".1.txt",
+    merge_id = "merge1_{}".format(hash_string)
+    command = ["head", "-n", "1", os.path.join(tempdir, "1.output.txt"),
         ">", merged_output, ";",
-        "tail", "-q", "-n", "+2", output_name + "*",
+        "tail", "-q", "-n", "+2", os.path.join(tempdir, "*.output.txt"),
         ">>", merged_output]
     submit_bsub_job(command, job_id=merge_id, dependent_id=hash_string,
-        logfile="tmp_ped.{0}*bjob_output.var_merge.txt".format(hash_string))
+        logfile=os.path.join(tempdir, "{}.merge.job".format(hash_string)))
     
     # merge the log files after the array finishes
-    log_merge_id = "merge2_{0}".format(hash_string)
-    command = ["cat", "tmp_ped.{0}*.log".format(hash_string), ">", merged_log]
+    log_merge_id = "merge2_{}".format(hash_string)
+    command = ["cat", os.path.join(tempdir, "*.log"), ">", merged_log]
     submit_bsub_job(command, job_id=log_merge_id, dependent_id=hash_string,
-        logfile="tmp_ped.{0}*bjob_output.log_merge.txt".format(hash_string))
+        logfile=os.path.join(tempdir, "{}.log".format(hash_string)))
     
     # remove the temporary files
-    command = ["rm", "tmp_ped.{0}*".format(hash_string)]
+    command = ["rm", '-r', tempdir]
     submit_bsub_job(command, job_id="cleanup", dependent_id=[merge_id, log_merge_id],
-        logfile="clinical_reporting.cleanup.txt")
+        logfile="clinical_reporting.cleanup.job")
 
 def main():
     
@@ -282,17 +274,16 @@ def main():
     if args.loglevel != None:
         log_options = ["--log", args.loglevel]
     
-    # set up a random string to associate with the run
     hash_string = get_random_string()
+    tempdir = os.path.join(USER_DIR, 'clinfilt.{}'.format(hash_string))
+    os.mkdir(tempdir)
+    # set up a random string to associate with the run
     
-    temp_name = "tmp_ped.{0}".format(hash_string)
-    
-    clean_folder('tmp_ped')
-    trio_counter = split_pedigree_file(temp_name, args.ped, args.njobs,
+    trio_counter = split_pedigree_file(tempdir, args.ped, args.njobs,
         args.without_parents, args.use_singletons_with_parents)
-    run_array(hash_string, trio_counter, temp_name, args.known_genes, \
+    run_array(hash_string, trio_counter, tempdir, args.known_genes, \
         args.all_genes, args.ignore_lof_tweak, log_options)
-    run_cleanup(hash_string)
+    run_cleanup(hash_string, tempdir)
 
 
 if __name__ == "__main__":
