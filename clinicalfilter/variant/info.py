@@ -19,6 +19,8 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
+from clinicalfilter.variant.symbols import Symbols
+
 class Info(object):
     """ parses the VCF info field
     """
@@ -172,90 +174,8 @@ class Info(object):
             masked alt alleles.)
         """
         
-        genes = None
-        
-        if "HGNC_ID" in info or "HGNC" in info or "SYMBOL" in info:
-            pos = [ i for i, x in enumerate(alts) if x not in masked ]
-            genes = [ self.get_genes_for_allele(info, i) for i in pos ]
-        # some genes lack an HGNC entry, but do have an HGNC_ALL entry. The
-        # HGNC_ALL entry is a "&"-separated list of Vega symbols.
-        elif genes is None and "HGNC_ALL" in info:
-            genes = [info["HGNC_ALL"].split("&") * (len(alts) - len(masked))]
-        elif self.is_cnv() and "HGNC_ID" not in info and "NUMBERGENES" in info:
-            if int(info["NUMBERGENES"]) > 0:
-                genes = [["."]]
-        # If we are not using a set of known genes, we still want to check
-        # variants that haven't been annotated with a HGNC, since some of these
-        # have a functional VEP annotation, presumably due to difficulties in
-        # identifying an HGNC symbol. We don't need to worry about this when
-        # using a set of known genes, since those should all have HGNC symbols.
-        elif genes is None and self.known_genes is None:
-            symbol = '{0}:{1}'.format(self.get_chrom(), self.get_position())
-            genes = [[symbol] * (len(alts) - len(masked))]
-        
-        return genes
-    
-    def get_genes_for_allele(self, info, position):
-        """ gets list of gene symbols for an allele, prioritising HGNC symbols.
-        
-        We have a variety of gene symbol sources for a variant. The INFO field
-        can contain HGNC_ID, HGNC, SYMBOL, ENSG, ENST, ENSP and ENSR. HGNC_ID is
-        the stable HGNC ID associated with the gene (from VEP), HGNC is HGNC gene
-        symbol, SYMBOL is VEGA-derived gene symbol, ENSG is Ensembl gene ID,
-        ENST is Ensembl transcript ID, ENSP is Ensembl protein ID, and ENSR is
-        Ensembl regulatory ID.
-        
-        In order for variants to check for compound heterozygotes, we match
-        variants by gene symbols. Ideally each variant would have a list of HGNC
-        symbols that it occurs in, but this is not the case. Many variants have
-        HGNC entries such as ".|GENE1|GENE2|.", where the "." indicates no
-        symbol available. We fill in the missing symbols by successively looking
-        through the SYMBOL field (from VEGA-derived symbols), then the ENSG IDs
-        and so on. Some entries will always lack a value, such as for variants
-        in transcription factor binding sites, where no symbol will ever be
-        available for the entry.
-        
-        Args:
-            position: integer position for the allele to be examined within a
-                comma-separated list.
-        
-        Returns:
-            list of gene symbols, filled in from the HGNC_ID, HGNC, SYMBOL, ENSG
-            fields where available.
-        """
-        
-        # set the list of fields to check, in order of their priority.
-        fields = ["HGNC_ID", "HGNC", "SYMBOL", "ENSG", "ENST", "ENSP", "ENSR"]
-        fields = [ x for x in fields if x in info ]
-        
-        genes = None
-        for field in fields:
-            symbols = info[field].split(",")[position].split("|")
-            if genes is None:
-                genes = symbols
-            
-            # find which positions of the gene list are missing a symbol
-            blanks = [ x for x,item in enumerate(genes) if item in ["", "."] ]
-            
-            # for the missing symbol positions, if the current list of symbols
-            # contains a value, swap that value into the gene list.
-            for x in blanks:
-                try:
-                    if symbols[x] != "":
-                        genes[x] = symbols[x]
-                except IndexError as error:
-                    # very occasionally we get a variant that raises this error.
-                    # The one example I've seen had ENSR=,.|ENSR00000215586.
-                    # This is first split by ',' (giving ['', '.|ENSR00000215586']),
-                    # then an entry is selected and split by '|'. The issue is
-                    # that only the seond entry contains '|', so the lengths are
-                    # discrepant
-                    continue
-        
-        if genes is not None:
-            genes = [ x if x not in ["", "."] else None for x in genes ]
-        
-        return genes
+        pos = [ i for i, x in enumerate(alts) if x not in masked ]
+        return [ Symbols(info, i) for i in pos ]
     
     def get_genes(self):
         """ split a gene string into list of gene names
@@ -267,7 +187,7 @@ class Info(object):
         if self.genes is None:
             return []
         
-        return self.genes
+        return [ x.prioritise() for x in self.genes ]
     
     def get_consequences(self, info, alts, masked):
         """ get a list of consequences for the different alt alleles

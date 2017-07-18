@@ -143,7 +143,10 @@ class Report(object):
         if 'GQ' in var.child.format:
             gq = str(var.child.format['GQ'])
         
-        genes = ','.join(list(set(candidate[3])))
+        prefs = ['HGNC', 'SYMBOL']
+        genes = [ var.child.genes[0].get(x, prefs) for x in candidate[3] ]
+        genes = [ x for x in genes if x is not None ]
+        genes = ','.join(list(set(genes)))
         result = ','.join(candidate[1])
         inh = ','.join(candidate[2])
         
@@ -317,6 +320,10 @@ class Report(object):
         for candidate in sorted(variants):
             var = candidate[0]
             
+            prefs = ['HGNC', 'SYMBOL']
+            genes = [ var.child.genes[0].get(x, prefs) for x in candidate[3] ]
+            genes = [ x for x in genes if x is not None ]
+            
             vcf_line = var.child.get_vcf_line()
             
             if var.child.mnv_code is not None:
@@ -326,7 +333,7 @@ class Report(object):
             var.child.add_info_field('ClinicalFilterGeneInheritance',
                 ','.join(candidate[2]))
             var.child.add_info_field('ClinicalFilterReportableHGNC',
-                ','.join(list(set(candidate[3]))))
+                ','.join(list(set(genes))))
             vcf_line[7] = var.child.get_info_as_string()
             
             parental_inheritance = self._get_parental_inheritance(var)
