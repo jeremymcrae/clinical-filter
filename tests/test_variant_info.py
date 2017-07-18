@@ -370,29 +370,51 @@ class TestVariantInfoPy(unittest.TestCase):
         self.assertEqual(self.var.get_per_gene_consequence("ATRX"),
             ["missense_variant"])
     
-    def test_get_zero_count_alleles(self):
-        ''' test that get_zero_count_alleles() works correctly
+    def test_get_low_depth_alleles(self):
+        ''' test that get_low_depth_alleles() works correctly
         '''
         
         # check with a single allele whre it is non-zero
         info = {'AC': '10'}
         alt_alleles = ('C', )
-        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), [])
+        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), [])
         
         # check with a single allele with zero count
         info = {'AC': '0'}
         alt_alleles = ('C', )
-        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), ['C'])
+        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), ['C'])
         
         # check with multiallelic, where both are nonzero
         info = {'AC': '10,10'}
         alt_alleles = ('C', 'G')
-        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), [])
+        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), [])
         
         # check with multiallelic, where one a has zero count
         info = {'AC': '10,0'}
         alt_alleles = ('C', 'G')
-        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), ['G'])
+        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), ['G'])
+    
+    def test_get_low_depth_alleles_indels(self):
+        ''' test that get_low_depth_alleles() works correctly for indels
+        '''
+        # check this doesn't affect SNVs
+        info = {'AC': '10,1'}
+        alt_alleles = ('C', 'G')
+        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), [])
+        
+        # check it works when the ref allele is > 1 bp
+        self.var.ref_allele = 'GG'
+        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), ['G'])
+        
+        # check it doesn't filter at 2+ reads
+        info = {'AC': '10,2'}
+        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), [])
+        
+        # check it catches when alt allele indicates an indel
+        self.var.ref_allele = 'G'
+        info = {'AC': '10,1'}
+        alt_alleles = ('C', 'GG')
+        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), ['GG'])
         
     def test_get_allele_frequency(self):
         """ tests that number conversion works as expected

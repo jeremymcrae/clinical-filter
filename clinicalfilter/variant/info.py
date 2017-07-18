@@ -99,7 +99,7 @@ class Info(object):
                 key, value = item, True
             self.info[key] = value
         
-        masked = self.get_zero_count_alleles(self.info, self.alt_alleles)
+        masked = self.get_low_depth_alleles(self.info, self.alt_alleles)
         self.genes = self.get_gene_from_info(self.info, self.alt_alleles, masked)
         self.consequence = self.get_consequences(self.info, self.alt_alleles, masked)
     
@@ -273,8 +273,8 @@ class Info(object):
         
         return cq
     
-    def get_zero_count_alleles(self, info, alt_alleles):
-        ''' get a list of alleles with zero counts
+    def get_low_depth_alleles(self, info, alt_alleles):
+        ''' get a list of alleles with zero counts, or indels with 1 read
         
         Some variants have multiple alts, so we need to select the alt with
         the most severe consequence. However, in at least one version of the
@@ -283,6 +283,9 @@ class Info(object):
         consequences recorded for zero-count alternate alleles before finding
         the most severe.
         
+        We also want to avoid indels with only one read, because these are
+        universally bad calls.
+        
         Args:
             info: info dictionary, which may contain an 'AC' key, where the
                 values are a comma-separated list of counts for the alternate
@@ -290,18 +293,26 @@ class Info(object):
             alt_alleles: tuple of alt alleles
         
         Returns:
-            list of alleles with zero depth
+            list of alleles with sufficiently low depth
         '''
+        
+        is_indel = lambda x, y: len(x) > 1 or len(y) > 1
         
         if 'AC' in info:
             counts = info['AC'].split(',')
             assert len(counts) == len(alt_alleles)
             
-            # find the positions of alleles where the allele count is zero
-            pos = [ i for i, x in enumerate(counts) if x == '0' ]
+            # find the positions of alleles where the allele count is zero,
+            # or indels with 1 alt read
+            pos = set()
+            for i, x in enumerate(counts):
+                if x == '0':
+                    pos.add(i)
+                elif x == '1' and is_indel(self.ref_allele, alt_alleles[i]):
+                    pos.add(i)
             
             # return the alleles with zero-count ,so we can mask them out
-            return [ alt_alleles[i] for i in pos ]
+            return [ alt_alleles[i] for i in sorted(pos) ]
         
         return []
     
