@@ -72,6 +72,9 @@ class Symbols(object):
             values = [ x if x is not None else '' for x in values ]
             info[field] = '|'.join(values)
         
+        info = [ "'{}': '{}'".format(x, info[x]) for x in sorted(info) ]
+        info = '{{{}}}'.format(', '.join(info))
+        
         return 'Symbols(info={}, idx={})'.format(info, 0)
     
     def __eq__(self, other):
