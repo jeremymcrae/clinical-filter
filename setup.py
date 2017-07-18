@@ -38,6 +38,7 @@ setup(
     license = "MIT",
     packages=["clinicalfilter", 'clinicalfilter.variant'],
     install_requires=['pytabix >= 0.0.2',
+                      'pysam >= 0.9.0',
     ],
     url='https://github.com/jeremymcrae/clinical-filter',
     classifiers=[
