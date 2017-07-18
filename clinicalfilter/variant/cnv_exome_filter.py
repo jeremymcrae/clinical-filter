@@ -45,6 +45,10 @@ class ExomeCNV(object):
             passes = False
             if track_variant:
                 print("failed mad ratio", self.cnv.info["MEANLR2"], self.cnv.info["MADL2R"])
+        elif self.fails_meanlr2():
+            passes = False
+            if track_variant:
+                print("failed meanlr2", self.cnv.info["MEANLR2"])
         elif self.fails_commmon_forwards():
             passes = False
             if track_variant:
@@ -80,6 +84,17 @@ class ExomeCNV(object):
             return abs(float(self.cnv.info["MEANLR2"])/float(self.cnv.info["MADL2R"])) < 5
         except ZeroDivisionError:
             return True
+    
+    def fails_meanlr2(self):
+        """ checks if the MEANLR2 value is out of bounds
+        """
+        
+        if self.cnv.genotype == "DUP":
+            return float(self.cnv.info["MEANLR2"]) < 0.4
+        elif self.cnv.genotype == "DEL":
+            return float(self.cnv.info["MEANLR2"]) > -0.5
+        
+        return False
     
     def fails_commmon_forwards(self):
         """ checks if the COMMONFORWARDS value is too high

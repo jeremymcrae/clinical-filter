@@ -88,6 +88,36 @@ class TestExomeCnvPy(unittest.TestCase):
         self.var.cnv.info["MADL2R"] = "0"
         self.assertTrue(self.var.fails_mad_ratio())
     
+    def test_fails_meanlr2(self):
+        """ test that fails_meanlr2() works correctly
+        """
+        
+        # below the DUP threshold
+        self.var.cnv.genotype = 'DUP'
+        self.var.cnv.info["MEANLR2"] = "0.399"
+        self.assertTrue(self.var.fails_meanlr2())
+        
+        # at the DUP threshold
+        self.var.cnv.info["MEANLR2"] = "0.4"
+        self.assertFalse(self.var.fails_meanlr2())
+        
+        # above the DUP threshold
+        self.var.cnv.info["MEANLR2"] = "0.41"
+        self.assertFalse(self.var.fails_meanlr2())
+        
+        # above the DEL threshold
+        self.var.cnv.genotype = 'DEL'
+        self.var.cnv.info["MEANLR2"] = "-0.4999"
+        self.assertTrue(self.var.fails_meanlr2())
+        
+        # at the DEL threshold
+        self.var.cnv.info["MEANLR2"] = "-0.5"
+        self.assertFalse(self.var.fails_meanlr2())
+        
+        # below the DEL threshold
+        self.var.cnv.info["MEANLR2"] = "-0.51"
+        self.assertFalse(self.var.fails_meanlr2())
+    
     def test_fails_population_frequency(self):
         """ test that fails_population_frequency() works correctly
         """
