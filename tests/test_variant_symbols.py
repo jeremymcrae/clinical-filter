@@ -34,9 +34,9 @@ class TestVariantSymbolsPy(unittest.TestCase):
     def test___repr__(self):
         ''' test Symbols repr
         '''
-        self.assertEqual(repr(self.symbols), "Symbols(info={'HGNC_ID': '1|2', " \
-            "'HGNC': 'A|B', 'SYMBOL': 'Z|H', 'ENSG': '|', 'ENST': '|', " \
-            "'ENSP': '|', 'ENSR': '|'}, idx=0)")
+        self.assertEqual(repr(self.symbols), "Symbols(info={'ENSG': '|', " \
+            "'ENSP': '|', 'ENSR': '|', 'ENST': '|', 'HGNC': 'A|B', " \
+            "'HGNC_ID': '1|2', 'SYMBOL': 'Z|H'}, idx=0)")
     
     def test_prioritise(self):
         ''' test that we correctly prioritise gene symbols
