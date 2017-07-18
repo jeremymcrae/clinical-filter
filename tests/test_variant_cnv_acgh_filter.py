@@ -47,9 +47,9 @@ class TestAcghCnvPy(unittest.TestCase):
         self.var.cnv.info["MADL2R"] = "0.02"
         self.assertFalse(self.var.fails_mad_ratio())
         
-        # check that var passes when MAD ratio < 15
+        # check that var fails when MAD ratio < 10
         self.var.cnv.info["MEANLR2"] = "0.29"
-        self.var.cnv.info["MADL2R"] = "0.02"
+        self.var.cnv.info["MADL2R"] = "0.03"
         self.assertTrue(self.var.fails_mad_ratio())
         
         # check that var passes when MAD ratio == 0
