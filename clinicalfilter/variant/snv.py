@@ -38,6 +38,8 @@ class SNV(Variant):
         
         if cls_obj.debug_chrom is not None:
             cls_obj.passes_filters = cls_obj.passes_filters_with_debug
+        else:
+            cls_obj.passes_filters = cls_obj.passes_filters_standard
     
     def is_cnv(self):
         """ checks whether the variant is for a CNV
@@ -185,7 +187,7 @@ class SNV(Variant):
         else:
             self.convert_autosomal_genotype_code_to_alleles()
     
-    def passes_filters(self):
+    def passes_filters_standard(self):
         """Checks whether a VCF record passes user defined criteria.
             
         Returns:
