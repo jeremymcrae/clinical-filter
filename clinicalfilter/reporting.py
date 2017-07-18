@@ -351,10 +351,10 @@ class Report(object):
             # include inheritance fields in parental sample data. This assumes
             # the the first sample in the VCF samples is the proband.
             for x in range(10, len(vcf_line)):
-                blank = ':'
+                # only add this to non-CNVs, since the parental data for CNVs is
+                # often '.', rather than an empty colon-separated list e.g. ':::'
                 if not var.is_cnv():
-                    blank = '::'
-                vcf_line[x + 1] += blank
+                    vcf_line[x] += '::'
             
             yield '\t'.join(vcf_line) + '\n'
     
