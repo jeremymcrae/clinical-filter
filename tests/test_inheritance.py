@@ -52,7 +52,7 @@ class TestInheritancePy(unittest.TestCase):
         # make sure we've got known genes data
         self.known_gene = {"inh": ["Monoallelic"], "confirmed_status": ["confirmed dd gene"]}
         
-        self.inh = Autosomal(self.variants, self.trio, self.known_gene, "TEST")
+        self.inh = Autosomal(self.variants, self.trio, self.known_gene, "1001")
     
     def create_variant(self, chrom="1", position="150", sex='F', cq=None,
             geno=['0/1', '0/0', '0/0']):
@@ -384,8 +384,8 @@ class TestInheritancePy(unittest.TestCase):
         var1 = self.set_compound_het_var(var1, "110")
         var2 = self.set_compound_het_var(var2, "101")
         
-        var1.child.genes = ["."]
-        var2.child.genes = ["."]
+        var1.child.genes[0].set('1001', None, 'HGNC_ID')
+        var2.child.genes[0].set('1001', None, 'HGNC_ID')
         
         # exclude pairs where both members are not loss-of-function
         self.assertFalse(self.inh.is_compound_pair(var1, var2))

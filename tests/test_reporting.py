@@ -64,7 +64,7 @@ class TestReportPy(unittest.TestCase):
         
         # generate a test variant
         child = create_snv(child_gender, "0/1", chrom='X', pos=150,
-            extra_info='MAX_AF=0.0005')
+            extra_info='HGNC=TEST;MAX_AF=0.0005')
         mom = create_snv("F", "0/0", chrom='X', pos=150)
         dad = create_snv("M", "0/0", chrom='X', pos=150)
         
@@ -132,16 +132,18 @@ class TestReportPy(unittest.TestCase):
         # use a folder to place the VCFG file in, which means we join the
         # proband ID to get a full path
         self.report.export_vcf = os.getcwd()
-        self.assertEqual(self.report._get_vcf_export_path(),
+        self.assertEqual(self.report._get_vcf_export_path(self.trio),
             os.path.join(os.getcwd(), "child.vcf.gz"))
         
         # define an un-usable directory, to raise an error
         self.report.export_vcf = os.getcwd() + "asjhfgasjhfg"
-        self.assertRaises(ValueError, self.report._get_vcf_export_path)
+        with self.assertRaises(ValueError):
+            self.report._get_vcf_export_path(self.trio)
         
         # define a specific path for a VCF file, which is returned directly
         self.report.export_vcf = os.path.join(os.getcwd(), "sample_id.vcf.gz")
-        self.assertEqual(self.report._get_vcf_export_path(), self.report.export_vcf)
+        self.assertEqual(self.report._get_vcf_export_path(self.trio),
+            self.report.export_vcf)
     
     def test__make_vcf_header(self):
         """ check that _make_vcf_header() works correctly
@@ -293,7 +295,7 @@ class TestReportPy(unittest.TestCase):
         line = ['X\t150\t.\tA\tG\t50\tPASS\tCQ=missense_variant;'
             'ClinicalFilterGeneInheritance=Monoallelic;'
             'ClinicalFilterReportableHGNC=TEST;ClinicalFilterType=single_variant;'
-            'DENOVO-SNP;HGNC=TEST;MAX_AF=0.0005\tGT:DP:INHERITANCE:'
+            'DENOVO-SNP;HGNC=TEST;HGNC_ID=1001;MAX_AF=0.0005\tGT:DP:INHERITANCE:'
             'INHERITANCE_GENOTYPE\t0/1:50:deNovo:1,0,0\n']
         
         # check that a list of one variant produces the correct VCF output. Note
@@ -301,10 +303,10 @@ class TestReportPy(unittest.TestCase):
         # INHERITANCE_GENOTYPE flag, nor have we tested a larger list of variants
         var = (self.variants[0], ["single_variant"], ["Monoallelic"], ["TEST"])
         var[0].child.add_vcf_line(['X', '150', '.', 'A', 'G', '50',
-            'PASS', 'HGNC=TEST;CQ=missense_variant;EUR_AF=0.0005',
+            'PASS', 'HGNC=TEST;HGNC_ID=1001;CQ=missense_variant;EUR_AF=0.0005',
             'GT:DP', '0/1:50'])
         
-        self.assertEqual(self.report._get_vcf_lines([var], header, provenance), vcf_lines + line)
+        self.assertEqual(list(self.report._get_vcf_lines([var], header, provenance)), vcf_lines + line)
     
     def test__get_output_line(self):
         """ check that _get_output_line() works correctly

@@ -96,30 +96,21 @@ class CNV(Variant):
         (currently the DDG2P set).
         """
         
+        if self.known_genes is None:
+            return
+        
         (start, end) = self.get_range()
-        
-        genes = []
-        for gene_list in self.get_genes():
-            fixed = []
-            for gene in gene_list:
-                # if the gene isn't in the DDG2P set we just include it as is, in
-                # order to allow for non DDG2P variant analyses.
-                # TODO: ideally we would match against all gencode positions
-                if self.known_genes is None or gene not in self.known_genes:
-                    fixed.append(gene)
-                else:
-                    gene_start = self.known_genes[gene]["start"]
-                    gene_end = self.known_genes[gene]["end"]
-                    
-                    # only add the known gene if the DDG2P GENCODE positions
-                    # indicate that it overlaps with the CNV, otherwise exclude it.
-                    if start <= gene_end and end >= gene_start:
-                        fixed.append(gene)
-                    else:
-                        fixed.append(".")
-            genes.append(fixed)
-        
-        self.genes = genes
+        for i, allele_genes in enumerate(self.get_genes()):
+            
+            known = [ x for x in allele_genes if x in self.known_genes ]
+            for x in known:
+                gene_start = self.known_genes[x]["start"]
+                gene_end = self.known_genes[x]["end"]
+                
+                # if the gene does not correctly overlap the known gene range,
+                # drop the gene symbol, so we do not pick the variant up
+                if not (start <= gene_end and end >= gene_start):
+                    self.genes[i].set(x, None, 'HGNC_ID')
     
     def passes_filters(self):
         """Checks whether a VCF variant passes user defined criteria.

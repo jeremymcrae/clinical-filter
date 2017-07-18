@@ -33,7 +33,7 @@ class TestExomeCnvPy(unittest.TestCase):
         """ define a default VcfInfo object
         """
         
-        extra = "OR5A1;CQ=missense_variant;CONVEX;RC50INTERNALFREQ=0.005;COMMONFORWARDS=0.000;MEANLR2=0.5;MADL2R=0.02"
+        extra = "HGNC=OR5A1;CQ=missense_variant;CONVEX;RC50INTERNALFREQ=0.005;COMMONFORWARDS=0.000;MEANLR2=0.5;MADL2R=0.02"
         cnv = create_cnv('F', 'deNovo', extra_info=extra)
         
         self.var = ExomeCNV(cnv)

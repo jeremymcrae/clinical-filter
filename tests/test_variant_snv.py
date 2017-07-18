@@ -47,7 +47,7 @@ class TestVariantSnvPy(unittest.TestCase):
         alt = "G"
         filt = "PASS"
         
-        info = "HGNC=ATRX;CQ=missense_variant;random_tag"
+        info = "HGNC_ID=1001;CQ=missense_variant;random_tag"
         self.keys = "GT:DP"
         self.values = "0/1:50"
         

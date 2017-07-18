@@ -231,7 +231,7 @@ class Inheritance(object):
         # we get two CNVs under "." gene IDs, these automatically come
         # through as compound hets, even though they might be on
         # different chroms
-        if first.get_genes() == ["."]:
+        if first.get_genes() == [[None]]:
             return False
         
         # now we have two different variants in the same gene

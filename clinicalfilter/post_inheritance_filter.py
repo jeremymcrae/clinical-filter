@@ -160,8 +160,8 @@ class PostInheritanceFilter(object):
         if mnv_code is not None and not mnv_code.startswith('unmodified'):
             return ['mnv_candidate']
         
-        # find the HGNC symbol positions in the partner variant that match the
-        # HGNC symbols
+        # find the HGNC ID positions in the partner variant that match the
+        # HGNC ID
         genes = var.get_genes()[0]
         pos = [ x for x in range(len(genes)) if genes[x] is not None and genes[x] in hgnc ]
         
@@ -209,7 +209,7 @@ class PostInheritanceFilter(object):
             # gene, compound_het, and polyphen benign
             benign_matches = [ self.has_compound_match(var, x, variants) for x in hgnc ]
             
-            # exclude HGNC symbols where partner variants are polyphen benign
+            # exclude HGNC ID where partner variants are polyphen benign
             hgnc = [ hgnc[x] for x in range(len(hgnc)) if not(benign_matches[x]) ]
             
             # check if any of the genes for the partner variants have damaging
@@ -234,7 +234,7 @@ class PostInheritanceFilter(object):
         
         Args:
             var: TrioGenotypes object
-            hgnc: HGNC symbol that we need to match for the partner variant
+            hgnc: HGNC ID that we need to match for the partner variant
             variants: list of (variant, check, inheritance, gene) tuples
         
         Returns:

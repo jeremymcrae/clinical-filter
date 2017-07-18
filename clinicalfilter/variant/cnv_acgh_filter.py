@@ -77,7 +77,7 @@ class ACGH_CNV(object):
         """
         
         try:
-            return abs(float(self.cnv.info["MEANLR2"])/float(self.cnv.info["MADL2R"])) < 0
+            return abs(float(self.cnv.info["MEANLR2"])/float(self.cnv.info["MADL2R"])) < 10
         except ValueError as error:
             if self.cnv.info['MADL2R'] == 'NA' or self.cnv.info['MEANLR2'] == 'NA':
                 return False
@@ -90,7 +90,7 @@ class ACGH_CNV(object):
         """ checks if the WSCORE value is too low
         """
         
-        return float(self.cnv.info["WSCORE"]) < 0.4
+        return float(self.cnv.info["WSCORE"]) < 0.45
     
     def fails_callp(self):
         """ checks if the CALLP value is too high
@@ -109,9 +109,9 @@ class ACGH_CNV(object):
         """
         
         if self.cnv.genotype == "DUP":
-            return float(self.cnv.info["MEANLR2"]) < 0.36
+            return float(self.cnv.info["MEANLR2"]) < 0.4
         elif self.cnv.genotype == "DEL":
-            return float(self.cnv.info["MEANLR2"]) > -0.41
+            return float(self.cnv.info["MEANLR2"]) > -0.5
         
         return False
     

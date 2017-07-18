@@ -43,21 +43,21 @@ def make_var(chrom, pos,  alt, sex, info, keys, values, is_cnv=False, id='.',
     return var(chrom, pos, id, ref, alt, filt, info=info, format=keys,
         sample=values, gender=sex)
 
-def create_snv(sex, genotype, cq='missense_variant', hgnc='TEST', chrom='1',
+def create_snv(sex, genotype, cq='missense_variant', hgnc='1001', chrom='1',
         pos='150', extra_info=None, format=None):
     ''' create a default SNV
     '''
     
     alt = 'G'
     
-    info = 'HGNC={0};CQ={1};DENOVO-SNP'.format(hgnc, cq)
+    info = 'HGNC_ID={0};CQ={1};DENOVO-SNP'.format(hgnc, cq)
     keys = 'GT:DP:TEAM29_FILTER:PP_DNM'
     values = '{}:50:PASS:0.99'.format(genotype)
     
     return make_var(chrom, pos, alt, sex, info, keys, values,
         extra_info=extra_info, format=format)
 
-def create_cnv(sex, genotype, cq='missense_variant', hgnc='TEST', chrom='1',
+def create_cnv(sex, genotype, cq='missense_variant', hgnc='1001', chrom='1',
         pos='150', extra_info=None, format=None):
     ''' create a default CNV
     '''
@@ -65,7 +65,7 @@ def create_cnv(sex, genotype, cq='missense_variant', hgnc='TEST', chrom='1',
     alt = '<DUP>'
     
     svlen = 5000
-    info = 'CQ={0};HGNC={1};HGNC_ALL={1};END={2};SVLEN={3}'.format(cq, hgnc, int(pos) + svlen, svlen)
+    info = 'CQ={0};HGNC_ID={1};HGNC_ALL={1};END={2};SVLEN={3}'.format(cq, hgnc, int(pos) + svlen, svlen)
     keys = 'INHERITANCE:DP'
     values = '{}:50'.format(genotype)
     

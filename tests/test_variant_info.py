@@ -23,6 +23,7 @@ import unittest
 
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.variant.cnv import CNV
+from clinicalfilter.variant.symbols import Symbols
 
 class TestVariantInfoPy(unittest.TestCase):
     """  unit testing of the VcfInfo class
@@ -40,8 +41,8 @@ class TestVariantInfoPy(unittest.TestCase):
         filt = "PASS"
         
         # here are the default filtering criteria, as loaded into python
-        known = {"ATRX": {"inheritance": {"Hemizygous": \
-            {"Loss of function"}}, "start": "10000000", "chrom": "1", \
+        known = {"1001": {"inh": {'symbol': 'ATRX', "Hemizygous":
+            {"Loss of function"}}, "start": "10000000", "chrom": "1",
             "confirmed_status": {"confirmed dd gene"}, "end": "20000000"}}
         
         self.pops = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF",
@@ -52,7 +53,7 @@ class TestVariantInfoPy(unittest.TestCase):
         SNV.set_populations(self.pops)
         
         # set up a SNV object, since SNV inherits Info
-        info = "HGNC=ATRX;CQ=missense_variant;random_tag"
+        info = "HGNC_ID=1001;CQ=missense_variant;random_tag"
         self.var = SNV(chrom, pos, snp_id, ref, alt, filt, info=info)
     
     def test_get_consequence(self):
@@ -117,40 +118,41 @@ class TestVariantInfoPy(unittest.TestCase):
         """
         
         # check for when a HGNC key exists
-        self.var.info["HGNC"] = "A"
+        self.var.info["HGNC_ID"] = "A"
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
-        self.assertEqual(genes, [["A"]])
+        self.assertEqual(genes, [Symbols(info={'HGNC_ID': 'A'}, idx=0)])
         
         # check for when a HGNC key doesn't exist
-        del self.var.info["HGNC"]
+        del self.var.info["HGNC_ID"]
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
-        self.assertIsNone(genes)
+        self.assertEqual(genes, [Symbols(info={}, idx=0)])
         
         # check for multiple gene symbols
-        self.var.info["HGNC"] = "A|B|C"
+        self.var.info["HGNC_ID"] = "A|B|C"
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
-        self.assertEqual(genes, [["A", "B", "C"]])
+        self.assertEqual(genes, [Symbols(info={'HGNC_ID': 'A|B|C'}, idx=0)])
         
         # check for multiple gene symbols, when some are missing
-        self.var.info["HGNC"] = "|.|C"
+        self.var.info["HGNC_ID"] = "|.|C"
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
-        self.assertEqual(genes, [[None, None, "C"]])
+        self.assertEqual(genes, [Symbols(info={'HGNC_ID': '||C'}, idx=0)])
         
         # check for multiple gene symbols, when some missing symbols have
         # alternates in other symbol fields.
-        self.var.info["HGNC"] = ".|.|C"
-        self.var.info["SYMBOL"] = "Z|.|C"
+        self.var.info["HGNC_ID"] = ".|.|C"
+        self.var.info["HGNC"] = "Z|.|C"
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
-        self.assertEqual(genes, [["Z", None, "C"]])
+        self.assertEqual(genes, [Symbols(info={'HGNC_ID': '||C', 'HGNC': 'Z||C'}, idx=0)])
         
         # Check that including alternate symbols has the correct precendence
         # order. Note that doing this properly would require checking all of the
         # possible order combinations.
-        self.var.info["HGNC"] = ".|.|C"
-        self.var.info["SYMBOL"] = "Z|.|C"
-        self.var.info["ENSG"] = "A|.|C"
+        self.var.info["HGNC_ID"] = ".|.|C"
+        self.var.info["HGNC"] = "Z|.|C"
+        self.var.info["SYMBOL"] = "A|.|C"
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
-        self.assertEqual(genes, [["Z", None, "C"]])
+        self.assertEqual(genes, [Symbols(info={'HGNC_ID': '||C',
+            'HGNC': 'Z||C', "SYMBOL": "A||C"}, idx=0)])
     
     def test_get_gene_from_info_multi_alts(self):
         ''' check check get_gene_from_info() when we have multiple alleles
@@ -158,6 +160,7 @@ class TestVariantInfoPy(unittest.TestCase):
         
         info = self.var.info
         alt_alleles = ('G', 'C')
+        info['HGNC_ID'] = 'D,E'
         info['HGNC'] = 'D,E'
         info['SYMBOL'] = 'D,E'
         info['ENSG'] = 'D,E'
@@ -166,7 +169,10 @@ class TestVariantInfoPy(unittest.TestCase):
         info['ENSR'] = 'D,E'
         
         self.assertEqual(self.var.get_gene_from_info(info, alt_alleles,  []),
-            [['D'], ['E']])
+            [Symbols(info={'HGNC_ID': 'D', 'HGNC': 'D', 'SYMBOL': 'D',
+                'ENSG': 'D', 'ENST': 'D', 'ENSP': 'D', 'ENSR': 'D'}, idx=0),
+            Symbols(info={'HGNC_ID': 'E', 'HGNC': 'E', 'SYMBOL': 'E',
+                'ENSG': 'E', 'ENST': 'E', 'ENSP': 'E', 'ENSR': 'E'}, idx=0)])
         
         # if we have more alleles than the available symbols, we get an error
         # NOTE: this doesn't check if we have fewer alleles than symbols
@@ -180,6 +186,7 @@ class TestVariantInfoPy(unittest.TestCase):
         
         info = self.var.info
         alt_alleles = ('G', 'C')
+        info['HGNC_ID'] = 'D|X,E|Y'
         info['HGNC'] = 'D|X,E|Y'
         info['SYMBOL'] = 'D|X,E|Y'
         info['ENSG'] = 'D|X,E|Y'
@@ -188,7 +195,10 @@ class TestVariantInfoPy(unittest.TestCase):
         info['ENSR'] = 'D|X,E|Y'
         
         self.assertEqual(self.var.get_gene_from_info(info, alt_alleles, []),
-            [['D', 'X'], ['E', 'Y']])
+            [Symbols(info={'HGNC_ID': 'D|X', 'HGNC': 'D|X', 'SYMBOL': 'D|X',
+                'ENSG': 'D|X', 'ENST': 'D|X', 'ENSP': 'D|X', 'ENSR': 'D|X'}, idx=0),
+            Symbols(info={'HGNC_ID': 'E|Y', 'HGNC': 'E|Y', 'SYMBOL': 'E|Y',
+                'ENSG': 'E|Y', 'ENST': 'E|Y', 'ENSP': 'E|Y', 'ENSR': 'E|Y'}, idx=0)])
         
     def test_get_gene_from_info_multi_alts_masked_alt(self):
         ''' check get_gene_from_info() when we mask alt alleles
@@ -196,6 +206,7 @@ class TestVariantInfoPy(unittest.TestCase):
         
         info = self.var.info
         alt_alleles = ('G', 'C')
+        info['HGNC_ID'] = 'D|X,E|Y'
         info['HGNC'] = 'D|X,E|Y'
         info['SYMBOL'] = 'D|X,E|Y'
         info['ENSG'] = 'D|X,E|Y'
@@ -205,7 +216,8 @@ class TestVariantInfoPy(unittest.TestCase):
         
         # mask one allele
         self.assertEqual(self.var.get_gene_from_info(info, alt_alleles, ['C']),
-            [['D', 'X']])
+            [Symbols(info={'HGNC_ID': 'D|X', 'HGNC': 'D|X', 'SYMBOL': 'D|X',
+                'ENSG': 'D|X', 'ENST': 'D|X', 'ENSP': 'D|X', 'ENSR': 'D|X'}, idx=0)])
         
         # mask both alleles
         self.assertEqual(self.var.get_gene_from_info(info, alt_alleles, ['C', 'G']),
@@ -220,71 +232,10 @@ class TestVariantInfoPy(unittest.TestCase):
         self.var.genes = None
         
         # remove the only possibly source of the gene symbol
-        del self.var.info["HGNC"]
+        del self.var.info["HGNC_ID"]
         
         genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
-        self.assertEqual(genes, [["1:15000000"]])
-    
-    def test_get_genes_for_allele(self):
-        ''' check that get_genes_for_allele() works correctly
-        '''
-        
-        # check simple case with single HGNC symbol
-        self.var.info['HGNC'] = 'ATRX'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), ['ATRX'])
-        
-        # check simple case with missing symbols
-        self.var.info['HGNC'] = '.'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), [None])
-        
-        # check with multiple HGNC symbols
-        self.var.info['HGNC'] = 'ATRX|TEST'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), ['ATRX', 'TEST'])
-        
-        # check with multiple HGNC symbols, across multiple alleles
-        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|TEST'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['ATRX', 'TEST'])
-        
-        # check that we raise an error if we try to select a gene symbol for an
-        # allele that does not exist
-        with self.assertRaises(IndexError):
-            self.var.get_genes_for_allele(self.var.info, 5)
-    
-    def test_get_genes_for_allele_missing_symbols(self):
-        ''' check that get_genes_for_allele() works when we lack any symbols
-        '''
-        
-        del self.var.info['HGNC']
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), None)
-        
-    def test_get_genes_for_allele_priority(self):
-        ''' check that get_genes_for_allele() prioritises symbols correctly
-        '''
-        
-        # check alternate gene symbols, first when the HGNC field is full
-        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|TEST'
-        self.var.info['SYMBOL'] = 'AAAA|BBBB,ATRX|CHANGED'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['ATRX', 'TEST'])
-        
-        # now give one of the HGNC symbols a missing code, so that the gene
-        # symbol has to be filled in from another source
-        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|.'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['ATRX', 'CHANGED'])
-        
-        # and catch the other 'missing' code
-        self.var.info['HGNC'] = 'AAAA|BBBB,ATRX|'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 1), ['ATRX', 'CHANGED'])
-        
-        # check without the HGNC symbol field
-        del self.var.info['HGNC']
-        self.var.info['SYMBOL'] = 'TEST'
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), ['TEST'])
-        
-        # check that we avoid an error if the fields are not the same lengths
-        self.var.info['HGNC'] = 'TEST|.'
-        self.var.info['ENSR'] = 'TEST'
-        del self.var.info['SYMBOL']
-        self.assertEqual(self.var.get_genes_for_allele(self.var.info, 0), ['TEST', None])
+        self.assertEqual(genes, [Symbols(info={}, idx=0)])
     
     def test_is_lof(self):
         """ test that is_lof() works correctly
@@ -305,7 +256,8 @@ class TestVariantInfoPy(unittest.TestCase):
         # check when the variant overlaps multiple genes (so has multiple
         # gene symbols and consequences).
         self.var.consequence = [["stop_gained", "missense_variant"]]
-        self.var.genes = [["ATRX", "TTN"]]
+        
+        self.var.genes = [Symbols(info={'HGNC': 'ATRX|TTN'}, idx=0)]
         self.assertTrue(self.var.is_lof())
         self.assertTrue(self.var.is_lof("ATRX"))
         self.assertFalse(self.var.is_lof("TTN"))
@@ -336,7 +288,7 @@ class TestVariantInfoPy(unittest.TestCase):
         # check when the variant overlaps multiple genes (so has multiple
         # gene symbols and consequences).
         self.var.consequence = [["missense_variant", "synonymous_variant"]]
-        self.var.genes = [["ATRX", "TTN"]]
+        self.var.genes = [Symbols(info={'HGNC': 'ATRX|TTN'}, idx=0)]
         self.assertTrue(self.var.is_missense())
         self.assertTrue(self.var.is_missense("ATRX"))
         self.assertFalse(self.var.is_missense("TTN"))
@@ -390,7 +342,7 @@ class TestVariantInfoPy(unittest.TestCase):
         """ test that get_per_gene_consequence works correctly
         """
         
-        self.var.genes = [["ATRX"]]
+        self.var.genes = [Symbols(info={'HGNC': 'ATRX'}, idx=0)]
         self.var.consequence = [["missense_variant"]]
         
         self.assertEqual(self.var.get_per_gene_consequence(None), ["missense_variant"])
@@ -399,37 +351,24 @@ class TestVariantInfoPy(unittest.TestCase):
         
         # check a variant with consequences in multiple genes, that we only
         # pull out the consequencesquences for a single gene
-        self.var.genes = [["ATRX", "TTN"]]
+        self.var.genes = [Symbols(info={'HGNC': 'ATRX|TTN'}, idx=0)]
         self.var.consequence = [["missense_variant", "synonymous_variant"]]
         self.assertEqual(self.var.get_per_gene_consequence("ATRX"), ["missense_variant"])
         self.assertEqual(self.var.get_per_gene_consequence("TTN"), ["synonymous_variant"])
         
         # check a symbol where two symbols match, we only use the first consequence
-        self.var.genes = [["TEMP", "ATRX", "TEMP"]]
+        self.var.genes = [Symbols(info={'HGNC': 'TEMP|ATRX|TEMP'}, idx=0)]
         self.var.consequence = [["splice_acceptor_variant", "missense_variant",
             "synonymous_variant"]]
         self.assertEqual(self.var.get_per_gene_consequence("TEMP"),
             ["splice_acceptor_variant"])
         
         # check a symbol with some None gene symbols
-        self.var.genes = [[None, "ATRX", None]]
+        self.var.genes = [Symbols(info={'HGNC': '|ATRX|'}, idx=0)]
         self.var.consequence = [["splice_acceptor_variant", "missense_variant",
             "synonymous_variant"]]
         self.assertEqual(self.var.get_per_gene_consequence("ATRX"),
             ["missense_variant"])
-        
-        # check that the earlier VCFs with single consequences but multiple
-        # symbols from HGNC_ALL give the same consequence for all genes.
-        info = "HGNC_ALL=ATRX&TTN;CQ=missense_variant;random_tag"
-        del self.var.info["HGNC"]
-        self.var.add_info(info)
-        
-        self.assertEqual(self.var.get_per_gene_consequence("ATRX"),
-            ["missense_variant"])
-        
-        # check that this now raises an error
-        with self.assertRaises(IndexError):
-            self.var.get_per_gene_consequence("TTN")
     
     def test_get_zero_count_alleles(self):
         ''' test that get_zero_count_alleles() works correctly

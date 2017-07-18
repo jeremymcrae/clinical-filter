@@ -42,15 +42,20 @@ class TestAcghCnvPy(unittest.TestCase):
         """ test that fails_mad_ratio() works correctly.
         """
         
-        # check that var passes when MAD ratio > 0
-        self.var.cnv.info["MEANLR2"] = "0.5"
+        # check that var passes when MAD ratio >= 15
+        self.var.cnv.info["MEANLR2"] = "0.3"
         self.var.cnv.info["MADL2R"] = "0.02"
         self.assertFalse(self.var.fails_mad_ratio())
+        
+        # check that var passes when MAD ratio < 15
+        self.var.cnv.info["MEANLR2"] = "0.29"
+        self.var.cnv.info["MADL2R"] = "0.02"
+        self.assertTrue(self.var.fails_mad_ratio())
         
         # check that var passes when MAD ratio == 0
         self.var.cnv.info["MEANLR2"] = "0.3"
         self.var.cnv.info["MADL2R"] = float("inf")
-        self.assertFalse(self.var.fails_mad_ratio())
+        self.assertTrue(self.var.fails_mad_ratio())
         
         # check that var fails when trying to divide by zero
         self.var.cnv.info["MEANLR2"] = "0.2"
@@ -66,16 +71,12 @@ class TestAcghCnvPy(unittest.TestCase):
         """ test that fails_wscore() works correctly
         """
         
-        # check that var passes when WSCORE > 0.4
-        self.var.cnv.info["WSCORE"] = "0.5"
+        # check that var passes when WSCORE > 0.45
+        self.var.cnv.info["WSCORE"] = "0.45"
         self.assertFalse(self.var.fails_wscore())
         
-        # check that var passes when WSCORE == 0.4
-        self.var.cnv.info["WSCORE"] = "0.4"
-        self.assertFalse(self.var.fails_wscore())
-        
-        # check that var fails when WSCORE > 0.4
-        self.var.cnv.info["WSCORE"] = "0.399"
+        # check that var fails when WSCORE < 0.45
+        self.var.cnv.info["WSCORE"] = "0.449"
         self.assertTrue(self.var.fails_wscore())
     
     def test_fails_callp(self):
@@ -118,16 +119,12 @@ class TestAcghCnvPy(unittest.TestCase):
         self.var.cnv.alt_alleles = ["<DUP>"]
         self.var.cnv.set_genotype()
         
-        # check that dup passes with MEANLR2 > 0.36
+        # check that dup passes with MEANLR2 > 0.4
         self.var.cnv.info["MEANLR2"] = "0.4"
         self.assertFalse(self.var.fails_meanlr2())
         
-        # check that dup passes with MEANLR2 == 0.36
-        self.var.cnv.info["MEANLR2"] = "0.36"
-        self.assertFalse(self.var.fails_meanlr2())
-        
-        # check that dup passes with MEANLR2 < 0.36
-        self.var.cnv.info["MEANLR2"] = "0.359"
+        # check that dup passes with MEANLR2 < 0.4
+        self.var.cnv.info["MEANLR2"] = "0.399"
         self.assertTrue(self.var.fails_meanlr2())
     
     def test_fails_mean_lr2_del(self):
@@ -137,16 +134,12 @@ class TestAcghCnvPy(unittest.TestCase):
         self.var.cnv.alt_alleles = ["<DEL>"]
         self.var.cnv.set_genotype()
         
-        # check that del passes with MEANLR2 < -0.41
+        # check that del passes with MEANLR2 < -0.5
         self.var.cnv.info["MEANLR2"] = "-0.5"
         self.assertFalse(self.var.fails_meanlr2())
         
-        # check that del passes with MEANLR2 == -0.41
-        self.var.cnv.info["MEANLR2"] = "-0.41"
-        self.assertFalse(self.var.fails_meanlr2())
-        
-        # check that del passes with MEANLR2 > -0.41
-        self.var.cnv.info["MEANLR2"] = "-0.409"
+        # check that del fails with MEANLR2 > -0.41
+        self.var.cnv.info["MEANLR2"] = "-0.499"
         self.assertTrue(self.var.fails_meanlr2())
     
     def test_fails_no_exons(self):
