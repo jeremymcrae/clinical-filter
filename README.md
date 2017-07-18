@@ -1,7 +1,5 @@
-[![Build Status](https://travis-ci.org/jeremymcrae/clinical-filter.svg?branch=master)]
-(https://travis-ci.org/jeremymcrae/clinical-filter)
-[![Coverage Status](https://coveralls.io/repos/github/jeremymcrae/clinical-filter/badge.svg?branch=master)]
-(https://coveralls.io/github/jeremymcrae/clinical-filter?branch=master)
+[![Build Status](https://travis-ci.org/jeremymcrae/clinical-filter.svg?branch=master)](https://travis-ci.org/jeremymcrae/clinical-filter)
+[![Coverage Status](https://coveralls.io/repos/github/jeremymcrae/clinical-filter/badge.svg?branch=master)](https://coveralls.io/github/jeremymcrae/clinical-filter?branch=master)
 
 ## Clinical filtering for trios
 Find candidate diagnostic variants in affected children that might contribute to
