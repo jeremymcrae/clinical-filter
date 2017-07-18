@@ -61,8 +61,8 @@ class Report(object):
         '''
         
         # capture some information about the python version, and run date
-        logging.info('# Date/Time : ' + str(datetime.datetime.now()))
-        logging.info('# Python    : ' + sys.version.replace('\n', ''))
+        logging.info('# timestamp: {}'.format(datetime.datetime.now()))
+        logging.info('# clinicalfilter version: {}'.format(clinicalfilter.__version__))
         logging.info('#')
     
     def export_data(self, variants, family, vcf_header, vcf_provenance):
