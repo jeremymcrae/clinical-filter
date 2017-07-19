@@ -56,13 +56,13 @@ class TrioGenotypes(object):
     
     def get_genes(self):
         if self.child is not None:
-            return self.child.get_genes()
+            return self.child.info.get_genes()
         else:
             return None
     
     def get_range(self):
         if self.child is not None:
-            return self.child.get_range()
+            return self.child.info.get_range()
         else:
             return None
     

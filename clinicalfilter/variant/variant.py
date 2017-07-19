@@ -21,7 +21,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from clinicalfilter.variant.info import Info
 
-class Variant(Info):
+class Variant(object):
     """ generic functions for variants
     """
     
@@ -32,6 +32,11 @@ class Variant(Info):
     x_pseudoautosomal_regions = [(60001, 2699520), (154930290, 155260560), \
         (88456802, 92375509)]
     y_pseudoautosomal_regions = [(10001, 2649520), (59034050, 59363566)]
+    known_genes = None
+    
+    @classmethod
+    def set_known_genes(cls_obj, known_genes):
+        cls_obj.known_genes = known_genes
     
     def __init__(self, chrom, position, id, ref, alts, filter, info=None,
             format=None, sample=None, gender=None, mnv_code=None):
@@ -61,6 +66,11 @@ class Variant(Info):
             self._set_gender(gender)
         
         self.vcf_line = None
+<<<<<<< HEAD
+=======
+        self.info = Info(info, self.get_chrom(), self.get_pos(), ref_allele,
+            alt_alleles, self.mnv_code)
+>>>>>>> start isolating INFO into an independent object
         
         self.format = None
         if format is not None and sample is not None:
@@ -75,6 +85,13 @@ class Variant(Info):
         self.genotype = None
         if self.format is not None and self._get_gender() is not None:
             self.set_genotype()
+    
+    def is_lof(self, gene_symbol=None):
+        return self.info.is_lof(gene_symbol)
+    def is_missense(self, is_cnv, gene_symbol=None):
+        return self.info.is_missense(is_cnv, gene_symbol)
+    def is_synoymous(self, gene_symbol=None):
+        return self.info.is_synoymous(gene_symbol)
     
     def __repr__(self):
         ''' repr function for Variant objects. SNV(...) and CNV(...) also work
@@ -91,7 +108,7 @@ class Variant(Info):
             keys = quote(':'.join(sorted(self.format)))
             sample = quote(':'.join([ self.format[x] for x in sorted(self.format) ]))
         
-        info = quote(self.get_info_as_string())
+        info = quote(self.info)
         gender = quote(self.gender)
         mnv_code = quote(self.mnv_code)
         

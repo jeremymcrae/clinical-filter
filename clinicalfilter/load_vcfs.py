@@ -21,6 +21,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import logging
 
+from clinicalfilter.variant.info import Info
+from clinicalfilter.variant.variant import Variant
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
@@ -54,12 +56,11 @@ class LoadVCFs(object):
         
         # define several parameters of the variant classes, before we have
         # initialised any class objects
-        SNV.set_known_genes(known_genes)
-        SNV.set_debug(debug_chrom, debug_pos)
-        SNV.set_last_base_sites(last_base)
-        SNV.set_populations(maf_tags)
+        Variant.set_known_genes(known_genes)
+        Info.set_last_base_sites(last_base)
+        Info.set_populations(maf_tags)
         
-        CNV.set_known_genes(known_genes)
+        SNV.set_debug(debug_chrom, debug_pos)
         CNV.set_debug(debug_chrom, debug_pos)
     
     def get_trio_variants(self, family, pp_filter):
@@ -237,7 +238,6 @@ class LoadVCFs(object):
         
         # if the childs variant does not exist in the parents VCF, then we
         # create a default variant for the parent
-        info = var.get_info_as_string()
         Var = SNV
         keys, sample = 'GT', '0/0'
         alts = ','.join(var.alt_alleles)
@@ -256,7 +256,7 @@ class LoadVCFs(object):
             keys, sample = 'INHERITANCE', 'uncertain'
         
         return Var(var.chrom, var.position, var.variant_id, var.ref_allele,
-            alts, var.filter, info, keys, sample, parent.get_gender())
+            alts, var.filter, str(var.info), keys, sample, parent.get_gender())
     
     def filter_de_novos(self, variants, pp_filter):
         """ filter the de novos variants in the VCF files

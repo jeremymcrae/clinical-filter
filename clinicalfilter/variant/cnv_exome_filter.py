@@ -81,7 +81,7 @@ class ExomeCNV(object):
         """
         
         try:
-            return abs(float(self.cnv.info["MEANLR2"])/float(self.cnv.info["MADL2R"])) < 5
+            return abs(float(self.cnv.info["MEANLR2"])/float(self.cnv.info["MADL2R"])) < 10
         except ZeroDivisionError:
             return True
     

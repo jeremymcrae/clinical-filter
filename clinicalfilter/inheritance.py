@@ -763,7 +763,7 @@ class CNVInheritance(object):
         # check if the CNV is a duplication that surrounds a gene, where the
         # mechanism is loss of function, since these whole-gene duplications
         # won't disrupt the gene.
-        start, end = variant.child.get_range()
+        start, end = variant.get_range()
         surrounding_disruptive_dup = variant.child.genotype == "DUP" and \
             "Loss of function" in self.known_gene["inh"][inh] and \
             inh in ["Monoallelic", "Hemizygous", "X-linked dominant"] and \
@@ -825,7 +825,7 @@ class CNVInheritance(object):
         """
         
         chrom = variant.child.get_chrom()
-        start, end = variant.child.get_range()
+        start, end = variant.get_range()
         copy_number = int(variant.child.info["CNS"])
         
         for region_key in cnv_regions:

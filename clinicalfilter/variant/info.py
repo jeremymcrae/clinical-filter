@@ -22,29 +22,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 from clinicalfilter.variant.symbols import Symbols
 
 class Info(object):
-    """ parses the VCF info field
+    """ parses the VCF INFO field
     """
-    
-    # Here are the VEP consequences, ranked in severity from the most severe to
-    # the least severe as defined at:
-    # http://www.ensembl.org/info/genome/variation/predicted_data.html
-    severity = {"transcript_ablation": 0, "splice_donor_variant": 1, \
-        "splice_acceptor_variant": 2, "stop_gained": 3, "frameshift_variant": 4, \
-        "stop_lost": 5, "start_lost": 6, "initiator_codon_variant": 7, \
-        "inframe_insertion": 8, "inframe_deletion": 9, "missense_variant": 10, \
-        "protein_altering_variant": 11, "transcript_amplification": 12, \
-        "splice_region_variant": 13, "incomplete_terminal_codon_variant": 14, \
-        "synonymous_variant": 15, "stop_retained_variant": 16, \
-        "coding_sequence_variant": 17, "mature_miRNA_variant": 18, \
-        "5_prime_UTR_variant": 19, "3_prime_UTR_variant": 20, \
-        "intron_variant": 21, "NMD_transcript_variant": 22, \
-        "non_coding_exon_variant": 23, "non_coding_transcript_exon_variant": 24, \
-        "nc_transcript_variant": 25, "upstream_gene_variant": 26, \
-        "downstream_gene_variant": 27, "TFBS_ablation": 28, \
-        "TFBS_amplification": 29, "TF_binding_site_variant": 30,
-        "regulatory_region_variant": 31, "regulatory_region_ablation": 32,
-        "regulatory_region_amplification": 33, "feature_elongation": 34,
-        "feature_truncation": 35, "intergenic_variant": 36}
     
     # define the set of loss-of-function consequences
     lof_consequences = set(["transcript_ablation", "splice_donor_variant", \
@@ -60,13 +39,8 @@ class Info(object):
     synonymous_consequences = set(["synonymous_variant"])
     
     # create static variables (set before creating any class instances)
-    known_genes = None
     last_base = set([])
     populations = []
-    
-    @classmethod
-    def set_known_genes(cls_obj, known_genes):
-        cls_obj.known_genes = known_genes
     
     @classmethod
     def set_last_base_sites(cls_obj, sites):
@@ -87,6 +61,8 @@ class Info(object):
             info_values: INFO text from a line in a VCF file
         """
         
+        self.mnv_code = mnv_code
+        self.info = {}
         for item in info_values.split(";"):
             if "=" in item:
                 try:
@@ -105,23 +81,23 @@ class Info(object):
         self.genes = self.get_gene_from_info(self.info, self.alt_alleles, masked)
         self.consequence = self.get_consequences(self.info, self.alt_alleles, masked)
     
-    def get_info_as_string(self):
+    def __str__(self):
         ''' reprocess the info dictionary back into a string, correctly sorted
         '''
         
-        info = None
-        if self.info != {}:
-            info = []
-            for key, value in sorted(self.info.items()):
-                entry = key
-                if value != True:
-                    entry = '{}={}'.format(key, value)
-                info.append(entry)
-            info = ';'.join(info)
-        
-        return info
+        info = []
+        for key, value in sorted(self.info.items()):
+            entry = key
+            if value != True:
+                entry = '{}={}'.format(key, value)
+            info.append(entry)
+            
+        return ';'.join(info)
     
-    def add_info_field(self, key, value):
+    def __getitem__(self, key):
+        return self.info[key]
+    
+    def __setitem__(self, key, value):
         ''' add another entry to the info dictionary
         
         Args:
@@ -137,35 +113,13 @@ class Info(object):
         else:
             raise ValueError('tried to add an already existing field to the INFO')
     
-    def get_range(self):
-        """ gets the range for the CNV
-        """
-        
-        start_position = self.get_position()
-        
-        if self.is_cnv():
-            end_position = start_position + 10000
-            if "END" in self.info:
-                end_position = int(self.info["END"])
-        else:
-            end_position = start_position
-        
-        return (start_position, end_position)
+    def __contains__(self, key):
+        return key in self.info
     
-    def get_gene_from_info(self, info, alts, masked):
-        """ sets a gene to the var using the info. CNVs and SNVs act differently
+    def parse_gene_symbols(self, alts, masked):
+        """ parses the available gene symbols in the INFO.
         
         Args:
-            info: dictionary of keys and values for the info fields. Contains
-                entries for HGNC, SYMBOL, ENSG, ENST, ENSP, ENSR. These are a
-                comma-separated list of gene (or transcript, protein etc)
-                symbols for the possible alt alleles. Each entry in the
-                comma-separated is a pipe-separated list of the genes (or
-                transcripts etc) that the particular allele occurs in. CNV (and
-                some SNVs in some DDD VCF versions) can also have a HGNC_ALL entry.
-                CNVs can also have NUMBERGENES, indicating the number of genes
-                that the CNV overlaps, rather than providing the full list of
-                HGNC symbols affected.
             alts: list of alternative alleles for the variant
             masked: list of alternative alleles that we don't consider. These
                 are identified as alt alleles with zero depth in the individual.
@@ -177,7 +131,7 @@ class Info(object):
         """
         
         pos = [ i for i, x in enumerate(alts) if x not in masked ]
-        return [ Symbols(info, i) for i in pos ]
+        return [ Symbols(self.info, i) for i in pos ]
     
     def get_genes(self):
         """ split a gene string into list of gene names
@@ -186,19 +140,17 @@ class Info(object):
             list of gene ID lists, one per allele
         """
         
-        if self.genes is None:
+        if self.symbols is None:
             return []
         
-        return [ x.prioritise() for x in self.genes ]
+        return [ x.prioritise() for x in self.symbols ]
     
-    def get_consequences(self, info, alts, masked):
+    def get_consequences(self, chrom, pos, alts, masked):
         """ get a list of consequences for the different alt alleles
         
         Args:
-            info: dictionary of keys and values for the info fields. Contains
-                a 'CQ' entry, which is a comma-separated (for different alt
-                alleles) and pipe-separated (for different genes) VEP-annotated
-                consequence.
+            chrom: chromosome for the current variant
+            pos: nucleotide position of the current variant
             alts: list of alternative alleles for the variant.
             masked: list of alternative alleles that we don't consider. These
                 are identified as alt alleles with zero depth in the individual.
@@ -211,8 +163,8 @@ class Info(object):
         
         pos = [ i for i, x in enumerate(alts) if x not in masked ]
         cq = None
-        if "CQ" in info:
-            cq = info["CQ"].split(',')
+        if "CQ" in self.info:
+            cq = self.info["CQ"].split(',')
             cq = [ cq[i].split('|') for i in pos ]
         
         # Allow for sites at the end of exons, changing from a conserved base.
@@ -223,7 +175,7 @@ class Info(object):
         # missed. We might erroneously change missense_variants in transcripts
         # where in one transcript the exon ends, while the other transcript the
         # exon continues, but those seem sufficiently rare.
-        if (self.get_chrom(), self.get_position()) in self.last_base:
+        if (chrom, pos) in self.last_base:
             required = ["missense_variant", "splice_region_variant"]
             new = "conserved_exon_terminus_variant"
             
@@ -253,15 +205,7 @@ class Info(object):
         if hgnc_symbol is None:
             return [ l for sublist in self.consequence for l in sublist ]
         
-        # At one point, the VCFs lacked per gene consequences, but could have
-        # multiple gene symbols (if they lacked a HGNC field but did have a
-        # HGNC_ALL field). These variants will have multiple genes, but only one
-        # consequence. Return the consequence as is, in order to retain the
-        # same output for those VCFs.
-        if len(self.get_genes()) > 1 and len(self.consequence) == 1:
-            return self.consequence[0]
-        
-        # find the consequernce terms for the given HGNC symbol. The HGNC
+        # find the consequence terms for the given HGNC symbol. The HGNC
         # symbols and consequences are lists of symbols/consequences per allele.
         # We need to look in the gene lists to first to identify the allele
         # index position, then the nested symbol position, so we can extract the
@@ -275,6 +219,7 @@ class Info(object):
         
         return cq
     
+<<<<<<< HEAD
     def get_most_severe_consequence(self, consequences):
         """ get the most severe consequence from a list of vep consequence terms
         
@@ -308,17 +253,61 @@ class Info(object):
         return most_severe
        
     def is_lof(self, hgnc_symbol=None):
+=======
+    def get_low_depth_alleles(self, ref, alts):
+        ''' get a list of alleles with zero counts, or indels with 1 read
+        
+        Some variants have multiple alts, so we need to select the alt with
+        the most severe consequence. However, in at least one version of the
+        VCFs, one of the alts could have zero counts, which I believe resulted
+        from the population based multi-sample calling. We need to drop the
+        consequences recorded for zero-count alternate alleles before finding
+        the most severe.
+        
+        We also want to avoid indels with only one read, because these are
+        universally bad calls.
+        
+        Args:
+            ref: reference allele
+            alts: tuple of alt alleles
+        
+        Returns:
+            list of alleles with sufficiently low depth
+        '''
+        
+        is_indel = lambda x, y: len(x) > 1 or len(y) > 1
+        
+        if 'AC' in self:
+            counts = self['AC'].split(',')
+            assert len(counts) == len(alts)
+            
+            # find the positions of alleles where the allele count is zero,
+            # or indels with 1 alt read
+            pos = set()
+            for i, x in enumerate(counts):
+                if x == '0':
+                    pos.add(i)
+                elif x == '1' and is_indel(ref, alts[i]):
+                    pos.add(i)
+            
+            # return the alleles with zero-count ,so we can mask them out
+            return [ alt_alleles[i] for i in sorted(pos) ]
+        
+        return []
+    
+    def is_lof(self, gene_symbol=None):
+>>>>>>> start isolating INFO into an independent object
         """ checks if a variant has a loss-of-function consequence
         
         Args:
-            hgnc_symbol: HGNC symbol for which we wish to check VEP consequence.
+            gene_symbol: HGNC symbol for which we wish to check VEP consequence.
                 By default we check all the consequences listed for the variant.
         """
         
         if self.consequence is None:
             return False
         
-        cq = self.get_per_gene_consequence(hgnc_symbol)
+        cq = self.get_per_gene_consequence(gene_symbol)
         
         if self.mnv_code is not None:
             if self.mnv_code == 'masked_stop_gain_mnv':
@@ -328,18 +317,18 @@ class Info(object):
         
         return len(set(cq) & self.lof_consequences) > 0
     
-    def is_missense(self, hgnc_symbol=None):
+    def is_missense(self, is_cnv, gene_symbol=None):
         """ checks if a variant has a missense-styled consequence
         
         Args:
-            hgnc_symbol: HGNC symbol for which we wish to check VEP consequence.
+            gene_symbol: HGNC symbol for which we wish to check VEP consequence.
                 By default we check all the consequences listed for the variant.
         """
         
         if self.consequence is None:
             return False
         
-        cq = self.get_per_gene_consequence(hgnc_symbol)
+        cq = self.get_per_gene_consequence(gene_symbol)
         
         if self.mnv_code is not None:
             if self.mnv_code == 'modified_synonymous_mnv':
@@ -353,21 +342,21 @@ class Info(object):
         # annotated as 'coding_sequence_variant', a term which historically is
         # used in anomalous situations. SNVs no longer have a problem with this.
         missense = set(self.missense_consequences)
-        if self.is_cnv():
+        if is_cnv:
             missense.add('coding_sequence_variant')
         
         return len(set(cq) & missense) > 0
     
-    def is_synonymous(self, hgnc_symbol=None):
-        """ checks if a variant has a missense-styled consequence
+    def is_synonymous(self, gene_symbol=None):
+        """ checks if a variant has a synonymous consequence
         """
         
         if self.consequence is None:
             return False
         
-        cq = self.get_per_gene_consequence(hgnc_symbol)
+        cq = self.get_per_gene_consequence(gene_symbol)
         
-        return not self.is_lof(hgnc_symbol) and not self.is_missense(hgnc_symbol) and \
+        return not self.is_lof(gene_symbol) and not self.is_missense(gene_symbol) and \
             len(set(cq) & self.synonymous_consequences) > 0
     
     def get_allele_frequency(self, values):
@@ -457,5 +446,3 @@ class Info(object):
                 max_freq = frequency
         
         return max_freq
-    
-    

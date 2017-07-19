@@ -114,7 +114,7 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.known_genes = {"TEST": {"start": 1000, "end": 2000, "chrom": "5"}}
         
         # make a CNV that will overlap with the known gene set
-        self.var.genes = [Symbols(info={'HGNC_ID': 'TEST'}, idx=0)]
+        self.var.info.genes = [Symbols(info={'HGNC_ID': 'TEST'}, idx=0)]
         # self.var.genes = [["TEST"]]
         self.var.position = 1000
         self.var.info["END"] = "1500"
@@ -122,26 +122,26 @@ class TestVariantCnvPy(unittest.TestCase):
         # check that fixing gene names does not alter anything for a CNV in a
         # single known gene
         self.var.fix_gene_IDs()
-        self.assertEqual(self.var.get_genes(), [['TEST']])
+        self.assertEqual(self.var.info.get_genes(), [['TEST']])
         
         # check that fixing gene names does not alter names not in the gene dict
         self.var.genes = [Symbols(info={'HGNC_ID': 'TEST|TEST2'}, idx=0)]
         self.var.fix_gene_IDs()
-        self.assertEqual(self.var.get_genes(), [['TEST', 'TEST2']])
+        self.assertEqual(self.var.info.get_genes(), [['TEST', 'TEST2']])
         
         # check that fixing gene names drop name of genes where the name is in
         # the known genes dict, and the CNV and gene do not overlap
         self.var.position = 900
         self.var.info["END"] = "950"
         self.var.fix_gene_IDs()
-        self.assertEqual(self.var.get_genes(), [[None, 'TEST2']])
+        self.assertEqual(self.var.info.get_genes(), [[None, 'TEST2']])
         
         # check that when we do not have any known genes, the gene names are
         # unaltered
         self.var.genes = [Symbols(info={'HGNC_ID': 'TEST|TEST2'}, idx=0)]
         self.var.known_genes = None
         self.var.fix_gene_IDs()
-        self.assertEqual(self.var.get_genes(), [['TEST', 'TEST2']])
+        self.assertEqual(self.var.info.get_genes(), [['TEST', 'TEST2']])
     
     def test_set_gene_from_info_cnv(self):
         """ test that set_add_gene_from_info() works correctly
@@ -168,16 +168,16 @@ class TestVariantCnvPy(unittest.TestCase):
         """
         
         self.var.genes = [Symbols(info={}, idx=0)]
-        self.assertEqual(self.var.get_genes(), [[]])
+        self.assertEqual(self.var.info.get_genes(), [[]])
         
         self.var.genes = [Symbols(info={'HGNC': 'TEST'}, idx=0)]
-        self.assertEqual(self.var.get_genes(), [["TEST"]])
+        self.assertEqual(self.var.info.get_genes(), [["TEST"]])
         
         self.var.genes = [Symbols(info={'HGNC': 'TEST1|TEST2'}, idx=0)]
-        self.assertEqual(self.var.get_genes(), [["TEST1", "TEST2"]])
+        self.assertEqual(self.var.info.get_genes(), [["TEST1", "TEST2"]])
         
         self.var.genes = [Symbols(info={'HGNC': '.'}, idx=0)]
-        self.assertEqual(self.var.get_genes(), [[None]])
+        self.assertEqual(self.var.info.get_genes(), [[None]])
     
     def test_fails_y_chrom_female(self):
         """ test that passes_filters() works correctly for female Y chrom CNVs

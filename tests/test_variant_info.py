@@ -319,25 +319,6 @@ class TestVariantInfoPy(unittest.TestCase):
         self.assertTrue(cnv.is_missense())
         self.assertFalse(snv.is_missense())
     
-    def test_get_most_severe_consequence(self):
-        """ test that get_most_severe_consequence works correctly
-        """
-        
-        # check for the most simple list
-        cq = ["missense_variant", "splice_acceptor_variant"]
-        self.assertEqual(self.var.get_most_severe_consequence(cq), \
-            "splice_acceptor_variant")
-        
-        # check for a single-entry list
-        cq = ["missense_variant"]
-        self.assertEqual(self.var.get_most_severe_consequence(cq), "missense_variant")
-        
-        # check for lists of lists per allele
-        cq_per_allele = [["synonymous_variant", "splice_donor_variant"], \
-            ["missense_variant", "regulatory_region_variant"]]
-        self.assertEqual(self.var.get_most_severe_consequence(cq_per_allele), \
-            ["missense_variant", "splice_donor_variant"])
-    
     def test_get_per_gene_consequence(self):
         """ test that get_per_gene_consequence works correctly
         """
@@ -345,109 +326,87 @@ class TestVariantInfoPy(unittest.TestCase):
         self.var.genes = [Symbols(info={'HGNC': 'ATRX'}, idx=0)]
         self.var.consequence = [["missense_variant"]]
         
-        self.assertEqual(self.var.get_per_gene_consequence(None), ["missense_variant"])
-        self.assertEqual(self.var.get_per_gene_consequence("ATRX"), ["missense_variant"])
-        self.assertEqual(self.var.get_per_gene_consequence("TEST"), [])
+        self.assertEqual(self.var.info.get_per_gene_consequence(None), ["missense_variant"])
+        self.assertEqual(self.var.info.get_per_gene_consequence("ATRX"), ["missense_variant"])
+        self.assertEqual(self.var.info.get_per_gene_consequence("TEST"), [])
         
         # check a variant with consequences in multiple genes, that we only
         # pull out the consequencesquences for a single gene
         self.var.genes = [Symbols(info={'HGNC': 'ATRX|TTN'}, idx=0)]
         self.var.consequence = [["missense_variant", "synonymous_variant"]]
-        self.assertEqual(self.var.get_per_gene_consequence("ATRX"), ["missense_variant"])
-        self.assertEqual(self.var.get_per_gene_consequence("TTN"), ["synonymous_variant"])
+        self.assertEqual(self.var.info.get_per_gene_consequence("ATRX"), ["missense_variant"])
+        self.assertEqual(self.var.info.get_per_gene_consequence("TTN"), ["synonymous_variant"])
         
         # check a symbol where two symbols match, we only use the first consequence
         self.var.genes = [Symbols(info={'HGNC': 'TEMP|ATRX|TEMP'}, idx=0)]
         self.var.consequence = [["splice_acceptor_variant", "missense_variant",
             "synonymous_variant"]]
-        self.assertEqual(self.var.get_per_gene_consequence("TEMP"),
+        self.assertEqual(self.var.info.get_per_gene_consequence("TEMP"),
             ["splice_acceptor_variant"])
         
         # check a symbol with some None gene symbols
         self.var.genes = [Symbols(info={'HGNC': '|ATRX|'}, idx=0)]
         self.var.consequence = [["splice_acceptor_variant", "missense_variant",
             "synonymous_variant"]]
-        self.assertEqual(self.var.get_per_gene_consequence("ATRX"),
+        self.assertEqual(self.var.info.get_per_gene_consequence("ATRX"),
             ["missense_variant"])
     
-    def test_get_low_depth_alleles(self):
-        ''' test that get_low_depth_alleles() works correctly
+    def test_get_zero_count_alleles(self):
+        ''' test that get_zero_count_alleles() works correctly
         '''
         
         # check with a single allele whre it is non-zero
         info = {'AC': '10'}
         alt_alleles = ('C', )
-        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), [])
+        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), [])
         
         # check with a single allele with zero count
         info = {'AC': '0'}
         alt_alleles = ('C', )
-        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), ['C'])
+        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), ['C'])
         
         # check with multiallelic, where both are nonzero
         info = {'AC': '10,10'}
         alt_alleles = ('C', 'G')
-        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), [])
+        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), [])
         
         # check with multiallelic, where one a has zero count
         info = {'AC': '10,0'}
         alt_alleles = ('C', 'G')
-        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), ['G'])
-    
-    def test_get_low_depth_alleles_indels(self):
-        ''' test that get_low_depth_alleles() works correctly for indels
-        '''
-        # check this doesn't affect SNVs
-        info = {'AC': '10,1'}
-        alt_alleles = ('C', 'G')
-        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), [])
-        
-        # check it works when the ref allele is > 1 bp
-        self.var.ref_allele = 'GG'
-        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), ['G'])
-        
-        # check it doesn't filter at 2+ reads
-        info = {'AC': '10,2'}
-        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), [])
-        
-        # check it catches when alt allele indicates an indel
-        self.var.ref_allele = 'G'
-        info = {'AC': '10,1'}
-        alt_alleles = ('C', 'GG')
-        self.assertEqual(self.var.get_low_depth_alleles(info, alt_alleles), ['GG'])
+        self.assertEqual(self.var.get_zero_count_alleles(info, alt_alleles), ['G'])
         
     def test_get_allele_frequency(self):
         """ tests that number conversion works as expected
         """
         
         # single number returns that number
-        self.assertEqual(self.var.get_allele_frequency("1"), 1)
+        self.assertEqual(self.var.info.get_allele_frequency("1"), 1)
         
         # two numbers return one number
-        self.assertEqual(self.var.get_allele_frequency("1,1"), 1)
+        self.assertEqual(self.var.info.get_allele_frequency("1,1"), 1)
         
         # two numbers return the highest number
-        self.assertEqual(self.var.get_allele_frequency("1,2"), 2)
+        self.assertEqual(self.var.info.get_allele_frequency("1,2"), 2)
         
         # number and string return the number
-        self.assertEqual(self.var.get_allele_frequency("a,1"), 1)
+        self.assertEqual(self.var.info.get_allele_frequency("a,1"), 1)
         
         # single string value returns None
-        self.assertEqual(self.var.get_allele_frequency("a"), None)
+        self.assertEqual(self.var.info.get_allele_frequency("a"), None)
         
         # multiple string values return None
-        self.assertEqual(self.var.get_allele_frequency("a,b"), None)
+        self.assertEqual(self.var.info.get_allele_frequency("a,b"), None)
         
         # multiple string values return None
-        self.assertEqual(self.var.get_allele_frequency(None), None)
+        self.assertEqual(self.var.info.get_allele_frequency(None), None)
     
     def test_is_number(self):
         """ tests that we can check if a value represents a number
         """
         
-        self.assertEqual(self.var.is_number(None), False)
-        self.assertEqual(self.var.is_number("5"), True)
-        self.assertEqual(self.var.is_number("a"), False)
+        self.assertEqual(self.var.info.is_number(None), False)
+        self.assertEqual(self.var.info.is_number("5"), True)
+        self.assertEqual(self.var.info.is_number("a"), False)
     
     def test_find_max_allele_frequency(self):
         """ test if the MAF finder operates correctly

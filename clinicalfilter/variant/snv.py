@@ -38,14 +38,18 @@ class SNV(Variant):
         
         if cls_obj.debug_chrom is not None:
             cls_obj.passes_filters = cls_obj.passes_filters_with_debug
-        else:
-            cls_obj.passes_filters = cls_obj.passes_filters_standard
     
     def is_cnv(self):
         """ checks whether the variant is for a CNV
         """
         
         return False
+    
+    def get_range(self):
+        """ gets the range for the SNV
+        """
+        pos = self.get_position()
+        return (pos, pos)
     
     def get_key(self):
         """ return a tuple to identify the variant
@@ -187,7 +191,7 @@ class SNV(Variant):
         else:
             self.convert_autosomal_genotype_code_to_alleles()
     
-    def passes_filters_standard(self):
+    def passes_filters(self):
         """Checks whether a VCF record passes user defined criteria.
             
         Returns:
@@ -244,7 +248,7 @@ class SNV(Variant):
         
         # exclude variants outside genes known to be involved in genetic
         # disorders, unless there isn't any such set of genes available
-        genes = [ l for sublist in self.get_genes() for l in sublist ]
+        genes = [ l for sublist in self.info.get_genes() for l in sublist ]
         if self.known_genes is not None and len(set(genes) & set(self.known_genes)) == 0:
             return (False, "HGNC")
         
