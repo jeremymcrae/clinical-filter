@@ -66,21 +66,15 @@ class Variant(object):
             self._set_gender(gender)
         
         self.vcf_line = None
-<<<<<<< HEAD
-=======
-        self.info = Info(info, self.get_chrom(), self.get_pos(), ref_allele,
-            alt_alleles, self.mnv_code)
->>>>>>> start isolating INFO into an independent object
         
         self.format = None
         if format is not None and sample is not None:
             self.add_format(format, sample)
         
-        self.info = {}
-        if info is not None:
-            self.add_info(info)
+        self.info = Info(info, self.mnv_code)
         masked = self.get_low_depth_alleles(self.ref_allele, self.alt_alleles)
-        self.set_genes_and_consequence(masked)
+        self.set_genes_and_consequence(masked, self.get_chrom(),
+            self.get_position(), self.ref_allele, self.alt_alleles)
         
         self.genotype = None
         if self.format is not None and self._get_gender() is not None:

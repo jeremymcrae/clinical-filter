@@ -54,7 +54,7 @@ class Info(object):
             assert type(populations) == list
             cls_obj.populations = populations
     
-    def add_info(self, info_values):
+    def __init__(self, info_values, mnv_code):
         """Parses the INFO column from VCF files.
         
         Args:
@@ -75,11 +75,11 @@ class Info(object):
                 key, value = item, True
             self.info[key] = value
     
-    def set_genes_and_consequence(self, masked):
+    def set_genes_and_consequence(self, chrom, pos, ref, alts, masked):
         ''' find the gene symbols and consequences for good alleles
         '''
-        self.genes = self.get_gene_from_info(self.info, self.alt_alleles, masked)
-        self.consequence = self.get_consequences(self.info, self.alt_alleles, masked)
+        self.symbols = self.parse_gene_symbols(alts, masked)
+        self.consequence = self.get_consequences(chrom, pos, ref, alts, masked)
     
     def __str__(self):
         ''' reprocess the info dictionary back into a string, correctly sorted
@@ -219,84 +219,7 @@ class Info(object):
         
         return cq
     
-<<<<<<< HEAD
-    def get_most_severe_consequence(self, consequences):
-        """ get the most severe consequence from a list of vep consequence terms
-        
-        Args:
-            consequences: list of VEP consequence strings, or list of lists
-        
-        Returns:
-            the most severe consequence string
-        """
-        
-        # If we have passed in a list of lists, such as for multiple alleles,
-        # then we consolidate all of the consequences into per gene lists
-        # (rather than per allele lists), and check for the most severe
-        # consequence within each geen list.
-        if type(consequences[0]) is list:
-            new_list = []
-            max_len = max([ len(x) for x in consequences ])
-            for i in range(max_len):
-                per_gene = [ x[i] for x in consequences if i < len(x)]
-                new_list.append(self.get_most_severe_consequence(per_gene))
-            
-            return new_list
-        
-        most_severe = ""
-        most_severe_score = 1000
-        for cq in consequences:
-            if self.severity[cq] < most_severe_score:
-                most_severe = cq
-                most_severe_score = self.severity[cq]
-        
-        return most_severe
-       
-    def is_lof(self, hgnc_symbol=None):
-=======
-    def get_low_depth_alleles(self, ref, alts):
-        ''' get a list of alleles with zero counts, or indels with 1 read
-        
-        Some variants have multiple alts, so we need to select the alt with
-        the most severe consequence. However, in at least one version of the
-        VCFs, one of the alts could have zero counts, which I believe resulted
-        from the population based multi-sample calling. We need to drop the
-        consequences recorded for zero-count alternate alleles before finding
-        the most severe.
-        
-        We also want to avoid indels with only one read, because these are
-        universally bad calls.
-        
-        Args:
-            ref: reference allele
-            alts: tuple of alt alleles
-        
-        Returns:
-            list of alleles with sufficiently low depth
-        '''
-        
-        is_indel = lambda x, y: len(x) > 1 or len(y) > 1
-        
-        if 'AC' in self:
-            counts = self['AC'].split(',')
-            assert len(counts) == len(alts)
-            
-            # find the positions of alleles where the allele count is zero,
-            # or indels with 1 alt read
-            pos = set()
-            for i, x in enumerate(counts):
-                if x == '0':
-                    pos.add(i)
-                elif x == '1' and is_indel(ref, alts[i]):
-                    pos.add(i)
-            
-            # return the alleles with zero-count ,so we can mask them out
-            return [ alt_alleles[i] for i in sorted(pos) ]
-        
-        return []
-    
     def is_lof(self, gene_symbol=None):
->>>>>>> start isolating INFO into an independent object
         """ checks if a variant has a loss-of-function consequence
         
         Args:
