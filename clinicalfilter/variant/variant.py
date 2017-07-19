@@ -61,13 +61,15 @@ class Variant(Info):
             self._set_gender(gender)
         
         self.vcf_line = None
-        self.info = {}
-        if info is not None:
-            self.add_info(info)
         
         self.format = None
         if format is not None and sample is not None:
             self.add_format(format, sample)
+        
+        masked = self.get_low_depth_alleles(self.alt_alleles)
+        self.info = {}
+        if info is not None:
+            self.add_info(info, masked)
         
         self.genotype = None
         if self.format is not None and self._get_gender() is not None:
@@ -197,7 +199,7 @@ class Variant(Info):
             for i, x in enumerate(counts):
                 if x == '0':
                     pos.add(i)
-                elif x == '1' and is_indel(self.ref_allele, alts[i]):
+                elif x == '1' and is_indel(ref, alts[i]):
                     pos.add(i)
             
             # return the alleles with zero-count ,so we can mask them out
