@@ -165,6 +165,46 @@ class Variant(Info):
         
         self.format = dict(zip(keys.split(":"), values.split(":")))
     
+    def get_low_depth_alleles(self, alts):
+        ''' get a list of alleles with zero counts, or indels with 1 read
+        
+        Some variants have multiple alts, so we need to select the alt with
+        the most severe consequence. However, in at least one version of the
+        VCFs, one of the alts could have zero counts, which I believe resulted
+        from the population based multi-sample calling. We need to drop the
+        consequences recorded for zero-count alternate alleles before finding
+        the most severe.
+        
+        We also want to avoid indels with only one read, because these are
+        universally bad calls.
+        
+        Args:
+            alts: tuple of alt alleles
+        
+        Returns:
+            list of alleles with sufficiently low depth
+        '''
+        
+        is_indel = lambda x, y: len(x) > 1 or len(y) > 1
+        
+        if 'AD' in self.format:
+            counts = self.format['AD'].split(',')[1:]
+            assert len(counts) == len(alts)
+            
+            # find the positions of alleles where the allele count is zero,
+            # or indels with 1 alt read
+            pos = set()
+            for i, x in enumerate(counts):
+                if x == '0':
+                    pos.add(i)
+                elif x == '1' and is_indel(self.ref_allele, alts[i]):
+                    pos.add(i)
+            
+            # return the alleles with zero-count ,so we can mask them out
+            return [ alt_alleles[i] for i in sorted(pos) ]
+        
+        return []
+    
     def add_vcf_line(self, vcf_line):
         self.vcf_line = vcf_line
     
