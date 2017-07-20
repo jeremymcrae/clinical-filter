@@ -80,7 +80,7 @@ class Info(object):
             assert type(populations) == list
             cls_obj.populations = populations
     
-    def add_info(self, info_values, masked):
+    def add_info(self, info_values):
         """Parses the INFO column from VCF files.
         
         Args:
@@ -98,7 +98,10 @@ class Info(object):
             else:
                 key, value = item, True
             self.info[key] = value
-        
+    
+    def set_genes_and_consequence(self, masked):
+        ''' find the gene symbols and consequences for good alleles
+        '''
         self.genes = self.get_gene_from_info(self.info, self.alt_alleles, masked)
         self.consequence = self.get_consequences(self.info, self.alt_alleles, masked)
     

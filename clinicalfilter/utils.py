@@ -130,7 +130,7 @@ def construct_variant(line, gender, mnvs=None):
         returns a Variant object
     """
     
-    chrom, pos, var_id, ref, alt, qual, filter_val, info = line[:8]
+    chrom, pos, var_id, ref, alt, qual, filter_val, info, format_keys, sample = line[:10]
     
     # CNVs are found by their alt_allele values, as either <DUP>, or <DEL>
     Var = SNV
@@ -141,13 +141,10 @@ def construct_variant(line, gender, mnvs=None):
     if mnvs is not None and (chrom, int(pos)) in mnvs:
         mnv_code = mnvs[(chrom, int(pos))]
     
-    var = Var(chrom, pos, var_id, ref, alt, filter_val, mnv_code=mnv_code)
-    var.add_info(info)
+    var = Var(chrom, pos, var_id, ref, alt, filter_val, info, format_keys,
+        sample, gender, mnv_code=mnv_code)
     
     if var.is_cnv():
-        # CNVs require the format values for filtering
-        var._set_gender(gender)
-        var.add_format(line[8], line[9])
         var.fix_gene_IDs()
     
     return var

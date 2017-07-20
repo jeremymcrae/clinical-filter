@@ -49,7 +49,6 @@ class LoadVCFs(object):
                 a variant fails to pass the filters.
         """
         
-        self.family = None
         self.counter = 0
         self.probands_n = probands_n
         
@@ -74,7 +73,6 @@ class LoadVCFs(object):
             list of filtered variants for a trio, as TrioGenotypes objects
         """
         
-        self.family = family
         self.counter += 1
         logging.info("opening trio {} of {}".format(self.counter, self.probands_n))
         
@@ -94,61 +92,30 @@ class LoadVCFs(object):
         
         return variants
     
-    def add_single_variant(self, variants, var, gender, line):
-        """ adds a single variant to a vcf dictionary indexed by position key
-        
-        Args:
-            variants: list of variants for an individual
-            var: single Variant object
-            gender: gender of the individual (eg "M"/"F" or "1"/"2")
-            line: list of elements of the VCF line for the variant
-        """
-        
-        # Complete the variant setup, now that the variant has passed the
-        # filtering. If we do this earlier, it slows all the unneeded variants.
-        var.add_format(line[8], line[9])
-        var.add_vcf_line(line)
-        var._set_gender(gender)
-        
-        try:
-            var.set_genotype()
-            variants.append(var)
-        except ValueError:
-            # we only get ValueError when the genotype cannot be set, which
-            # occurs for x chrom male heterozygotes (an impossible genotype)
-            if var.get_chrom() == var.debug_chrom and var.get_position() == var.debug_pos:
-                print("failed as heterozygous genotype in male on chrX")
-            pass
-    
     def include_variant(self, line, child_variants, gender, mnvs):
         """ check if we want to include the variant or not
         
         Args:
             line: list of elements from the VCF line for the variant.
-            child_variants: True/False for whether variants have been filtered
-                for the proband (if so, we can simply check the parent's
-                variants for matches in the child's variants).
+            child_variants: list of variants that passed in the child, so we can
+                quickly assess parental variants. This is None when screening
+                the child.
             gender: the gender of the proband (used in CNV filtering).
+            mnvs: dictionary of (chrom, pos), MNV_code pairs for known
+                multinucleotide variant sites  within the proband.
         
         Returns:
             True/False for whether to include the variant.
         """
         
-        use_variant = False
-        if child_variants:
+        if child_variants is not None:
             key = (line[0], int(line[1]))
-            if key in self.child_keys:
-                use_variant = True
-            elif line[4] == "<DUP>" or line[4] == "<DEL>":
-                var = construct_variant(line, gender)
-        else:
-            var = construct_variant(line, gender, mnvs)
-            if var.passes_filters():
-                use_variant = True
-            
-        return use_variant
+            return key in child_variants
         
-    def open_individual(self, individual, child_variants=False, mnvs=None):
+        var = construct_variant(line, gender, mnvs)
+        return var.passes_filters()
+        
+    def open_individual(self, individual, child_variants=None, mnvs=None):
         """ Convert VCF to TSV format. Use for single sample VCF file.
         
         Obtains the VCF data for a single sample. This function optionally
@@ -160,6 +127,7 @@ class LoadVCFs(object):
             child_variants: True/False for whether variants have been filtered
                 for the proband (if so, we can simply check the parent's
                 variants for matches in the child's variants).
+            mnvs: dictionary
         
         Returns:
             A list of variants for the individual.
@@ -181,10 +149,18 @@ class LoadVCFs(object):
         for line in vcf:
             line = line.strip().split("\t")
             
-            # check if we want to include the variant or not
-            if self.include_variant(line, child_variants, gender, mnvs):
-                var = construct_variant(line, gender, mnvs)
-                self.add_single_variant(variants, var, gender, line)
+            try:
+                # check if we want to include the variant or not
+                if self.include_variant(line, child_variants, gender, mnvs):
+                    var = construct_variant(line, gender, mnvs)
+                    var.add_vcf_line(line)
+                    variants.append(var)
+            except ValueError:
+                # we only get ValueError when the genotype cannot be set, which
+                # occurs for x chrom male heterozygotes (an impossible genotype)
+                if line[0] == SNV.debug_chrom and int(line[1]) == SNV.debug_pos:
+                    print("failed as heterozygous genotype in male on chrX")
+                continue
         
         vcf.close()
         
@@ -204,12 +180,12 @@ class LoadVCFs(object):
         # open the childs VCF file, and get the variant keys, to check if they
         # are in the parents VCF
         child = self.open_individual(family.child, mnvs=mnvs)
-        self.child_keys = set([var.get_key() for var in child])
+        keys = set([var.get_key() for var in child])
         
         self.child_header = get_vcf_header(family.child.get_path())
         
-        mother = self.open_individual(family.mother, child_variants=True)
-        father = self.open_individual(family.father, child_variants=True)
+        mother = self.open_individual(family.mother, child_variants=keys)
+        father = self.open_individual(family.father, child_variants=keys)
         
         return self.combine_trio_variants(family, child, mother, father)
     

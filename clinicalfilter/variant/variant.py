@@ -66,10 +66,11 @@ class Variant(Info):
         if format is not None and sample is not None:
             self.add_format(format, sample)
         
-        masked = self.get_low_depth_alleles(self.alt_alleles)
         self.info = {}
         if info is not None:
-            self.add_info(info, masked)
+            self.add_info(info)
+        masked = self.get_low_depth_alleles(self.ref_allele, self.alt_alleles)
+        self.set_genes_and_consequence(masked)
         
         self.genotype = None
         if self.format is not None and self._get_gender() is not None:
@@ -167,7 +168,7 @@ class Variant(Info):
         
         self.format = dict(zip(keys.split(":"), values.split(":")))
     
-    def get_low_depth_alleles(self, alts):
+    def get_low_depth_alleles(self, ref, alts):
         ''' get a list of alleles with zero counts, or indels with 1 read
         
         Some variants have multiple alts, so we need to select the alt with
@@ -181,6 +182,7 @@ class Variant(Info):
         universally bad calls.
         
         Args:
+            ref: reference allele
             alts: tuple of alt alleles
         
         Returns:
@@ -189,23 +191,29 @@ class Variant(Info):
         
         is_indel = lambda x, y: len(x) > 1 or len(y) > 1
         
-        if 'AD' in self.format:
-            counts = self.format['AD'].split(',')[1:]
-            assert len(counts) == len(alts)
-            
-            # find the positions of alleles where the allele count is zero,
-            # or indels with 1 alt read
-            pos = set()
-            for i, x in enumerate(counts):
-                if x == '0':
-                    pos.add(i)
-                elif x == '1' and is_indel(ref, alts[i]):
-                    pos.add(i)
-            
-            # return the alleles with zero-count ,so we can mask them out
-            return [ alt_alleles[i] for i in sorted(pos) ]
+        allele_counts = ['1'] * len(alts)
+        if 'AC' in self.info:
+            allele_counts = self.info['AC'].split(',')
         
-        return []
+        allele_depths = ['10'] * len(alts)
+        if 'AD' in self.format:
+            allele_depths = self.format['AD'].split(',')[1:]
+        
+        counts = list(zip(allele_counts, allele_depths))
+        
+        assert len(counts) == len(alts)
+        
+        # find the positions of alleles where the allele count is zero,
+        # or indels with 1 alt read
+        pos = set()
+        for i, (count, depth) in enumerate(counts):
+            if count == '0':
+                pos.add(i)
+            elif depth == '1' and is_indel(ref, alts[i]):
+                pos.add(i)
+        
+        # return the alleles with zero-count ,so we can mask them out
+        return [ alts[i] for i in sorted(pos) ]
     
     def add_vcf_line(self, vcf_line):
         self.vcf_line = vcf_line
