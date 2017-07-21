@@ -71,7 +71,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         return TrioGenotypes(chrom, pos, child, mom, dad)
     
     def create_snv(self, chrom, geno="0/1", info=None, pos='150',
-            snp_id='.', ref='A', alt='G', filt='PASS', **kwargs):
+            snp_id='.', ref='A', alt='G', qual='1000', filt='PASS', **kwargs):
         
         if info is None:
             info = "HGNC=ATRX;CQ=missense_variant;random_tag;AF_AFR=0.0001"
@@ -79,11 +79,11 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         keys = "GT:DP:TEAM29_FILTER:PP_DNM"
         values = "{0}:50:PASS:0.99".format(geno)
         
-        return SNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
+        return SNV(chrom, pos, snp_id, ref, alt, qual, filt, info=info, format=keys,
             sample=values, gender='male', **kwargs)
     
     def create_cnv(self, chrom, info=None, pos='15000000', snp_id='.', ref='A',
-            alt='<DUP>', filt='PASS', **kwargs):
+            alt='<DUP>', qual='1000', filt='PASS', **kwargs):
         
         if info is None:
             info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;CNSOLIDATE;' \
@@ -93,7 +93,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         keys = "inheritance:DP"
         values = "deNovo:50"
         
-        return CNV(chrom, pos, snp_id, ref, alt, filt, info=info, format=keys,
+        return CNV(chrom, pos, snp_id, ref, alt, qual, filt, info=info, format=keys,
             sample=values, gender='male', **kwargs)
     
     def test_filter_variants(self):

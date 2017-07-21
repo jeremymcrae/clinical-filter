@@ -28,6 +28,7 @@ def make_var(chrom, pos,  alt, sex, info, keys, values, is_cnv=False, id='.',
     ''' function to prevent duplication between create_snv and create_cnv
     '''
     
+    qual = '1000'
     if extra_info is not None:
         info = '{};{}'.format(info, extra_info)
     
@@ -40,7 +41,7 @@ def make_var(chrom, pos,  alt, sex, info, keys, values, is_cnv=False, id='.',
     if is_cnv:
         var = CNV
     
-    return var(chrom, pos, id, ref, alt, filt, info=info, format=keys,
+    return var(chrom, pos, id, ref, alt, qual, filt, info=info, format=keys,
         sample=values, gender=sex)
 
 def create_snv(sex, genotype, cq='missense_variant', hgnc='1001', chrom='1',
@@ -51,8 +52,8 @@ def create_snv(sex, genotype, cq='missense_variant', hgnc='1001', chrom='1',
     alt = 'G'
     
     info = 'HGNC_ID={0};CQ={1};DENOVO-SNP'.format(hgnc, cq)
-    keys = 'GT:DP:TEAM29_FILTER:PP_DNM'
-    values = '{}:50:PASS:0.99'.format(genotype)
+    keys = 'GT:AD:DP:TEAM29_FILTER:PP_DNM'
+    values = '{}:5,5:50:PASS:0.99'.format(genotype)
     
     return make_var(chrom, pos, alt, sex, info, keys, values,
         extra_info=extra_info, format=format)

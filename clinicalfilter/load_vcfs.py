@@ -56,7 +56,8 @@ class LoadVCFs(object):
         
         # define several parameters of the variant classes, before we have
         # initialised any class objects
-        Variant.set_known_genes(known_genes)
+        SNV.set_known_genes(known_genes)
+        CNV.set_known_genes(known_genes)
         Info.set_last_base_sites(last_base)
         Info.set_populations(maf_tags)
         
@@ -256,7 +257,8 @@ class LoadVCFs(object):
             keys, sample = 'INHERITANCE', 'uncertain'
         
         return Var(var.chrom, var.position, var.variant_id, var.ref_allele,
-            alts, var.filter, str(var.info), keys, sample, parent.get_gender())
+            alts, var.qual, var.filter, str(var.info), keys, sample, 
+            parent.get_gender())
     
     def filter_de_novos(self, variants, pp_filter):
         """ filter the de novos variants in the VCF files

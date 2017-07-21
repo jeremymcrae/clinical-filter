@@ -62,7 +62,7 @@ class TrioGenotypes(object):
     
     def get_range(self):
         if self.child is not None:
-            return self.child.info.get_range()
+            return self.child.get_range()
         else:
             return None
     
@@ -173,7 +173,7 @@ class TrioGenotypes(object):
         
         # check the VCF record to see whether the variant has been screened out.
         # Either DENOVO-SNP or DENOVO-INDEL should be in the info.
-        if len(set(self.child.info) & de_novo_field) < 1:
+        if 'DENOVO-SNP' not in self.child.info and 'DENOVO-INDEL' not in self.child.info:
             if self.get_chrom() == self.debug_chrom and self.get_position() == self.debug_pos:
                 print(self, "failed DENOVO-SNP/INDEL check")
             return False

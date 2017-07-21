@@ -115,7 +115,7 @@ class PostInheritanceFilter(object):
         
         passed_vars = []
         for (var, check, inh, hgnc) in variants:
-            max_maf = var.child.find_max_allele_frequency()
+            max_maf = var.child.info.find_max_allele_frequency()
             if max_maf is None: # set maf=NA to 0 to reduce later checks
                 max_maf = 0
             

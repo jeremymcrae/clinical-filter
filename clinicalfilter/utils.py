@@ -141,7 +141,7 @@ def construct_variant(line, gender, mnvs=None):
     if mnvs is not None and (chrom, int(pos)) in mnvs:
         mnv_code = mnvs[(chrom, int(pos))]
     
-    var = Var(chrom, pos, var_id, ref, alt, filter_val, info, format_keys,
+    var = Var(chrom, pos, var_id, ref, alt, qual, filter_val, info, format_keys,
         sample, gender, mnv_code=mnv_code)
     
     if var.is_cnv():

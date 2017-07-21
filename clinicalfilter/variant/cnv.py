@@ -54,6 +54,7 @@ class CNV(Variant):
             end_position = int(self.info["END"])
         
         return (start_position, end_position)
+    
     def set_genotype(self):
         """ sets the genotype of the variant
         """
@@ -120,7 +121,7 @@ class CNV(Variant):
                 # if the gene does not correctly overlap the known gene range,
                 # drop the gene symbol, so we do not pick the variant up
                 if not (start <= gene_end and end >= gene_start):
-                    self.info.genes[i].set(x, None, 'HGNC_ID')
+                    self.info.symbols[i].set(x, None, 'HGNC_ID')
     
     def passes_filters(self):
         """Checks whether a VCF variant passes user defined criteria.

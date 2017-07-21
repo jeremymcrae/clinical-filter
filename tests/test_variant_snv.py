@@ -27,6 +27,8 @@ except ImportError:
 import sys
 
 from clinicalfilter.variant.snv import SNV
+from clinicalfilter.variant.info import Info
+from clinicalfilter.variant.variant import Variant
 
 class TestVariantSnvPy(unittest.TestCase):
     """ unit testing of the SNV class
@@ -34,10 +36,11 @@ class TestVariantSnvPy(unittest.TestCase):
     
     pops = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF", "ESP_AF",
         "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"]
-    SNV.set_populations(pops)
+    Info.set_populations(pops)
+    SNV.set_known_genes(None)
     
     def setUp(self):
-        """ define a default VcfInfo object
+        """ define a default SNV object
         """
         
         chrom = "1"
@@ -45,14 +48,16 @@ class TestVariantSnvPy(unittest.TestCase):
         snp_id = "."
         ref = "A"
         alt = "G"
+        qual = "1000"
         filt = "PASS"
         
         info = "HGNC_ID=1001;CQ=missense_variant;random_tag"
         self.keys = "GT:DP"
         self.values = "0/1:50"
         
+        SNV.set_known_genes(None)
         # set up a SNV object, since SNV inherits VcfInfo
-        self.var = SNV(chrom, pos, snp_id, ref, alt, filt, info=info,
+        self.var = SNV(chrom, pos, snp_id, ref, alt, qual, filt, info=info,
             format=self.keys, sample=self.values)
     
     def test_get_key(self):
@@ -255,6 +260,26 @@ class TestVariantSnvPy(unittest.TestCase):
         # check that a default variant passes the filters
         self.assertTrue(self.var.passes_filters())
     
+    def test_passes_known_genes(self):
+        ''' test that genes pass or fail when they affect known genes or not
+        '''
+        
+        SNV.known_genes = {"1001": {'irrelevant'}}
+        info = "HGNC_ID=1001;CQ=missense_variant;random_tag"
+        var = SNV('1', '100', '.', 'A', 'G', '1000', 'PASS', info=info,
+            format='GT:DP', sample='0/1:50')
+        
+        # a variant that affects a known gene passes
+        self.assertTrue(var.passes_filters())
+        
+        # a variant that doesn't affect any known genes fails
+        SNV.known_genes = {"1002": {'irrelevant'}}
+        self.assertFalse(var.passes_filters())
+        
+        # if we haven't provided any known genes, the variant passes
+        SNV.known_genes = None
+        self.assertTrue(var.passes_filters())
+    
     def test_passes_alternate_filter_string(self):
         """ test that the alternate permitted FILTER string also passes
         """
@@ -341,7 +366,7 @@ class TestVariantSnvPy(unittest.TestCase):
         
         # check all the failing consequences
         for cq in vep_failing:
-            self.var.consequence = [[cq]]
+            self.var.info.consequence = [[cq]]
             self.assertFalse(self.var.passes_filters())
     
     def test_passes_filters_with_debug(self):

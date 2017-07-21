@@ -38,6 +38,7 @@ class TestVariantCnvPy(unittest.TestCase):
         snp_id = "."
         ref = "A"
         alt = "<DUP>"
+        qual = "1000"
         filt = "PASS"
         
         info = "HGNC=TEST;HGNC_ALL=TEST,OR5A1;CQ=missense_variant;" \
@@ -48,7 +49,7 @@ class TestVariantCnvPy(unittest.TestCase):
         sex = "F"
         
         # set up a CNV object
-        self.var = CNV(chrom, pos, snp_id, ref, alt, filt, info=info,
+        self.var = CNV(chrom, pos, snp_id, ref, alt, qual, filt, info=info,
             format=keys, sample=values, gender=sex)
     
     def test_set_genotype(self):
@@ -114,8 +115,7 @@ class TestVariantCnvPy(unittest.TestCase):
         self.var.known_genes = {"TEST": {"start": 1000, "end": 2000, "chrom": "5"}}
         
         # make a CNV that will overlap with the known gene set
-        self.var.info.genes = [Symbols(info={'HGNC_ID': 'TEST'}, idx=0)]
-        # self.var.genes = [["TEST"]]
+        self.var.info.symbols = [Symbols(info={'HGNC_ID': 'TEST'}, idx=0)]
         self.var.position = 1000
         self.var.info["END"] = "1500"
         
@@ -125,7 +125,7 @@ class TestVariantCnvPy(unittest.TestCase):
         self.assertEqual(self.var.info.get_genes(), [['TEST']])
         
         # check that fixing gene names does not alter names not in the gene dict
-        self.var.genes = [Symbols(info={'HGNC_ID': 'TEST|TEST2'}, idx=0)]
+        self.var.info.symbols = [Symbols(info={'HGNC_ID': 'TEST|TEST2'}, idx=0)]
         self.var.fix_gene_IDs()
         self.assertEqual(self.var.info.get_genes(), [['TEST', 'TEST2']])
         
@@ -138,7 +138,7 @@ class TestVariantCnvPy(unittest.TestCase):
         
         # check that when we do not have any known genes, the gene names are
         # unaltered
-        self.var.genes = [Symbols(info={'HGNC_ID': 'TEST|TEST2'}, idx=0)]
+        self.var.info.symbols = [Symbols(info={'HGNC_ID': 'TEST|TEST2'}, idx=0)]
         self.var.known_genes = None
         self.var.fix_gene_IDs()
         self.assertEqual(self.var.info.get_genes(), [['TEST', 'TEST2']])
@@ -154,29 +154,29 @@ class TestVariantCnvPy(unittest.TestCase):
         
         # check that HGNC takes precedence
         self.var.info["HGNC"] = "A"
-        genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
+        genes = self.var.info.parse_gene_symbols(self.var.alt_alleles, [])
         self.assertEqual(genes, [Symbols(info={'HGNC': 'A'}, idx=0)])
         
         # check that HGNC_ALL doesn't affect anything
         self.var.info["HGNC_ALL"] = "B"
         del self.var.info["HGNC"]
-        genes = self.var.get_gene_from_info(self.var.info, self.var.alt_alleles, [])
+        genes = self.var.info.parse_gene_symbols(self.var.alt_alleles, [])
         self.assertEqual(genes, [Symbols(info={}, idx=0)])
     
     def test_get_genes(self):
         """ test that get_genes() works correctly
         """
         
-        self.var.genes = [Symbols(info={}, idx=0)]
+        self.var.info.symbols = [Symbols(info={}, idx=0)]
         self.assertEqual(self.var.info.get_genes(), [[]])
         
-        self.var.genes = [Symbols(info={'HGNC': 'TEST'}, idx=0)]
+        self.var.info.symbols = [Symbols(info={'HGNC': 'TEST'}, idx=0)]
         self.assertEqual(self.var.info.get_genes(), [["TEST"]])
         
-        self.var.genes = [Symbols(info={'HGNC': 'TEST1|TEST2'}, idx=0)]
+        self.var.info.symbols = [Symbols(info={'HGNC': 'TEST1|TEST2'}, idx=0)]
         self.assertEqual(self.var.info.get_genes(), [["TEST1", "TEST2"]])
         
-        self.var.genes = [Symbols(info={'HGNC': '.'}, idx=0)]
+        self.var.info.symbols = [Symbols(info={'HGNC': '.'}, idx=0)]
         self.assertEqual(self.var.info.get_genes(), [[None]])
     
     def test_fails_y_chrom_female(self):

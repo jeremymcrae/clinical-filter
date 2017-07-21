@@ -88,8 +88,8 @@ class SNV(Variant):
         except ValueError:
             allele_1, allele_2 = genotype.split("|")
         
-        assert self.is_number(allele_1)
-        assert self.is_number(allele_2)
+        assert self.info.is_number(allele_1)
+        assert self.info.is_number(allele_2)
         
         # if the two alleles are different, return 1, which roughly equates
         # to heterozygous. Strictly this isn't quite true, since some variants
@@ -217,9 +217,9 @@ class SNV(Variant):
         if pass_value == False and self.get_position() == self.debug_pos:
             
             if key == "MAF":
-                value = self.find_max_allele_frequency()
+                value = self.info.find_max_allele_frequency()
             elif key == "consequence":
-                value = self.consequence
+                value = self.info.consequence
             elif key == "FILTER":
                 value = self.filter
             elif key == "HGNC":
@@ -238,11 +238,11 @@ class SNV(Variant):
         """
         
         # exclude variants without functional consequences
-        if not self.is_lof() and not self.is_missense():
+        if not self.is_lof() and not self.is_missense(is_cnv=False):
             return (False, "consequence")
         
         # exclude variants with high minor allele frequencies in any population
-        max_maf = self.find_max_allele_frequency()
+        max_maf = self.info.find_max_allele_frequency()
         if max_maf is not None and max_maf > 0.005:
             return (False, "MAF")
         

@@ -28,7 +28,7 @@ from clinicalfilter.ped import Family, Person
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
 
-from tests.utils import create_snv, create_variant
+from tests.utils import create_variant
 from tests.utils import make_vcf_header, make_vcf_line
 
 
@@ -96,14 +96,14 @@ class TestFilterPy(unittest.TestCase):
         self.assertEqual(self.finder.analyse_trio(family),
             [(TrioGenotypes(chrom="1", pos=1,
                 child=SNV(chrom="1", position=1, id=".", ref="G", alts="T",
-                    filter="PASS",
+                    qual='1000', filter="PASS",
                     info="CQ=missense_variant;DENOVO-SNP;HGNC=ARID1B;PP_DNM=1",
                     format="DP:GT", sample="50:0/1", gender="female", mnv_code=None),
                 mother=SNV(chrom="1", position=1, id=".", ref="G", alts="T",
-                    filter="PASS", info="CQ=missense_variant;HGNC=ARID1B",
+                    qual='1000', filter="PASS", info="CQ=missense_variant;HGNC=ARID1B",
                     format="DP:GT", sample="50:0/0", gender="female", mnv_code=None),
                 father=SNV(chrom="1", position=1, id=".", ref="G", alts="T",
-                    filter="PASS", info="CQ=missense_variant;HGNC=ARID1B",
+                    qual='1000', filter="PASS", info="CQ=missense_variant;HGNC=ARID1B",
                     format="DP:GT", sample="50:0/0", gender="male", mnv_code=None)),
             ['single_variant'], ['Monoallelic'], ['ARID1B'])])
     

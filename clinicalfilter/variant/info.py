@@ -44,7 +44,7 @@ class Info(object):
     
     @classmethod
     def set_last_base_sites(cls_obj, sites):
-        cls_obj.last_base = sites
+        cls_obj.last_base = set(sites)
     
     @classmethod
     def set_populations(cls_obj, populations):
@@ -54,7 +54,7 @@ class Info(object):
             assert type(populations) == list
             cls_obj.populations = populations
     
-    def __init__(self, info_values, mnv_code):
+    def __init__(self, info_values, mnv_code=None):
         """Parses the INFO column from VCF files.
         
         Args:
@@ -63,6 +63,9 @@ class Info(object):
         
         self.mnv_code = mnv_code
         self.info = {}
+        if info_values is None:
+            return
+        
         for item in info_values.split(";"):
             if "=" in item:
                 try:
@@ -75,11 +78,11 @@ class Info(object):
                 key, value = item, True
             self.info[key] = value
     
-    def set_genes_and_consequence(self, chrom, pos, ref, alts, masked):
+    def set_genes_and_consequence(self, chrom, pos, alts, masked):
         ''' find the gene symbols and consequences for good alleles
         '''
         self.symbols = self.parse_gene_symbols(alts, masked)
-        self.consequence = self.get_consequences(chrom, pos, ref, alts, masked)
+        self.consequence = self.get_consequences(chrom, pos, alts, masked)
     
     def __str__(self):
         ''' reprocess the info dictionary back into a string, correctly sorted
@@ -108,13 +111,13 @@ class Info(object):
             ValueError if the key is already present in the dictionary
         '''
         
-        if key not in self.info:
-            self.info[key] = value
-        else:
-            raise ValueError('tried to add an already existing field to the INFO')
+        self.info[key] = value
     
     def __contains__(self, key):
         return key in self.info
+    
+    def __delitem__(self, key):
+        del self.info[key]
     
     def parse_gene_symbols(self, alts, masked):
         """ parses the available gene symbols in the INFO.
@@ -161,11 +164,11 @@ class Info(object):
             masked alt alleles.)
         """
         
-        pos = [ i for i, x in enumerate(alts) if x not in masked ]
+        idx = [ i for i, x in enumerate(alts) if x not in masked ]
         cq = None
         if "CQ" in self.info:
             cq = self.info["CQ"].split(',')
-            cq = [ cq[i].split('|') for i in pos ]
+            cq = [ cq[i].split('|') for i in idx ]
         
         # Allow for sites at the end of exons, changing from a conserved base.
         # These haven't been annotated in the VCF, so we modify the VEP
@@ -279,7 +282,8 @@ class Info(object):
         
         cq = self.get_per_gene_consequence(gene_symbol)
         
-        return not self.is_lof(gene_symbol) and not self.is_missense(gene_symbol) and \
+        return not self.is_lof(gene_symbol) and not \
+            self.is_missense(gene_symbol, is_cnv=False) and \
             len(set(cq) & self.synonymous_consequences) > 0
     
     def get_allele_frequency(self, values):

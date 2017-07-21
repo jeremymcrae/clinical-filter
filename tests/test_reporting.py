@@ -30,6 +30,7 @@ import gzip
 
 import clinicalfilter
 from clinicalfilter.ped import Family
+from clinicalfilter.variant.info import Info
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
@@ -72,7 +73,7 @@ class TestReportPy(unittest.TestCase):
         
         self.report = Report(None, None, None)
         self.report.family = self.trio
-        SNV.set_populations(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF",
+        Info.set_populations(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF",
             "EAS_AF", "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"])
     
     def create_family(self, child_gender, mom_aff, dad_aff):

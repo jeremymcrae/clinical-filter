@@ -224,14 +224,15 @@ class Inheritance(object):
         # variants have missense equivalent consequences, since these are very
         # unlikely to be pathogenic.
         if not self.trio.has_parents() and \
-          first.child.is_missense(self.gene) and second.child.is_missense(self.gene):
+          first.child.is_missense(first.is_cnv(), self.gene) and \
+          second.child.is_missense(second.is_cnv(), self.gene):
             return False
         
         # some CNVs get lumped with NA "." gene values, which mean when
         # we get two CNVs under "." gene IDs, these automatically come
         # through as compound hets, even though they might be on
         # different chroms
-        if first.get_genes() == [[None]]:
+        if first.get_genes() == [[]]:
             return False
         
         # now we have two different variants in the same gene

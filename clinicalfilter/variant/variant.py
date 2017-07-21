@@ -38,7 +38,7 @@ class Variant(object):
     def set_known_genes(cls_obj, known_genes):
         cls_obj.known_genes = known_genes
     
-    def __init__(self, chrom, position, id, ref, alts, filter, info=None,
+    def __init__(self, chrom, position, id, ref, alts, qual, filter, info=None,
             format=None, sample=None, gender=None, mnv_code=None):
         """ initialise the object with the definition values
         """
@@ -54,11 +54,10 @@ class Variant(object):
         self.alt_alleles = tuple(alts.split(','))
         
         self.mnv_code = mnv_code
+        self.qual = qual
         self.filter = filter
         
         # intialise variables that will be set later
-        self.genes = None
-        self.consequence = None
         self.inheritance_type = None
         
         self.gender = None
@@ -73,8 +72,8 @@ class Variant(object):
         
         self.info = Info(info, self.mnv_code)
         masked = self.get_low_depth_alleles(self.ref_allele, self.alt_alleles)
-        self.set_genes_and_consequence(masked, self.get_chrom(),
-            self.get_position(), self.ref_allele, self.alt_alleles)
+        self.info.set_genes_and_consequence(self.get_chrom(),
+            self.get_position(), self.alt_alleles, masked)
         
         self.genotype = None
         if self.format is not None and self._get_gender() is not None:
@@ -107,10 +106,10 @@ class Variant(object):
         mnv_code = quote(self.mnv_code)
         
         return '{}(chrom="{}", position={}, id="{}", ref="{}", alts="{}", ' \
-            'filter="{}", info={}, format={}, sample={}, gender={}, ' \
+            'qual="{}", filter="{}", info={}, format={}, sample={}, gender={}, ' \
             'mnv_code={})'.format(type(self).__name__, self.chrom,
             self.position, self.variant_id, self.ref_allele,
-            ','.join(self.alt_alleles), self.filter, info, keys, sample,
+            ','.join(self.alt_alleles), self.qual, self.filter, info, keys, sample,
             gender, mnv_code)
     
     def __hash__(self):

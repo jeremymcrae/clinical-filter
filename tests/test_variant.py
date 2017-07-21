@@ -21,6 +21,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import unittest
 from clinicalfilter.variant.variant import Variant
+from clinicalfilter.variant.info import Info
 
 
 class TestVariantPy(unittest.TestCase):
@@ -35,9 +36,13 @@ class TestVariantPy(unittest.TestCase):
         snp_id = "."
         ref = "A"
         alt = "G"
+        qual = "1000"
         filt = "PASS"
+        info = 'AC=1;HGNC=TEST'
+        keys = 'GT:DP:AD'
+        sample = '0/1:40:10,10'
         
-        self.var = Variant(chrom, pos, snp_id, ref, alt, filt)
+        self.var = Variant(chrom, pos, snp_id, ref, alt, qual, filt, info, keys, sample)
     
     def test_set_gender_unknown(self):
         """ tests set_gender(), and its implications on the inheritance type
@@ -140,6 +145,45 @@ class TestVariantPy(unittest.TestCase):
         vcf_line = ["1", "15000000", ".", "A", "G", "50", "PASS", "AB=0.41;AC=1;AN=2", "GT:gatk_PL:GQ", "0/1:736,0,356:99"]
         self.var.add_vcf_line(vcf_line)
         self.assertEqual(self.var.get_vcf_line(), vcf_line)
+    
+    def test_get_low_depth_alleles(self):
+        ''' test that get_low_depth_alleles() works correctly
+        '''
+        
+        # check with a single allele whre it is non-zero
+        self.var.info = Info('AC=1')
+        alts = ('C', )
+        self.assertEqual(self.var.get_low_depth_alleles('G', alts), [])
+        
+        # check with a single allele with zero count
+        self.var.info = Info('AC=0')
+        alts = ('C', )
+        self.assertEqual(self.var.get_low_depth_alleles('G', alts), ['C'])
+        
+        # check with multiallelic, where both are nonzero
+        self.var.info = Info('AC=1,1')
+        self.var.format = {'AD': '5,10,10'}
+        alts = ('C', 'G')
+        self.assertEqual(self.var.get_low_depth_alleles('G', alts), [])
+        
+        # check with multiallelic, where one a has zero count
+        self.var.info = Info('AC=1,0')
+        self.var.format = {'AD': '5,10,10'}
+        alts = ('C', 'G')
+        self.assertEqual(self.var.get_low_depth_alleles('G', alts), ['G'])
+    
+    def test_get_low_depth_alleles_bad_indel(self):
+        ''' test that get_low_depth_alleles() works for indels with depth=1
+        '''
+        # check with multiallelic, where all should pass, since none are indels
+        self.var.info = Info('AC=1,1')
+        self.var.format = {'AD': '5,10,1'}
+        alts = ('C', 'G')
+        self.assertEqual(self.var.get_low_depth_alleles('G', alts), [])
+        
+        # but if we have an indel alt, and the corresponding depth is bad, fail
+        alts = ('C', 'GG')
+        self.assertEqual(self.var.get_low_depth_alleles('G', alts), ['GG'])
     
     # TODO: check add_format
 

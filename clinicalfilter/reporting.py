@@ -121,7 +121,7 @@ class Report(object):
         trio_genotype = '{0}/{1}/{2}'.format(*var.get_trio_genotype())
         trio_genotype = trio_genotype.replace('None', 'NA')
         
-        max_af = var.child.find_max_allele_frequency()
+        max_af = var.child.info.find_max_allele_frequency()
         if max_af is None:
             max_af = 'NA'
         max_af = str(max_af)
@@ -144,7 +144,12 @@ class Report(object):
             gq = str(var.child.format['GQ'])
         
         prefs = ['HGNC', 'SYMBOL']
-        genes = [ var.child.genes[0].get(x, prefs) for x in candidate[3] ]
+        
+        genes = [ var.child.info.symbols[0].get(x, prefs) for x in candidate[3] ]
+        # genes = [ var.child.info.get_genes()[0].get(x) for x in candidate[3] ]
+        # genes = [ x.get(x, prefs) for x in genes ]
+        #
+        # genes = [ var.child.info.genes[0].get(x, prefs) for x in candidate[3] ]
         genes = [ x for x in genes if x is not None ]
         genes = ','.join(list(set(genes)))
         result = ','.join(candidate[1])
@@ -321,7 +326,9 @@ class Report(object):
             var = candidate[0]
             
             prefs = ['HGNC', 'SYMBOL']
-            genes = [ var.child.genes[0].get(x, prefs) for x in candidate[3] ]
+            genes = [ var.child.info.symbols[0].get(x, prefs) for x in candidate[3] ]
+            # genes = [ var.child.info.get_genes() for x in candidate[3] ]
+            # genes = [ x.get(x, prefs) for x in genes ]
             genes = [ x for x in genes if x is not None ]
             
             vcf_line = var.child.get_vcf_line()
@@ -329,12 +336,10 @@ class Report(object):
             if var.child.mnv_code is not None:
                 var.child.add_info_field('CANDIDATE_MNV', var.child.mnv_code)
             
-            var.child.add_info_field('ClinicalFilterType', ','.join(candidate[1]))
-            var.child.add_info_field('ClinicalFilterGeneInheritance',
-                ','.join(candidate[2]))
-            var.child.add_info_field('ClinicalFilterReportableHGNC',
-                ','.join(list(set(genes))))
-            vcf_line[7] = var.child.get_info_as_string()
+            var.child.info['ClinicalFilterType'] = ','.join(candidate[1])
+            var.child.info['ClinicalFilterGeneInheritance'] = ','.join(candidate[2])
+            var.child.info['ClinicalFilterReportableHGNC'] = ','.join(list(set(genes)))
+            vcf_line[7] = str(var.child.info)
             
             parental_inheritance = self._get_parental_inheritance(var)
             

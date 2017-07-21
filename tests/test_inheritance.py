@@ -24,6 +24,7 @@ import unittest
 from clinicalfilter.ped import Family
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.variant.cnv import CNV
+from clinicalfilter.variant.info import Info
 from clinicalfilter.inheritance import Autosomal
 from clinicalfilter.inheritance import Allosomal
 from clinicalfilter.trio_genotypes import TrioGenotypes
@@ -384,8 +385,10 @@ class TestInheritancePy(unittest.TestCase):
         var1 = self.set_compound_het_var(var1, "110")
         var2 = self.set_compound_het_var(var2, "101")
         
-        var1.child.genes[0].set('1001', None, 'HGNC_ID')
-        var2.child.genes[0].set('1001', None, 'HGNC_ID')
+        var1.child.info = Info('CQ=missense_variant')
+        var2.child.info = Info('CQ=missense_variant')
+        var1.child.info.set_genes_and_consequence('1', 100, ('G', ), [])
+        var2.child.info.set_genes_and_consequence('1', 100, ('G', ), [])
         
         # exclude pairs where both members are not loss-of-function
         self.assertFalse(self.inh.is_compound_pair(var1, var2))

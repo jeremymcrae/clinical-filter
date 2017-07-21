@@ -190,7 +190,7 @@ class Filter(object):
         
         # Now that we are examining a single gene, check that the consequences
         # for the gene are in the required functional categories.
-        variants = [ var for var in variants if var.child.is_lof(gene) or var.child.is_missense(gene, var.child.is_cnv()) ]
+        variants = [ var for var in variants if var.child.is_lof(gene) or var.child.is_missense(var.child.is_cnv(), gene) ]
         if variants == []:
             return []
         

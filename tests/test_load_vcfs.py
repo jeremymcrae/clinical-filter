@@ -167,33 +167,6 @@ class TestLoadVCFsPy(unittest.TestCase):
             exclude_header(handler)
             self.assertEqual(handler.readline(), vcf[4])
     
-    def test_add_single_variant(self):
-        """ test that add_single_variant() works correctly
-        """
-        
-        # the sub-functions are all tested elsewhere, this test merely checks
-        # that valid variants are added to the variants list, and invalid
-        # variants are passed over without being added to the variants list
-        
-        # set up an autosomal variant
-        line = ["1", "100", ".", "T", "G", "1000", "PASS", ".", "GT", "0/1"]
-        gender = "M"
-        variant = SNV(*line[:6])
-        
-        # check that the variant is added to the variant list
-        variants = []
-        self.vcf_loader.add_single_variant(variants, variant, gender, line)
-        self.assertEqual(variants, [variant])
-        
-        # set up an X-chrom male het
-        line = ["X", "100", ".", "T", "G", "1000", "PASS", ".", "GT", "0/1"]
-        variant = SNV(*line[:6])
-        
-        # check that the X-chrom male het is not added to the variant list
-        variants = []
-        self.vcf_loader.add_single_variant(variants, variant, gender, line)
-        self.assertEqual(variants, [])
-    
     def test_get_vcf_provenance(self):
         """ test that get_vcf_provenance() works correctly
         """
@@ -252,68 +225,62 @@ class TestLoadVCFsPy(unittest.TestCase):
         # check that construct variant works for SNVs
         line = ["1", "100", ".", "T", "G", "1000", "PASS", ".", "GT", "0/1"]
         gender = "M"
-        test_var = SNV(*line[:6])
+        test_var = SNV(*line, gender=gender)
         
         variant = construct_variant(line, gender)
         
         self.assertEqual(variant.get_key(), test_var.get_key())
-        # initally constructing a SNV shouldn't affect the format variable
-        self.assertEqual(variant.format, None)
+        self.assertEqual(variant.format, {'GT': '0/1'})
         
         # check that construct variant works for CNVs
         line = ["1", "100", ".", "T", "<DEL>", "1000", "PASS", "END=200", "GT", "0/1"]
         gender = "M"
-        test_var = CNV(*line[:6])
-        test_var.add_info(line[7])
+        test_var = CNV(*line, gender=gender)
         
         variant = construct_variant(line, gender)
         
         self.assertEqual(variant.get_key(), test_var.get_key())
-        self.assertNotEqual(variant.format, None)
-        
-        # TODO: add checks for when HGNC is in the the filters
+        self.assertEqual(variant.format, {'GT': '0/1'})
     
     def test_include_variant(self):
         """ check that include_variant() works correctly
         """
         
         mnvs = {}
-        child_variants = False
+        child_keys = None
         gender = "M"
         # make a child var which passes the filters
         line = ["1", "100", ".", "T", "A", "1000", "PASS", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
+        self.assertTrue(self.vcf_loader.include_variant(line, child_keys, gender, mnvs))
         
         # make a child var that fails the filters, which should return False
         line = ["1", "100", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
+        self.assertFalse(self.vcf_loader.include_variant(line, child_keys, gender, mnvs))
         
         # now check for parents variants
-        child_variants = True
         # check a parents var, where we have a matching child var
-        self.vcf_loader.child_keys = set([("1", 100), ("X", 200)])
+        child_keys = set([("1", 100), ("X", 200)])
         line = ["1", "100", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
+        self.assertTrue(self.vcf_loader.include_variant(line, child_keys, gender, mnvs))
         
         # check a parents var, where we don't have a matching child var
         line = ["1", "200", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
+        self.assertFalse(self.vcf_loader.include_variant(line, child_keys, gender, mnvs))
         
         # and check parental CNVs
         line = ["1", "100", ".", "T", "<DEL>", "1000", "PASS", "END=200", "GT", "0/1"]
         gender = "M"
-        test_var = CNV(*line[:6])
-        test_var.add_info(line[7])
+        test_var = CNV(*line)
         
         # in this function we look for overlap in CNVs. Set up a child CNV
         # that the parents CNV must match.
-        self.assertTrue(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
+        self.assertTrue(self.vcf_loader.include_variant(line, child_keys, gender, mnvs))
         
         # check that a parental CNV without any overlap to any childs CNVs,
         # fails to pass
         line = ["1", "300", ".", "T", "<DEL>", "1000", "PASS", "END=400", "GT", "0/1"]
         gender = "M"
-        self.assertFalse(self.vcf_loader.include_variant(line, child_variants, gender, mnvs))
+        self.assertFalse(self.vcf_loader.include_variant(line, child_keys, gender, mnvs))
     
     def test_open_individual(self):
         ''' test that open_individual() works correctly
@@ -332,19 +299,19 @@ class TestLoadVCFsPy(unittest.TestCase):
         person = Person('fam_id', 'sample', 'dad', 'mom', 'F', '2', path)
         
         var1 = SNV(chrom="1", position=1, id=".", ref="G", alts="T",
-            filter="PASS", info="CQ=missense_variant;HGNC=TEST;MAX_AF=0.0001",
+            qual='1000', filter="PASS", info="CQ=missense_variant;HGNC=TEST;MAX_AF=0.0001",
             format="DP:GT", sample="50:0/1", gender="female", mnv_code=None)
         var2 = SNV(chrom="1", position=2, id=".", ref="G", alts="T",
-            filter="PASS", info="CQ=missense_variant;HGNC=ATRX;MAX_AF=0.0001",
+            qual='1000', filter="PASS", info="CQ=missense_variant;HGNC=ATRX;MAX_AF=0.0001",
             format="DP:GT", sample="50:0/1", gender="female", mnv_code=None)
         
         self.assertEqual(self.vcf_loader.open_individual(person), [var2])
         
         # define a set of variants to automatically pass, and check that these
         # variants pass.
-        self.vcf_loader.child_keys = set([('1', 1), ('1', 2)])
+        child_keys = set([('1', 1), ('1', 2)])
         self.assertEqual(self.vcf_loader.open_individual(person,
-            child_variants=True), [var1, var2])
+            child_variants=child_keys), [var1, var2])
     
     def test_open_individual_with_mnvs(self):
         ''' test that open_individual works with MNVs
@@ -364,7 +331,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         args = {'chrom': "1", 'position': 1, 'id': ".", 'ref': "G", 'alts': "T",
             'filter': "PASS", 'info': "CQ=splice_region_variant;HGNC=ATRX;MAX_AF=0.0001",
             'format': "DP:GT", 'sample': "50:0/1", 'gender': "female",
-            'mnv_code': 'modified_protein_altering_mnv'}
+            'mnv_code': 'modified_protein_altering_mnv', 'qual': '1000'}
         var1 = SNV(**args)
         
         args['position'] = 2
@@ -379,6 +346,25 @@ class TestLoadVCFsPy(unittest.TestCase):
         self.assertEqual(self.vcf_loader.open_individual(person,
             mnvs={('1', 1): 'modified_protein_altering_mnv',
             ('1', 2): 'modified_synonymous_mnv'}), [var1])
+    
+    def test_open_individual_male_het_chrx(self):
+        """ test that open_individual() passes over hets in males on chrX
+        """
+        
+        # the sub-functions are all tested elsewhere, this test merely checks
+        # that valid variants are added to the variants list, and invalid
+        # variants are passed over without being added to the variants list
+        
+        vcf = make_vcf_header()
+        vcf.append(make_vcf_line(chrom='X', pos=1, genotype='0/1',
+            extra='HGNC=TEST;MAX_AF=0.0001'))
+        
+        path = os.path.join(self.temp_dir, "temp.vcf")
+        self.write_temp_vcf(path, vcf)
+        
+        person = Person('fam_id', 'sample', 'dad', 'mom', 'M', '2', path)
+        
+        self.assertEqual(self.vcf_loader.open_individual(person), [])
     
     def test_load_trio(self):
         ''' test that load_trio() works correctly
@@ -408,7 +394,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         args = {'chrom': "1", 'position': 2, 'id': ".", 'ref': "G", 'alts': "T",
             'filter': "PASS", 'info': "CQ=missense_variant;HGNC=ATRX;MAX_AF=0.0001",
             'format': "DP:GT", 'sample': "50:0/1", 'gender': "female",
-            'mnv_code': None}
+            'mnv_code': None, 'qual': '1000'}
         dad_args = copy.deepcopy(args)
         dad_args['gender'] = 'male'
         
@@ -429,8 +415,8 @@ class TestLoadVCFsPy(unittest.TestCase):
         # variant for a missing parental genotype
         self.assertEqual(self.vcf_loader.get_parental_var(var, parental, mom),
             SNV(chrom="1", position=150, id=".", ref="A", alts="G",
-                filter="PASS", info=var.get_info_as_string(), format="GT", sample="0/0",
-                gender="female", mnv_code=None))
+                qual='1000', filter="PASS", info=str(var.info), format="GT",
+                sample="0/0", gender="female", mnv_code=None))
         
         # now see if we can pick up a  variant where it does exist
         mother_var = create_snv(sex, '0/0')
@@ -448,7 +434,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         self.assertEqual(self.vcf_loader.get_parental_var(var, parental_vars,
             mom), CNV(chrom="1", position=150, id=".", ref="A",
-                alts="<REF>", filter="PASS", info=var.get_info_as_string(),
+                alts="<REF>", qual='1000', filter="PASS", info=str(var.info),
                 format='INHERITANCE', sample='uncertain', gender="female",
                 mnv_code=None))
         
@@ -457,7 +443,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         mother_var = create_cnv(sex, 'uncertain')
         self.assertEqual(self.vcf_loader.get_parental_var(var, [mother_var],
             mom), CNV(chrom="1", position=150, id=".", ref="A",
-                alts="<REF>", filter="PASS", info=var.get_info_as_string(),
+                alts="<REF>", qual='1000', filter="PASS", info=str(var.info),
                 format='INHERITANCE', sample='uncertain', gender="female",
                 mnv_code=None))
     
@@ -473,7 +459,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         var = create_cnv(sex, 'maternal')
         self.assertEqual(self.vcf_loader.get_parental_var(var, [], mom),
             CNV(chrom="1", position=150, id=".", ref="A",
-                alts="<DUP>", filter="PASS", info=var.get_info_as_string(),
+                alts="<DUP>", qual='1000',filter="PASS", info=str(var.info),
                 format='INHERITANCE', sample='uncertain', gender="female",
                 mnv_code=None))
     
@@ -489,7 +475,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         # set up an autosomal variant
         gender = "M"
-        args = ["1", "100", ".", "T", "G", "PASS", ".", "GT", "0/1", gender]
+        args = ["1", "100", ".", "T", "G", "1000", "PASS", ".", "GT", "0/1", gender]
         child_var = SNV(*args)
         
         # combine the variant into a list of TrioGenotypes
