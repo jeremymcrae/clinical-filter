@@ -70,16 +70,15 @@ class TestLoadVCFsPy(unittest.TestCase):
         CNV.known_genes = self.known_genes
     
     def tearDown(self):
-        # assign the known genes to the variant classes, so later tests can rely
-        # on the known genes
-        SNV.known_genes = self.known_genes
-        CNV.known_genes = self.known_genes
+        SNV.known_genes = None
+        CNV.known_genes = None
         
         Info.populations = []
         Info.last_base = set()
     
     def test_load_variants(self):
-        ''' test that load_variants() works correctly. Mainly checks variables are set correctly
+        ''' test that load_variants() works correctly. Mainly checks variables
+        are set correctly.
         '''
         
         vcf = make_minimal_vcf()
