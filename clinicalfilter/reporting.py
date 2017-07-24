@@ -67,13 +67,13 @@ class Report(object):
         
         # export the results in tabular format
         if self.output_path is not None:
-            self._save_tabular(self.output_path, variants, family)
+            _save_tabular(self.output_path, variants, family)
         
         # export the results in vcf format
         if self.export_vcf is not None:
-            lines = self._get_vcf_lines(variants, family)
-            path = self._get_vcf_export_path(self.export_vcf, family)
-            self._write_vcf(path, lines)
+            lines = _get_vcf_lines(variants, family)
+            path = _get_vcf_export_path(self.export_vcf, family)
+            _write_vcf(path, lines)
 
 def _log_run_details():
     ''' log the python version and run date
