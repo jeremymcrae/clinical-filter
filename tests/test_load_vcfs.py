@@ -75,7 +75,6 @@ class TestLoadVCFsPy(unittest.TestCase):
         SNV.known_genes = self.known_genes
         CNV.known_genes = self.known_genes
         
-        # Info.populations = ['AFR_AF']
         Info.populations = []
         Info.last_base = set()
     
