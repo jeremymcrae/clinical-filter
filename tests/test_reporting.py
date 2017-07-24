@@ -34,7 +34,9 @@ from clinicalfilter.variant.info import Info
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
-from clinicalfilter.reporting import Report
+from clinicalfilter.reporting import Report, _log_run_details, _get_output_line, \
+    _save_tabular, _get_provenance, _get_vcf_export_path, _make_vcf_header, \
+    _get_parental_inheritance, _get_vcf_lines, _write_vcf
 
 logging.disable(logging.CRITICAL)
 
@@ -97,7 +99,7 @@ class TestReportPy(unittest.TestCase):
         
         var = (self.variants[0], ["single_variant"], ["Monoallelic"], ["TEST"])
         var[0].child.format['GQ'] = 40
-        report._save_tabular([var], self.trio)
+        _save_tabular(temp.name, [var], self.trio)
         
         with open(temp.name, 'r') as handle:
             lines = handle.readlines()
@@ -119,7 +121,7 @@ class TestReportPy(unittest.TestCase):
         prov = ["checksum", "sample.calls.date.vcf.gz", "2014-01-01"]
         member = "proband"
         
-        self.assertEqual(self.report._get_provenance(prov, member), \
+        self.assertEqual(_get_provenance(prov, member), \
             ["##UberVCF_proband_Id=sample\n", \
             "##UberVCF_proband_Checksum=checksum\n", \
             "##UberVCF_proband_Basename=sample.calls.date.vcf.gz\n", \
@@ -131,19 +133,19 @@ class TestReportPy(unittest.TestCase):
         
         # use a folder to place the VCFG file in, which means we join the
         # proband ID to get a full path
-        self.report.export_vcf = os.getcwd()
-        self.assertEqual(self.report._get_vcf_export_path(self.trio),
+        export_vcf = os.getcwd()
+        self.assertEqual(_get_vcf_export_path(export_vcf, self.trio),
             os.path.join(os.getcwd(), "child.vcf.gz"))
         
         # define an un-usable directory, to raise an error
-        self.report.export_vcf = os.getcwd() + "asjhfgasjhfg"
+        export_vcf = os.getcwd() + "asjhfgasjhfg"
         with self.assertRaises(ValueError):
-            self.report._get_vcf_export_path(self.trio)
+            _get_vcf_export_path(export_vcf, self.trio)
         
         # define a specific path for a VCF file, which is returned directly
-        self.report.export_vcf = os.path.join(os.getcwd(), "sample_id.vcf.gz")
-        self.assertEqual(self.report._get_vcf_export_path(self.trio),
-            self.report.export_vcf)
+        export_vcf = os.path.join(os.getcwd(), "sample_id.vcf.gz")
+        self.assertEqual(_get_vcf_export_path(export_vcf, self.trio),
+            export_vcf)
     
     def test__make_vcf_header(self):
         """ check that _make_vcf_header() works correctly
@@ -205,7 +207,7 @@ class TestReportPy(unittest.TestCase):
         # check that the standard function returns the expected value. Note that
         # I haven't checked the output if self.known_genes_date is not None, nor
         # have I checked if the _clinicalFilterVersion is available
-        self.assertEqual(self.report._make_vcf_header(header, provenance),
+        self.assertEqual(_make_vcf_header(header, provenance),
            processed_header)
     
     def test__get_parental_inheritance(self):
@@ -216,24 +218,24 @@ class TestReportPy(unittest.TestCase):
         fam = self.trio
         
         # check for the default genotypes
-        self.assertEqual(self.report._get_parental_inheritance(var, fam), "deNovo")
+        self.assertEqual(_get_parental_inheritance(var, fam), "deNovo")
         
         # check when only the mother is non-ref
         var.mother.genotype = 1
-        self.assertEqual(self.report._get_parental_inheritance(var, fam), "maternal")
+        self.assertEqual(_get_parental_inheritance(var, fam), "maternal")
         
         # check when both parents are non-ref
         var.father.genotype = 1
-        self.assertEqual(self.report._get_parental_inheritance(var, fam), "biparental")
+        self.assertEqual(_get_parental_inheritance(var, fam), "biparental")
         
         # check when only the father is non-ref
         var.mother.genotype = 0
-        self.assertEqual(self.report._get_parental_inheritance(var, fam), "paternal")
+        self.assertEqual(_get_parental_inheritance(var, fam), "paternal")
         
         # check when the proband lacks parental information
         fam.father = None
         fam.mother = None
-        self.assertEqual(self.report._get_parental_inheritance(var, fam), "unknown")
+        self.assertEqual(_get_parental_inheritance(var, fam), "unknown")
     
     def test__get_vcf_lines(self):
         """ check that _get_vcf_lines() works correctly
@@ -307,7 +309,7 @@ class TestReportPy(unittest.TestCase):
             'PASS', 'HGNC=TEST;HGNC_ID=1001;CQ=missense_variant;EUR_AF=0.0005',
             'GT:DP', '0/1:50'])
         
-        self.assertEqual(list(self.report._get_vcf_lines([var], family)), vcf_lines + line)
+        self.assertEqual(list(_get_vcf_lines([var], family)), vcf_lines + line)
     
     def test__get_output_line(self):
         """ check that _get_output_line() works correctly
@@ -318,7 +320,7 @@ class TestReportPy(unittest.TestCase):
         # check the output for the default variant
         expected = "child\tF\tX\t150\tTEST\tNA\tNA\tmissense_variant\t" \
             "A/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\tsingle_variant\t0.99\tNA\tNA\tTrue\tNA\n"
-        self.assertEqual(self.report._get_output_line(var, self.trio), expected)
+        self.assertEqual(_get_output_line(var, self.trio), expected)
         
         # introduce additional info for the output line parsing, check the line
         # that is returned is expected
@@ -329,7 +331,7 @@ class TestReportPy(unittest.TestCase):
             "missense_variant,PolyPhen=probably_damaging(0.99)," \
             "SIFT=deleterious(0)\tA/G\t0.0005\tMonoallelic\t1/0/0\t1\t1\t" \
             "single_variant\t0.99\tNA\tNA\tTrue\tNA\n"
-        self.assertEqual(self.report._get_output_line(var, self.trio), expected)
+        self.assertEqual(_get_output_line(var, self.trio), expected)
     
     def test__write_vcf(self):
         ''' check that _write_vcf() works correctly
@@ -344,7 +346,7 @@ class TestReportPy(unittest.TestCase):
             'ClinicalFilterReportableHGNC=TEST\tGT:DP:INHERITANCE:'
             'INHERITANCE_GENOTYPE\t0/1:50:deNovo:1,0,0\n']
         
-        self.report._write_vcf(path.name, lines)
+        _write_vcf(path.name, lines)
         
         with gzip.open(path.name, 'r') as handle:
             vcf = [ x.decode() for x in handle ]
