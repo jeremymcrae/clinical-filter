@@ -39,6 +39,9 @@ class TestVariantInfoPy(unittest.TestCase):
         # set up a SNV object, since SNV inherits Info
         self.info = Info("HGNC_ID=1001;CQ=missense_variant;random_tag")
     
+    def tearDown(self):
+        Info.set_populations([])
+    
     def test_get_consequence(self):
         """ test that get_consequence works correctly
         """

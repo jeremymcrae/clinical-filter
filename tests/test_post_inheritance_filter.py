@@ -21,6 +21,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import unittest
 from clinicalfilter.ped import Family
+from clinicalfilter.variant.info import Info
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
@@ -33,6 +34,8 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
     def setUp(self):
         """ define a default variant object
         """
+        
+        Info.populations = ['AFR_AF']
         
         family = Family('test')
         family.add_child('child', 'mother', 'father', 'male', '2', 'child_vcf')
@@ -48,7 +51,10 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         self.variants.append((cnv, ["single_variant"], ["Monoallelic"], ["ATRX"]))
         
         self.post_filter = PostInheritanceFilter(family)
-        
+    
+    def tearDown(self):
+        Info.populations = []
+    
     def create_var(self, chrom, snv=True, geno=["0/1", "0/1", "0/1"], info=None,
             pos='150', **kwargs):
         """ define a family and variant, and start the Inheritance class

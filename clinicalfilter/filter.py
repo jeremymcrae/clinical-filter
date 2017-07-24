@@ -21,11 +21,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import logging
 
-from clinicalfilter.load_vcfs import LoadVCFs
+from clinicalfilter.load_vcfs import load_variants
 from clinicalfilter.inheritance import Allosomal, Autosomal
 from clinicalfilter.post_inheritance_filter import PostInheritanceFilter
 from clinicalfilter.reporting import Report
-from clinicalfilter.utils import get_vcf_provenance
 from clinicalfilter.load_files import open_known_genes, open_cnv_regions, \
     open_last_base_sites
 
@@ -60,7 +59,10 @@ class Filter(object):
         """
         
         self.pp_filter = pp_filter
+        self.total = count
+        self.count = 0
         
+        self.populations = population_tags
         self.debug_chrom = debug_chrom
         self.debug_pos = debug_pos
         
@@ -68,9 +70,6 @@ class Filter(object):
         self.known_genes = open_known_genes(known_genes)
         self.cnv_regions = open_cnv_regions(regions)
         self.last_base = open_last_base_sites(lof_sites)
-        
-        self.loader = LoadVCFs(count, population_tags, self.known_genes,
-              self.last_base, self.debug_chrom, self.debug_pos)
         
         self.reporter = Report(output_path, export_vcf, date)
     
@@ -83,14 +82,12 @@ class Filter(object):
         family.set_child()
         while family.child is not None:
             if family.child.is_affected():
+                self.count += 1
+                logging.info("opening trio {} of {}".format(self.count, self.total))
+                
                 found_vars = self.analyse_trio(family)
-                
-                vcf_provenance = [ get_vcf_provenance(x) for x in
-                    [family.child, family.mother, family.father] ]
-                
                 # export the results to either tab-separated table or VCF format
-                self.reporter.export_data(found_vars, family, \
-                    self.loader.child_header, vcf_provenance)
+                self.reporter.export_data(found_vars, family)
             
             family.set_child_examined()
     
@@ -111,7 +108,8 @@ class Filter(object):
             variants that pass inheritance and post-inheritance checks.
         """
         
-        variants = self.loader.get_trio_variants(family, self.pp_filter)
+        variants = load_variants(family, self.pp_filter, self.populations,
+            self.known_genes, self.last_base, self.debug_chrom, self.debug_pos)
         
         # organise variants by gene, then find variants that fit different
         # inheritance models. We have to flatten the list of variant lists

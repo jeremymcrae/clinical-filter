@@ -19,7 +19,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
-
+import logging
 import os
 import io
 import sys
@@ -42,7 +42,9 @@ def open_vcf(path):
     """
     
     if not os.path.exists(path):
-        raise OSError("VCF file not found at: " + path)
+        msg = "VCF not found: {}".format(path)
+        logging.error(msg)
+        raise OSError(msg)
     
     extension = os.path.splitext(path)[1]
     
@@ -55,7 +57,7 @@ def open_vcf(path):
     elif extension in [".vcf", ".txt"]:
         handle = io.open(path, "r", encoding="latin_1")
     else:
-        raise OSError("unsupported filetype: " + path)
+        raise OSError("unsupported filetype: {}".format(path))
     
     return handle
 
@@ -130,7 +132,7 @@ def construct_variant(line, gender, mnvs=None):
         returns a Variant object
     """
     
-    chrom, pos, var_id, ref, alt, qual, filter_val, info, format_keys, sample = line[:10]
+    chrom, pos, var_id, ref, alt, qual, filter_val, info, keys, sample = line[:10]
     
     # CNVs are found by their alt_allele values, as either <DUP>, or <DEL>
     Var = SNV
@@ -141,7 +143,7 @@ def construct_variant(line, gender, mnvs=None):
     if mnvs is not None and (chrom, int(pos)) in mnvs:
         mnv_code = mnvs[(chrom, int(pos))]
     
-    var = Var(chrom, pos, var_id, ref, alt, qual, filter_val, info, format_keys,
+    var = Var(chrom, pos, var_id, ref, alt, qual, filter_val, info, keys,
         sample, gender, mnv_code=mnv_code)
     
     if var.is_cnv():

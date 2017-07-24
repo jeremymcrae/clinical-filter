@@ -19,6 +19,9 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
+import tempfile
+import subprocess
+
 from clinicalfilter.variant.snv import SNV
 from clinicalfilter.variant.cnv import CNV
 from clinicalfilter.trio_genotypes import TrioGenotypes
@@ -129,3 +132,25 @@ def make_minimal_vcf():
     variants.append(make_vcf_line(pos=200))
     
     return make_vcf_header() + variants
+
+def write_temp_vcf(path, vcf_data):
+    """ writes data to a file
+    """
+    
+    with open(path, 'w') as handle:
+        handle.writelines(vcf_data)
+
+def write_gzipped_vcf(path, lines):
+    ''' write, compress, and index lines for a VCF
+    '''
+    
+    handle = tempfile.NamedTemporaryFile(mode='wt')
+    handle.writelines(lines)
+    handle.flush()
+    
+    # assume bgzip and tabix binaries are available, this should be
+    # handled by travis-ci setup.
+    with open(path, 'w') as output:
+        subprocess.call(['bgzip', '-c', handle.name], stdout=output)
+    
+    subprocess.call(['tabix', '-f', '-p', 'vcf', path])

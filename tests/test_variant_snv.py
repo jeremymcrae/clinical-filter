@@ -34,14 +34,13 @@ class TestVariantSnvPy(unittest.TestCase):
     """ unit testing of the SNV class
     """
     
-    pops = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF", "ESP_AF",
-        "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"]
-    Info.set_populations(pops)
-    SNV.set_known_genes(None)
-    
     def setUp(self):
         """ define a default SNV object
         """
+        
+        self.pops = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF", "ESP_AF",
+            "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"]
+        Info.set_populations(self.pops)
         
         chrom = "1"
         pos = "15000000"
@@ -55,10 +54,12 @@ class TestVariantSnvPy(unittest.TestCase):
         self.keys = "GT:DP"
         self.values = "0/1:50"
         
-        SNV.set_known_genes(None)
-        # set up a SNV object, since SNV inherits VcfInfo
         self.var = SNV(chrom, pos, snp_id, ref, alt, qual, filt, info=info,
             format=self.keys, sample=self.values)
+    
+    def tearDown(self):
+        SNV.known_genes = None
+        Info.set_populations([])
     
     def test_get_key(self):
         """ tests that get_key() operates correctly

@@ -26,6 +26,8 @@ import sys
 import os
 
 import clinicalfilter
+from clinicalfilter.utils import get_vcf_header
+from clinicalfilter.utils import get_vcf_provenance
 
 class Report(object):
     ''' A class to report candidate variants.
@@ -40,7 +42,6 @@ class Report(object):
             known_genes_date: date the known gene list was generated, or None
         '''
         
-        self.family = None
         self.output_path = output_path
         self.export_vcf = export_vcf
         self.known_genes_date = known_genes_date
@@ -65,7 +66,7 @@ class Report(object):
         logging.info('# clinicalfilter version: {}'.format(clinicalfilter.__version__))
         logging.info('#')
     
-    def export_data(self, variants, family, vcf_header, vcf_provenance):
+    def export_data(self, variants, family):
         ''' export the variants to files (if we have specified paths)
         
         Args:
@@ -73,15 +74,13 @@ class Report(object):
             family: Family object
         '''
         
-        self.family = family
-        
         # export the results in tabular format
         if self.output_path is not None:
             self._save_tabular(variants, family)
         
         # export the results in vcf format
         if self.export_vcf is not None:
-            lines = self._get_vcf_lines(variants, vcf_header, vcf_provenance)
+            lines = self._get_vcf_lines(variants, family)
             path = self._get_vcf_export_path(family)
             self._write_vcf(path, lines)
     
@@ -146,10 +145,6 @@ class Report(object):
         prefs = ['HGNC', 'SYMBOL']
         
         genes = [ var.child.info.symbols[0].get(x, prefs) for x in candidate[3] ]
-        # genes = [ var.child.info.get_genes()[0].get(x) for x in candidate[3] ]
-        # genes = [ x.get(x, prefs) for x in genes ]
-        #
-        # genes = [ var.child.info.genes[0].get(x, prefs) for x in candidate[3] ]
         genes = [ x for x in genes if x is not None ]
         genes = ','.join(list(set(genes)))
         result = ','.join(candidate[1])
@@ -280,7 +275,7 @@ class Report(object):
         
         return header
     
-    def _get_parental_inheritance(self, var):
+    def _get_parental_inheritance(self, var, family):
         ''' figures out the parental inheritance for SNVs
         
         Args:
@@ -291,7 +286,7 @@ class Report(object):
             paternal or maternal
         '''
         
-        if self.family.has_parents():
+        if family.has_parents():
             mother_genotype = var.mother.get_genotype()
             father_genotype = var.father.get_genotype()
             
@@ -307,7 +302,7 @@ class Report(object):
         
         return parental_inheritance
     
-    def _get_vcf_lines(self, variants, header, vcf_provenance):
+    def _get_vcf_lines(self, variants, family):
         ''' gets the VCF lines for the proband, including candidate variants.
         
         Args:
@@ -319,7 +314,11 @@ class Report(object):
             lines for a VCF file
         '''
         
-        for line in self._make_vcf_header(header, vcf_provenance):
+        header = get_vcf_header(family.child.get_path())
+        provenance = [ get_vcf_provenance(x) for x in
+            [family.child, family.mother, family.father] ]
+        
+        for line in self._make_vcf_header(header, provenance):
             yield line
         
         for candidate in sorted(variants):
@@ -327,8 +326,6 @@ class Report(object):
             
             prefs = ['HGNC', 'SYMBOL']
             genes = [ var.child.info.symbols[0].get(x, prefs) for x in candidate[3] ]
-            # genes = [ var.child.info.get_genes() for x in candidate[3] ]
-            # genes = [ x.get(x, prefs) for x in genes ]
             genes = [ x for x in genes if x is not None ]
             
             vcf_line = var.child.get_vcf_line()
@@ -341,7 +338,7 @@ class Report(object):
             var.child.info['ClinicalFilterReportableHGNC'] = ','.join(list(set(genes)))
             vcf_line[7] = str(var.child.info)
             
-            parental_inheritance = self._get_parental_inheritance(var)
+            parental_inheritance = self._get_parental_inheritance(var, family)
             
             if 'INHERITANCE' not in vcf_line[8]:
                 vcf_line[8] += ':INHERITANCE'

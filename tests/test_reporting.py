@@ -72,7 +72,6 @@ class TestReportPy(unittest.TestCase):
         self.variants = [TrioGenotypes('X', '150', child, mom, dad)]
         
         self.report = Report(None, None, None)
-        self.report.family = self.trio
         Info.set_populations(["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF",
             "EAS_AF", "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"])
     
@@ -81,9 +80,9 @@ class TestReportPy(unittest.TestCase):
         """
         
         fam = Family('test')
-        fam.add_child('child', 'mother', 'father', child_gender, '2', 'child_vcf')
-        fam.add_mother('mother', '0', '0', 'female', mom_aff, 'mother_vcf')
-        fam.add_father('father', '0', '0', 'male', dad_aff, 'father_vcf')
+        fam.add_child('child', 'mother', 'father', child_gender, '2', os.path.join(self.temp_dir, 'child.vcf'))
+        fam.add_mother('mother', '0', '0', 'female', mom_aff, os.path.join(self.temp_dir, 'mother.vcf'))
+        fam.add_father('father', '0', '0', 'male', dad_aff, os.path.join(self.temp_dir, 'father.vcf'))
         fam.set_child()
         
         return fam
@@ -214,38 +213,39 @@ class TestReportPy(unittest.TestCase):
         """
         
         var = self.variants[0]
+        fam = self.trio
         
         # check for the default genotypes
-        self.assertEqual(self.report._get_parental_inheritance(var), "deNovo")
+        self.assertEqual(self.report._get_parental_inheritance(var, fam), "deNovo")
         
         # check when only the mother is non-ref
         var.mother.genotype = 1
-        self.assertEqual(self.report._get_parental_inheritance(var), "maternal")
+        self.assertEqual(self.report._get_parental_inheritance(var, fam), "maternal")
         
         # check when both parents are non-ref
         var.father.genotype = 1
-        self.assertEqual(self.report._get_parental_inheritance(var), "biparental")
+        self.assertEqual(self.report._get_parental_inheritance(var, fam), "biparental")
         
         # check when only the father is non-ref
         var.mother.genotype = 0
-        self.assertEqual(self.report._get_parental_inheritance(var), "paternal")
+        self.assertEqual(self.report._get_parental_inheritance(var, fam), "paternal")
         
         # check when the proband lacks parental information
-        self.report.family.father = None
-        self.report.family.mother = None
-        self.assertEqual(self.report._get_parental_inheritance(var), "unknown")
+        fam.father = None
+        fam.mother = None
+        self.assertEqual(self.report._get_parental_inheritance(var, fam), "unknown")
     
     def test__get_vcf_lines(self):
         """ check that _get_vcf_lines() works correctly
         """
         
-         # define the intial header lines
-        header = make_vcf_header()
-        
-        # define the VCF provenances
-        provenance = [("checksum", "proband.calls.date.vcf.gz", "2014-01-01"),
-            ("checksum", "mother.calls.date.vcf.gz", "2014-01-02"),
-            ("checksum", "father.calls.date.vcf.gz", "2014-01-03")]
+        # write VFs for the trio members, in order to be able to pick up the
+        # VCF provenance information
+        family = self.trio
+        for member in [family.child, family.mother, family.father]:
+            header = make_vcf_header()
+            with open(member.get_path(), 'w') as handle:
+                handle.writelines(header)
         
         # define what the header will become
         vcf_lines = ["##fileformat=VCFv4.1\n",
@@ -278,18 +278,18 @@ class TestReportPy(unittest.TestCase):
            "##ClinicalFilterRunDate={0}\n".format(datetime.date.today()),
            "##ClinicalFilterVersion={}\n".format(clinicalfilter.__version__),
            "##ClinicalFilterHistory=single_variant,compound_het\n",
-           "##UberVCF_proband_Id=proband\n",
-           "##UberVCF_proband_Checksum=checksum\n",
-           "##UberVCF_proband_Basename=proband.calls.date.vcf.gz\n",
+           "##UberVCF_proband_Id=child\n",
+           "##UberVCF_proband_Checksum=0a35d4e98a0f07153584f255ead8a2014ebacad0\n",
+           "##UberVCF_proband_Basename=child.vcf\n",
            "##UberVCF_proband_Date=2014-01-01\n",
            "##UberVCF_maternal_Id=mother\n",
-           "##UberVCF_maternal_Checksum=checksum\n",
-           "##UberVCF_maternal_Basename=mother.calls.date.vcf.gz\n",
-           "##UberVCF_maternal_Date=2014-01-02\n",
+           "##UberVCF_maternal_Checksum=0a35d4e98a0f07153584f255ead8a2014ebacad0\n",
+           "##UberVCF_maternal_Basename=mother.vcf\n",
+           "##UberVCF_maternal_Date=2014-01-01\n",
            "##UberVCF_paternal_Id=father\n",
-           "##UberVCF_paternal_Checksum=checksum\n",
-           "##UberVCF_paternal_Basename=father.calls.date.vcf.gz\n",
-           "##UberVCF_paternal_Date=2014-01-03\n",
+           "##UberVCF_paternal_Checksum=0a35d4e98a0f07153584f255ead8a2014ebacad0\n",
+           "##UberVCF_paternal_Basename=father.vcf\n",
+           "##UberVCF_paternal_Date=2014-01-01\n",
            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsample\n"]
         
         # define what the default variant vcf line will become
@@ -307,7 +307,7 @@ class TestReportPy(unittest.TestCase):
             'PASS', 'HGNC=TEST;HGNC_ID=1001;CQ=missense_variant;EUR_AF=0.0005',
             'GT:DP', '0/1:50'])
         
-        self.assertEqual(list(self.report._get_vcf_lines([var], header, provenance)), vcf_lines + line)
+        self.assertEqual(list(self.report._get_vcf_lines([var], family)), vcf_lines + line)
     
     def test__get_output_line(self):
         """ check that _get_output_line() works correctly
