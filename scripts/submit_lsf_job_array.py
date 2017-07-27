@@ -236,7 +236,7 @@ def run_array(hash_string, n_jobs, tempdir, genes_path, all_genes, ignore_lof_tw
     if not ignore_lof_tweak:
         command += ["--lof-sites", LAST_BASE_PATH]
     
-    submit_bsub_job(command, job_id=job_id, logfile=job_output)
+    submit_bsub_job(command, job_id=job_id, logfile=job_output, memory=150)
 
 def run_cleanup(hash_string, tempdir):
     """ runs a lsf job to clean up the files
