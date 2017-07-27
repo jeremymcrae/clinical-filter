@@ -125,6 +125,9 @@ class TestAutosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.check_heterozygous("Monoallelic"), "single_variant")
         self.assertEqual(self.inh.log_string, "de novo as single_variant")
         
+        # mosaic should operate as per monoallelic
+        self.assertEqual(self.inh.check_heterozygous("Mosaic"), "single_variant")
+        
         # check for biallelic inheritance
         self.assertEqual(self.inh.check_heterozygous("Biallelic"), "compound_het")
         self.assertEqual(self.inh.log_string, "de novo as compound_het")
@@ -147,11 +150,17 @@ class TestAutosomalPy(unittest.TestCase):
         self.assertEqual(self.inh.check_heterozygous("Monoallelic"), "single_variant")
         self.assertEqual(self.inh.log_string, "transmitted from aff, other parent non-carrier or aff")
         
+        # mosaic should operate as per monoallelic
+        self.assertEqual(self.inh.check_heterozygous("Mosaic"), "single_variant")
+        
         # check that when the other parent is also non-ref, the variant is no
         # longer captured, unless the parent is affected
         self.set_trio_genos(var, "111")
         self.assertEqual(self.inh.check_heterozygous("Monoallelic"), "nothing")
         self.assertEqual(self.inh.log_string, "typically for trios with non-de novo unaffected parents")
+        
+        # mosaic should operate as per monoallelic
+        self.assertEqual(self.inh.check_heterozygous("Mosaic"), "nothing")
         
         self.inh.father_affected = True
         self.inh.check_heterozygous("Monoallelic")
