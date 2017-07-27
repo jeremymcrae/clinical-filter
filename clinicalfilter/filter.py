@@ -192,8 +192,9 @@ class Filter(object):
         if variants == []:
             return []
         
+        symbol = variants[0].child.info.symbols[0].get(gene, ['HGNC', 'SYMBOL', 'ENSG'])
         logging.info("{}\t{}\tvariants: {}\trequired_mode: {}".format(
-            family.child.get_id(), gene, [str(x) for x in variants], gene_inh))
+            family.child.get_id(), symbol, [str(x) for x in variants], gene_inh))
         
         if chrom_inheritance == "autosomal":
             finder = Autosomal(variants, family, known_gene, gene, self.cnv_regions)
