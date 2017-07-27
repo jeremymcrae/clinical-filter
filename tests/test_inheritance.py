@@ -85,7 +85,7 @@ class TestInheritancePy(unittest.TestCase):
         
         # check that the default inheritance types have been set up correctly
         self.assertEqual(self.inh.inheritance_modes, {"Monoallelic",
-            "Biallelic", "Both", 'Imprinted'})
+            "Biallelic", "Both", 'Imprinted', 'Mosaic'})
         
         # make sure that the default var and gene inheritance work
         self.assertTrue(self.inh.check_inheritance_mode_matches_gene_mode())

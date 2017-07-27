@@ -105,7 +105,7 @@ class TestFilterPy(unittest.TestCase):
                 father=SNV(chrom="1", position=1, id=".", ref="G", alts="T",
                     qual='1000', filter="PASS", info="CQ=missense_variant;HGNC=ARID1B",
                     format="DP:GT", sample="50:0/0", gender="male", mnv_code=None)),
-            ['single_variant'], ['Monoallelic'], ['ARID1B'])])
+            ['single_variant'], ['Monoallelic', 'Mosaic'], ['ARID1B'])])
     
     def test_create_gene_dict(self):
         """ test that create_gene_dict works correctly
@@ -165,8 +165,9 @@ class TestFilterPy(unittest.TestCase):
         
         # remove the known genes, so that the variants in unknown genes pass
         self.finder.known_genes = None
-        self.assertEqual(self.finder.find_variants([snv1], "TEST2", family),
-            [(snv1, ["single_variant"], ["Monoallelic"], ["TEST2"])])
+        self.assertEqual(sorted(self.finder.find_variants([snv1], "TEST2", family)),
+            [(snv1, ["single_variant"], ["Monoallelic"], ["TEST2"]),
+            (snv1, ["single_variant"], ["Mosaic"], ["TEST2"])])
         
         # but variants without gene symbols still are excluded
         self.assertEqual(self.finder.find_variants([snv3], None, family), [])
@@ -191,7 +192,7 @@ class TestFilterPy(unittest.TestCase):
             ((snv1, ["compound_het"], ["Biallelic"], ["TEST1"])),
             ((snv1, ["compound_het"], ["Biallelic"], ["TEST1"]))]
         self.assertEqual(self.finder.exclude_duplicates(variants),
-            [(snv1, ["single_variant", "compound_het"], ["Monoallelic", "Biallelic"], ["TEST1"])])
+            [(snv1, ["compound_het", "single_variant"], ["Biallelic", "Monoallelic"], ["TEST1"])])
         
         # create a list of variant tuples that passed filtering for two
         # different gene symbols

@@ -229,11 +229,14 @@ class Filter(object):
                 unique_vars[key][1] += [x for x in result if x not in unique_vars[key][1]]
                 unique_vars[key][2] += [x for x in inh if x not in unique_vars[key][2]]
                 
+                unique_vars[key][1] = sorted(unique_vars[key][1])
+                unique_vars[key][2] = sorted(unique_vars[key][2])
+                
                 # add the gene IDs that are unique to the current variant
                 # to the merged variant
                 genes = [x for x in hgnc if x not in unique_vars[key][3]]
                 unique_vars[key][3] += genes
-                
+        
         unique_vars = [tuple(unique_vars[x]) for x in unique_vars]
         
         return unique_vars
