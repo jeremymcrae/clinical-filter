@@ -75,12 +75,12 @@ class TestExomeCnvPy(unittest.TestCase):
         
         # check that var passes when MAD ratio == 5
         self.var.cnv.info["MEANLR2"] = "0.1"
-        self.var.cnv.info["MADL2R"] = "0.02"
+        self.var.cnv.info["MADL2R"] = "0.01"
         self.assertFalse(self.var.fails_mad_ratio())
         
         # check that var fails when MAD ratio < 5
         self.var.cnv.info["MEANLR2"] = "0.09"
-        self.var.cnv.info["MADL2R"] = "0.02"
+        self.var.cnv.info["MADL2R"] = "0.01"
         self.assertTrue(self.var.fails_mad_ratio())
         
         # check that var fails when trying to divide by zero
