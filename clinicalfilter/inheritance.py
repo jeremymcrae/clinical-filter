@@ -304,7 +304,7 @@ class Autosomal(Inheritance):
         
         super(Autosomal, self).__init__(variants, trio, known_genes, gene, cnv_regions)
         
-        self.inheritance_modes = set(["Monoallelic", "Biallelic", "Both", 'Imprinted'])
+        self.inheritance_modes = set(["Monoallelic", "Biallelic", "Both", 'Imprinted', 'Mosaic'])
     
     def check_variant_without_parents(self, inheritance):
         """ test variants in children where we lack parental genotypes
@@ -328,7 +328,7 @@ class Autosomal(Inheritance):
         """ checks if a heterozygous genotype could contribute to disease
         """
         
-        if "Monoallelic" == inheritance:
+        if "Monoallelic" == inheritance or "Mosaic" == inheritance:
             # dominant, should be reported
             report = "single_variant"
         elif "Biallelic" == inheritance:
