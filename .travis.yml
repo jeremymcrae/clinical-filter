@@ -1,12 +1,13 @@
 language: python
 python:
-  - 3.3
   - 2.7
+  - 3.3
+  - 3.6
 before_install:
  - sudo apt-get -qq update
  - sudo apt-get install -y tabix
-install:
- - pip install coveralls
+ - pip install --upgrade pip setuptools wheel
+ - pip install --only-binary=all pytabix pysam coveralls
 script:
  - python setup.py test
  - python -m coverage run --source=./clinicalfilter setup.py test
