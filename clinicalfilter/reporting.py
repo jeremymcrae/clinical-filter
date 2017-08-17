@@ -330,7 +330,7 @@ def _get_vcf_lines(variants, family):
         vcf_line = var.child.get_vcf_line()
         
         if var.child.mnv_code is not None:
-            var.child.add_info_field('CANDIDATE_MNV', var.child.mnv_code)
+            var.child.info['CANDIDATE_MNV'] = var.child.mnv_code
         
         var.child.info['ClinicalFilterType'] = ','.join(sorted(candidate[1]))
         var.child.info['ClinicalFilterGeneInheritance'] = ','.join(sorted(candidate[2]))
