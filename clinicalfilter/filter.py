@@ -192,7 +192,12 @@ class Filter(object):
         if variants == []:
             return []
         
-        symbol = variants[0].child.info.symbols[0].get(gene, ['HGNC', 'SYMBOL', 'ENSG'])
+        for x in variants[0].child.info.symbols:
+            try:
+                symbol = x.get(gene, ['HGNC', 'SYMBOL', 'ENSG'])
+                break
+            except KeyError:
+                continue
         logging.info("{}\t{}\tvariants: {}\trequired_mode: {}".format(
             family.child.get_id(), symbol, [str(x) for x in variants], gene_inh))
         
