@@ -144,7 +144,12 @@ def _get_output_line(candidate, family):
     
     prefs = ['HGNC', 'SYMBOL']
     
-    genes = [ var.child.info.symbols[0].get(x, prefs) for x in candidate[3] ]
+    for x in var.child.info.symbols:
+        try:
+            genes = [ x.get(y, prefs) for y in candidate[3] ]
+            break
+        except KeyError:
+            continue
     genes = [ x for x in genes if x is not None ]
     genes = ','.join(sorted(set(genes)))
     result = ','.join(sorted(candidate[1]))

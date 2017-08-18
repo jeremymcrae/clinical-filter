@@ -20,7 +20,7 @@ from setuptools import setup
 
 setup(
     name = "clinical-filter",
-    version = "0.5.2",
+    version = "0.5.3",
     author = "Jeremy McRae",
     author_email = "jeremy.mcrae@sanger.ac.uk",
     description="Clinical filtering for trios.",
