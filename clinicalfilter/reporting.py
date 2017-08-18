@@ -329,7 +329,12 @@ def _get_vcf_lines(variants, family):
         var = candidate[0]
         
         prefs = ['HGNC', 'SYMBOL']
-        genes = [ var.child.info.symbols[0].get(x, prefs) for x in candidate[3] ]
+        for x in var.child.info.symbols:
+            try:
+                genes = [ x.get(y, prefs) for y in candidate[3] ]
+                break
+            except KeyError:
+                continue
         genes = [ x for x in genes if x is not None ]
         
         vcf_line = var.child.get_vcf_line()
