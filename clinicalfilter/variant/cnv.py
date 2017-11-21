@@ -151,8 +151,7 @@ class CNV(Variant):
         elif "EXOME" in self.info["CALLSOURCE"]:
             # currently return false for all exome-only CNVs, undergoing testing
             filt = ExomeCNV(self)
-            # passes = filt.filter_cnv(track_variant)
-            passes = False
+            passes = filt.filter_cnv(track_variant)
         else:
             if track_variant:
                 print("CNV is not an aCGH or exome CNV")
