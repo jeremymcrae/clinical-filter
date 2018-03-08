@@ -39,7 +39,7 @@ class Variant(object):
         cls_obj.known_genes = known_genes
     
     def __init__(self, chrom, position, id, ref, alts, qual, filter, info=None,
-            format=None, sample=None, gender=None, mnv_code=None):
+            format=None, sample=None, gender=None, sum_x_lr2=None, mnv_code=None):
         """ initialise the object with the definition values
         """
         
@@ -56,6 +56,8 @@ class Variant(object):
         self.mnv_code = mnv_code
         self.qual = qual
         self.filter = filter
+
+        self.sum_x_lr2 = sum_x_lr2
         
         # intialise variables that will be set later
         self.inheritance_type = None
@@ -78,7 +80,8 @@ class Variant(object):
         self.genotype = None
         if self.format is not None and self._get_gender() is not None:
             self.set_genotype()
-    
+
+
     def is_lof(self, gene_symbol=None):
         return self.info.is_lof(gene_symbol)
     def is_missense(self, is_cnv, gene_symbol=None):
@@ -293,3 +296,9 @@ class Variant(object):
         """
         
         return self.genotype
+
+    def get_sum_x_lr2(self):
+        """ return the sum of mean l2r on x chromsome
+        """
+
+        return self.sum_x_lr2

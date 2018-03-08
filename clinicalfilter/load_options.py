@@ -74,6 +74,9 @@ def get_options():
             "SAS_AF,UK10K_cohort_AF",
         help="Comma separated list of population tags that can exist in the "
             "INFO field for population-specific minor allele frequencies")
+
+    #new argument added by re3 to require a file of sums of log2 ratio on X chromosome for CNV filtering
+    parser.add_argument("--sum_x_lr2_file", help="Path to file containing the sum of lr2 on x chromosome for each sample")
     
     args = parser.parse_args()
     
@@ -85,7 +88,10 @@ def get_options():
             argparse.ArgumentParser.error("--dad-aff must also be used if --father is used")
         if args.mother is not None and args.mom_aff is None:
             argparse.ArgumentParser.error("--mom-aff must also be used if --mother is used")
-    
+
+    if args.sum_x_lr2_file is None:
+        argparse.ArgumentParser.error("--sum_x_lr2_file must be used")
+
     args.populations = args.maf_populations.split(',')
     
     return args

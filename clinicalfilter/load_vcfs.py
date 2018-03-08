@@ -30,7 +30,7 @@ from clinicalfilter.utils import open_vcf, get_vcf_header, exclude_header, \
     construct_variant
 from clinicalfilter.multinucleotide_variants import get_mnv_candidates
 
-def load_variants(family, pp_filter, pops, known_genes, last_base,
+def load_variants(family, pp_filter, pops, known_genes, last_base, sum_x_lr2,
         debug_chrom=None, debug_pos=None):
     """ loads the variants for a trio or singleton
     
@@ -45,6 +45,7 @@ def load_variants(family, pp_filter, pops, known_genes, last_base,
             a variant fails to pass the filters.
         debug_pos: chromosome position, to give more information about why
             a variant fails to pass the filters.
+        sum_x_lr2: Sum of mean l2r on x chromosomes for all probands
     
     Returns:
         list of filtered variants for a trio, as TrioGenotypes objects
@@ -57,12 +58,17 @@ def load_variants(family, pp_filter, pops, known_genes, last_base,
     
     Info.set_last_base_sites(last_base)
     Info.set_populations(pops)
+
+#get sum of mean l2r for proband
+    sum_x_lr2_proband = 0
+    if family.child.person_id in sum_x_lr2.keys():
+        sum_x_lr2_proband = sum_x_lr2[family.child.person_id]
     
-    variants = load_trio(family)
+    variants = load_trio(family, sum_x_lr2_proband)
     
     return filter_de_novos(variants, pp_filter)
     
-def include_variant(line, child_variants, gender, mnvs):
+def include_variant(line, child_variants, gender, mnvs, sum_x_lr2):
     """ check if we want to include the variant or not
     
     Args:
@@ -73,6 +79,7 @@ def include_variant(line, child_variants, gender, mnvs):
         gender: the gender of the proband (used in CNV filtering).
         mnvs: dictionary of (chrom, pos), MNV_code pairs for known
             multinucleotide variant sites  within the proband.
+        sum_x_lr2: SUm of mean lr2 on x chromosome for proband.
     
     Returns:
         True/False for whether to include the variant.
@@ -82,10 +89,10 @@ def include_variant(line, child_variants, gender, mnvs):
         key = (line[0], int(line[1]))
         return key in child_variants
     
-    var = construct_variant(line, gender, mnvs)
+    var = construct_variant(line, gender, mnvs, sum_x_lr2)
     return var.passes_filters()
     
-def open_individual(individual, child_variants=None, mnvs=None):
+def open_individual(individual, child_variants=None, mnvs=None, sum_x_lr2=None):
     """ Convert VCF to TSV format. Use for single sample VCF file.
     
     Obtains the VCF data for a single sample. This function optionally
@@ -98,11 +105,12 @@ def open_individual(individual, child_variants=None, mnvs=None):
             for the proband (if so, we can simply check the parent's
             variants for matches in the child's variants).
         mnvs: dictionary
+        sum_x_lr2: SUm of mean lr2 for proband X chromosome for filtering CNVs
     
     Returns:
         A list of variants for the individual.
     """
-    
+
     if individual is None:
         return []
     
@@ -121,8 +129,8 @@ def open_individual(individual, child_variants=None, mnvs=None):
         
         try:
             # check if we want to include the variant or not
-            if include_variant(line, child_variants, gender, mnvs):
-                var = construct_variant(line, gender, mnvs)
+            if include_variant(line, child_variants, gender, mnvs, sum_x_lr2):
+                var = construct_variant(line, gender, mnvs, sum_x_lr2)
                 var.add_vcf_line(line)
                 variants.append(var)
         except ValueError:
@@ -136,20 +144,21 @@ def open_individual(individual, child_variants=None, mnvs=None):
     
     return variants
 
-def load_trio(family):
+def load_trio(family, sum_x_lr2_proband):
     """ opens and parses the VCF files for members of the family trio.
     
     We need to load the VCF data for each of the members of the trio. As a
     bare minimum we need VCF data for the child in the family. Occasionally
     we lack parents for the child, so we create blank entries when that
     happens.
+    We also need the sum of mean lr2 ratios on the X chromosome for the proband
     """
     
     mnvs = get_mnv_candidates(family.child.get_path())
     
     # open the childs VCF file, and get the variant keys, to check if they
     # are in the parents VCF
-    child = open_individual(family.child, mnvs=mnvs)
+    child = open_individual(family.child, mnvs=mnvs, sum_x_lr2=sum_x_lr2_proband)
     keys = set([var.get_key() for var in child])
     
     mother = open_individual(family.mother, child_variants=keys)
