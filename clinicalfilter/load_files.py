@@ -187,6 +187,10 @@ def open_x_lr2_file(path):
     Returns:
         Set of proband and sum xl2r as a dict
      '''
+
+    if path is None:
+        return {}
+
     sumxlr2 = {}
     with open(path) as handle:
         for line in handle:

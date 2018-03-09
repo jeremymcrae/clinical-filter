@@ -176,6 +176,45 @@ class TestExomeCnvPy(unittest.TestCase):
         self.var.cnv.info["NUMBEREXONS"] = "0"
         self.assertTrue(self.var.fails_no_exons())
 
+    def test_fails_x_lr2(self):
+        """test that fails_x_lr2() works correctly
+        """
+        self.var.cnv.chrom = "X"
+        self.var.cnv.sum_x_lr2 = "-6000"
+        self.assertTrue(self.var.fails_x_lr2())
+
+        self.var.cnv.sum_x_lr2 = "8000"
+        self.assertTrue(self.var.fails_x_lr2())
+
+        self.var.cnv.sum_x_lr2 = "2000"
+        self.assertFalse(self.var.fails_x_lr2())
+
+    def test_fails_additional_filters(self):
+        """test that fails_additional_filters() works correctly
+        """
+        self.var.cnv.genotype = "DUP"
+        self.var.cnv.format["CIFER_INHERITANCE"] = "maternal_inh"
+        self.var.cnv.info["MEANLR2"] = "-2"
+        self.var.cnv.info["CONVEXSCORE"] = "10"
+        self.var.cnv.info["MADL2R"] = "0.2"
+        self.assertFalse(self.var.fails_additional_filters())
+
+        self.var.cnv.genotype = "DEL"
+        self.assertFalse(self.var.fails_additional_filters())
+
+        self.var.cnv.format["CIFER_INHERITANCE"] = "not_inherited"
+        self.assertTrue(self.var.fails_additional_filters())
+
+        self.var.cnv.info["MADL2R"] = "0.1"
+        self.assertTrue(self.var.fails_additional_filters())
+
+        self.var.cnv.info["MEANLR2"] = "-1"
+        self.assertFalse(self.var.fails_additional_filters())
+
+        self.var.cnv.info["CONVEXSCORE"] = "20"
+        self.assertFalse(self.var.fails_additional_filters())
+
+        
 
 if __name__ == '__main__':
     unittest.main()

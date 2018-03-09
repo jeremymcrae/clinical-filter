@@ -67,7 +67,7 @@ class ExomeCNV(object):
 #- convex_mad_l2r > 0.15
 #Apply total l2r on X chromosome filter of <-5000 and >7000 
 
-        elif self.fails_x_l2r():
+        elif self.fails_x_lr2():
             passes = False
             if track_variant:
                 print("fails sum mean l2r on X chromosome")
@@ -129,7 +129,7 @@ class ExomeCNV(object):
         
         return self.cnv.format["CIFER_INHERITANCE"] == "false_positive"
 
-    def fails_x_l2r(self):
+    def fails_x_lr2(self):
         """Fail if call is on X chromosome and sum of mean l2r on X is <-5000 
         or >7000
         """

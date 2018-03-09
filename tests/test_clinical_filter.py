@@ -57,9 +57,10 @@ class TestFilterPy(unittest.TestCase):
         lof_sites = None
         population_tags = ["AFR_AF", "AMR_AF", "ASN_AF", "DDD_AF", "EAS_AF",
             "ESP_AF", "EUR_AF", "MAX_AF", "SAS_AF", "UK10K_cohort_AF"]
+        sum_x_lr2 = None#
         
         self.finder = Filter(population_tags, count, known_genes, genes_date,
-            regions, lof_sites, pp_filter, output_path, export_vcf, debug_chrom,
+            regions, lof_sites, pp_filter, sum_x_lr2, output_path, export_vcf, debug_chrom,
             debug_pos)
     
     def test_analyse_trio(self):

@@ -63,7 +63,6 @@ class Filter(object):
         self.pp_filter = pp_filter
         self.total = count
         self.count = 0
-        self.sum_x_lr2 = open_x_lr2_file(sum_x_lr2_file)
         
         self.populations = population_tags
         self.debug_chrom = debug_chrom
@@ -73,6 +72,9 @@ class Filter(object):
         self.known_genes = open_known_genes(known_genes)
         self.cnv_regions = open_cnv_regions(regions)
         self.last_base = open_last_base_sites(lof_sites)
+
+        #open file containing sum of mean log 2 ratios on X, returns an empty dict if path is None
+        self.sum_x_lr2 = open_x_lr2_file(sum_x_lr2_file)
         
         self.reporter = Report(output_path, export_vcf, date)
     
