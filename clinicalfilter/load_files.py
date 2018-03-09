@@ -23,6 +23,7 @@ from __future__ import unicode_literals
 
 import io
 import json
+import re
 
 def get_header_positions(file_handle, columns):
     """ get a dictionary of column positions from a header line
@@ -178,3 +179,24 @@ def open_last_base_sites(path):
         last_base = set([ (x[0], int(x[1])) for x in last_base ])
     
     return last_base
+
+def open_x_lr2_file(path):
+    '''open file containing sum of mean log 2 ratios for each proband.
+    Args:
+        path: path to x_lr2 file
+    Returns:
+        Set of proband and sum xl2r as a dict
+     '''
+
+    if path is None:
+        return {}
+
+    sumxlr2 = {}
+    with open(path) as handle:
+        for line in handle:
+            linedata = line.split()
+            if linedata[0].startswith('DDD'):
+                sumxlr2[linedata[0]] = linedata[1]
+
+    return sumxlr2
+            

@@ -27,11 +27,10 @@ class ExomeCNV(object):
         """ initialise the class with a CNV
         """
         self.cnv = cnv
-    
+
     def filter_cnv(self, track_variant):
         """ filters the CNV
         """
-        
         passes = True
         if self.fails_convex_score():
             passes = False
@@ -57,11 +56,27 @@ class ExomeCNV(object):
             passes = False
             if track_variant:
                 print("failed CIFER inheritance", self.cnv.format["CIFER_INHERITANCE"])
-        # elif self.fails_no_exons():
+                # elif self.fails_no_exons():
         #     passes = False
         #     if track_variant:
         #         print("failed no exons", self.info["NUMBEREXONS"])
-        
+#additional filters
+#FAIL not_inherited or uncertain deletion calls if they meet at least 2 out of the 3 criteria:
+#- convex_meanl2r > -1.5  
+#- convex_score < 15
+#- convex_mad_l2r > 0.15
+#Apply total l2r on X chromosome filter of <-5000 and >7000 
+
+        elif self.fails_x_lr2():
+            passes = False
+            if track_variant:
+                print("fails sum mean l2r on X chromosome")
+
+        elif self.fails_additional_filters():
+            passes = False
+            if track_variant:
+                print("DEL fails at least 2 of 3 additional CNV filters (mean l2r < -2, score < 20, mad > 0.2)")
+       
         return passes
     
     def fails_convex_score(self):
@@ -113,3 +128,39 @@ class ExomeCNV(object):
         """
         
         return self.cnv.format["CIFER_INHERITANCE"] == "false_positive"
+
+    def fails_x_lr2(self):
+        """Fail if call is on X chromosome and sum of mean l2r on X is <-5000 
+        or >7000
+        """
+        if self.cnv.chrom == 'X':
+            x_lr2 = float(self.cnv.get_sum_x_lr2())
+            if x_lr2 < -5000 or x_lr2 > 7000:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def fails_additional_filters(self):
+        """FAIL deletion calls if they meet at least 2 out of the 3 criteria:
+        - convex_meanl2r > -1.5  
+        - convex_score < 15
+        - convex_mad_l2r > 0.15
+        - filter not inherited and uncertain only
+        """
+        if self.cnv.genotype == "DEL":
+            if self.cnv.format["CIFER_INHERITANCE"] == "not_inherited" or self.cnv.format["CIFER_INHERITANCE"] == "uncertain":
+                failcount = 0
+                if float(self.cnv.info["MEANLR2"]) < -1.5:
+                    failcount += 1
+                if float(self.cnv.info["CONVEXSCORE"]) < 15:
+                    failcount += 1
+                if float(self.cnv.info["MADL2R"]) > 0.15:
+                    failcount += 1
+                if failcount >= 2:
+                    return True
+                else:
+                    return False
+        else:#DUPs and inherited variants are OK
+            return False

@@ -26,7 +26,7 @@ from clinicalfilter.inheritance import Allosomal, Autosomal
 from clinicalfilter.post_inheritance_filter import PostInheritanceFilter
 from clinicalfilter.reporting import Report
 from clinicalfilter.load_files import open_known_genes, open_cnv_regions, \
-    open_last_base_sites
+    open_last_base_sites, open_x_lr2_file
 
 class Filter(object):
     """ filters trios for candidate variants that might contribute to a
@@ -34,7 +34,7 @@ class Filter(object):
     """
     
     def __init__(self, population_tags=None, count=0, known_genes=None, date=None,
-            regions=None, lof_sites=None, pp_filter=0.0,
+            regions=None, lof_sites=None, pp_filter=0.0, sum_x_lr2_file=None,
             output_path=None, export_vcf=None, debug_chrom=None, debug_pos=None):
         """ initialise the class object
         
@@ -52,6 +52,8 @@ class Filter(object):
                 required. Can be None if unneeded.
             pp_filter: threshold from 0 to 1 for pp_dnm value to filter out
                 candidiate DNMs which fall below this value
+            sum_x_lr2_file: File containing sum of l2r values on x chromosome 
+                for each person
             output_path: path to write output tab-separated file to
             export_vcf: path to file or folder to write VCFs to.
             debug_chrom: chromosome for debugging purposes.
@@ -70,6 +72,9 @@ class Filter(object):
         self.known_genes = open_known_genes(known_genes)
         self.cnv_regions = open_cnv_regions(regions)
         self.last_base = open_last_base_sites(lof_sites)
+
+        #open file containing sum of mean log 2 ratios on X, returns an empty dict if path is None
+        self.sum_x_lr2 = open_x_lr2_file(sum_x_lr2_file)
         
         self.reporter = Report(output_path, export_vcf, date)
     
@@ -109,14 +114,14 @@ class Filter(object):
         """
         
         variants = load_variants(family, self.pp_filter, self.populations,
-            self.known_genes, self.last_base, self.debug_chrom, self.debug_pos)
+            self.known_genes, self.last_base, self.sum_x_lr2, self.debug_chrom, self.debug_pos)
         
         # organise variants by gene, then find variants that fit different
         # inheritance models. We have to flatten the list of variant lists
         genes = self.create_gene_dict(variants)
         variants = [ self.find_variants(genes[x], x, family) for x in genes ]
         variants = [ x for sublist in variants for x in sublist ]
-        
+
         # remove any duplicate variants (which might ocur due to CNVs being
         # checked against all the genes that they encompass)
         variants = self.exclude_duplicates(variants)

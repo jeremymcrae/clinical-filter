@@ -24,7 +24,7 @@ import shutil
 
 import unittest
 from clinicalfilter.load_files import get_header_positions, \
-    parse_gene_line,  open_known_genes, open_cnv_regions
+    parse_gene_line,  open_known_genes, open_cnv_regions, open_x_lr2_file
 
 class TestLoadFilesPy(unittest.TestCase):
     ''' test the file loading functions
@@ -226,5 +226,16 @@ class TestLoadFilesPy(unittest.TestCase):
         
         self.assertEqual(open_cnv_regions(self.temp.name),
             {('4', '1569197', '2110236'): '1'})
-        
+
+    def test_open_x_lr2_file(self):
+        '''test that open_x_lr2_file() works correct
+        '''
+
+        header = ['Proband', 'sum_X_l2r']
+        line1 = ['DDDP012345', '1000']
+        self.temp.write(('\t'.join(header) + '\n').encode('utf8'))
+        self.temp.write(('\t'.join(line1) + '\n').encode('utf8'))
+        self.temp.flush()
+
+        self.assertEqual(open_x_lr2_file(self.temp.name),{'DDDP012345': '1000'})
     
