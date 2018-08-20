@@ -81,16 +81,16 @@ def get_options():
     args = parser.parse_args()
     
     if args.pp_filter < 0.0 or args.pp_filter > 1:
-        argparse.ArgumentParser.error("--pp-dnm-threshold must be between 0 and 1")
+        parser.error("--pp-dnm-threshold must be between 0 and 1")
     
     if args.child is not None:
         if args.father is not None and args.dad_aff is None:
-            argparse.ArgumentParser.error("--dad-aff must also be used if --father is used")
+            parser.error("--dad-aff must also be used if --father is used")
         if args.mother is not None and args.mom_aff is None:
-            argparse.ArgumentParser.error("--mom-aff must also be used if --mother is used")
+            parser.error("--mom-aff must also be used if --mother is used")
 
     if args.sum_x_lr2_file is None:
-        argparse.ArgumentParser.error("--sum_x_lr2_file must be used")
+        parser.error("--sum_x_lr2_file must be used")
 
     args.populations = args.maf_populations.split(',')
     
