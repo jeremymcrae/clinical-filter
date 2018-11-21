@@ -99,7 +99,7 @@ def make_vcf_header(sample_id='sample'):
     return lines
 
 def make_vcf_line(chrom=1, pos=1, ref='G', alts='T',
-        cq='missense_variant', genotype='0/1', extra=None):
+        cq='missense_variant', genotype='0/1', extra=None, ad='10,10'):
     ''' generate a VCF line suitable for the unit tests
     
     Args:
@@ -120,8 +120,8 @@ def make_vcf_line(chrom=1, pos=1, ref='G', alts='T',
     if extra is not None:
          info += ';' + extra
     
-    return '{}\t{}\t.\t{}\t{}\t1000\tPASS\t{}\tGT:DP\t{}:50\n'.format(chrom,
-        pos, ref, alts, info, genotype)
+    return '{}\t{}\t.\t{}\t{}\t1000\tPASS\t{}\tGT:DP:AD\t{}:50:{}\n'.format(chrom,
+        pos, ref, alts, info, genotype, ad)
 
 def make_minimal_vcf():
     ''' construct the bare minimum of lines for a VCF file

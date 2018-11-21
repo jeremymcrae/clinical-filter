@@ -482,7 +482,7 @@ class TestInheritancePy(unittest.TestCase):
         # now check when the father is affected
         self.inh.father_affected = True
         self.assertTrue(self.inh.is_compound_pair(var1, var2))
-        
+        del var2.father.format['PP_DNM']
         # make sure we can't set the father as het on the X chrom
         with self.assertRaises(ValueError):
             self.set_compound_het_var(var2, "201")

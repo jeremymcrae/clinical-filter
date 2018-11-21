@@ -99,13 +99,13 @@ class TestFilterPy(unittest.TestCase):
                 child=SNV(chrom="1", position=1, id=".", ref="G", alts="T",
                     qual='1000', filter="PASS",
                     info="CQ=missense_variant;DENOVO-SNP;HGNC=ARID1B;PP_DNM=1",
-                    format="DP:GT", sample="50:0/1", gender="female", mnv_code=None),
+                    format="DP:GT:AD", sample="50:0/1:10,10", gender="female", mnv_code=None),
                 mother=SNV(chrom="1", position=1, id=".", ref="G", alts="T",
                     qual='1000', filter="PASS", info="CQ=missense_variant;HGNC=ARID1B",
-                    format="DP:GT", sample="50:0/0", gender="female", mnv_code=None),
+                    format="DP:GT:AD", sample="50:0/0:10,10", gender="female", mnv_code=None),
                 father=SNV(chrom="1", position=1, id=".", ref="G", alts="T",
                     qual='1000', filter="PASS", info="CQ=missense_variant;HGNC=ARID1B",
-                    format="DP:GT", sample="50:0/0", gender="male", mnv_code=None)),
+                    format="DP:GT:AD", sample="50:0/0:10,10", gender="male", mnv_code=None)),
             ['single_variant'], ['Monoallelic', 'Mosaic'], ['ARID1B'])])
     
     def test_create_gene_dict(self):

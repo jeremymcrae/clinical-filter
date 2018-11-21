@@ -51,8 +51,8 @@ class TestVariantSnvPy(unittest.TestCase):
         filt = "PASS"
         
         info = "HGNC_ID=1001;CQ=missense_variant;random_tag"
-        self.keys = "GT:DP"
-        self.values = "0/1:50"
+        self.keys = "GT:DP:AD"
+        self.values = "0/1:50:10,10"
         
         self.var = SNV(chrom, pos, snp_id, ref, alt, qual, filt, info=info,
             format=self.keys, sample=self.values)

@@ -160,10 +160,10 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         var1 = SNV(chrom="1", position=1, id=".", ref="G", alts="T",
             qual='1000', filter="PASS", info="CQ=missense_variant;HGNC=TEST;MAX_AF=0.0001",
-            format="DP:GT", sample="50:0/1", gender="female", mnv_code=None)
+            format="DP:GT:AD", sample="50:0/1:10,10", gender="female", mnv_code=None)
         var2 = SNV(chrom="1", position=2, id=".", ref="G", alts="T",
             qual='1000', filter="PASS", info="CQ=missense_variant;HGNC=ATRX;MAX_AF=0.0001",
-            format="DP:GT", sample="50:0/1", gender="female", mnv_code=None)
+            format="DP:GT:AD", sample="50:0/1:10,10", gender="female", mnv_code=None)
         
         self.assertEqual(open_individual(person), [var2])
         
@@ -190,7 +190,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         args = {'chrom': "1", 'position': 1, 'id': ".", 'ref': "G", 'alts': "T",
             'filter': "PASS", 'info': "CQ=splice_region_variant;HGNC=ATRX;MAX_AF=0.0001",
-            'format': "DP:GT", 'sample': "50:0/1", 'gender': "female",
+            'format': "DP:GT:AD", 'sample': "50:0/1:10,10", 'gender': "female",
             'mnv_code': 'modified_protein_altering_mnv', 'qual': '1000'}
         var1 = SNV(**args)
         
@@ -255,7 +255,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         # define the parameters and values for the SNV class
         args = {'chrom': "1", 'position': 2, 'id': ".", 'ref': "G", 'alts': "T",
             'filter': "PASS", 'info': "CQ=missense_variant;HGNC=ATRX;MAX_AF=0.0001",
-            'format': "DP:GT", 'sample': "50:0/1", 'gender': "female",
+            'format': "DP:GT:AD", 'sample': "50:0/1:10,10", 'gender': "female",
             'mnv_code': None, 'qual': '1000'}
         dad_args = copy.deepcopy(args)
         dad_args['gender'] = 'male'
