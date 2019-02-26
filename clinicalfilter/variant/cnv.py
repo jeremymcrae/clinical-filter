@@ -168,9 +168,6 @@ class CNV(Variant):
             inheritance state as string e.g 'maternal', 'paternal' etc
         '''
 
-#        print(self.__dict__)
-#        exit(0)
-        
         if self.format is None:
             return None
         

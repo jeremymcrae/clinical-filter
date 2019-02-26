@@ -68,12 +68,8 @@ class SNV(Variant):
             raise ValueError("cannot find a genotype")
         
         self.set_reference_genotypes()
-#        print(self.__dict__)
-#        print("\n")
         self.convert_genotype_code_to_alleles()
-#        print(self.__dict__)
-#        print(self.alleles)
-#        exit(0)
+
     
     def convert_genotype(self, genotype):
         """Maps genotypes from two character format to single character.
