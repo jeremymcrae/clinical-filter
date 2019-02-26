@@ -32,6 +32,7 @@ class ExomeCNV(object):
         """ filters the CNV
         """
         passes = True
+ 
         if self.fails_convex_score():
             passes = False
             if track_variant:
@@ -52,6 +53,7 @@ class ExomeCNV(object):
             passes = False
             if track_variant:
                 print("failed commonforwards", self.cnv.info["COMMONFORWARDS"])
+#        elif self.cnv.has_parents and self.fails_cifer_inh():#may be able to use self.cnv.get_has_parents and remove parents above
         elif self.fails_cifer_inh():
             passes = False
             if track_variant:
@@ -126,8 +128,10 @@ class ExomeCNV(object):
     def fails_cifer_inh(self):
         """ check that the CIFER inheritance classification isn't false_positive
         """
-        
-        return self.cnv.format["CIFER_INHERITANCE"] == "false_positive"
+        if self.cnv.get_has_parents():
+            return self.cnv.format["CIFER_INHERITANCE"] == "false_positive"
+        else:
+            return False
 
     def fails_x_lr2(self):
         """Fail if call is on X chromosome and sum of mean l2r on X is <-5000 

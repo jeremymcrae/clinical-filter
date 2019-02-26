@@ -85,9 +85,10 @@ class TestLoadVCFsPy(unittest.TestCase):
         path = os.path.join(self.temp_dir, "temp.vcf.gz")
         write_gzipped_vcf(path, vcf)
         sum_x_lr2 = {}
+        parents = True
         
         fam = Family('fam', children=[Person('fam', 'child', '0', '0', 'f', '2', path)])
-        variants = load_variants(fam, 0.9, ['AFR_AF'], self.known_genes, set(), sum_x_lr2)
+        variants = load_variants(fam, 0.9, ['AFR_AF'], self.known_genes, set(), sum_x_lr2, parents)
         
         self.assertEqual(SNV.known_genes, self.known_genes)
         self.assertEqual(CNV.known_genes, self.known_genes)
@@ -95,7 +96,7 @@ class TestLoadVCFsPy(unittest.TestCase):
         self.assertEqual(Info.last_base, set())
         
         # and check that the
-        variants = load_variants(fam, 0.9, [], None, set([('1', 100)]), sum_x_lr2)
+        variants = load_variants(fam, 0.9, [], None, set([('1', 100)]), sum_x_lr2, parents)
         self.assertIsNone(SNV.known_genes, self.known_genes)
         self.assertIsNone(CNV.known_genes, self.known_genes)
         self.assertEqual(Info.populations, [])
@@ -109,23 +110,24 @@ class TestLoadVCFsPy(unittest.TestCase):
         child_keys = None
         gender = "M"
         sum_x_l2r = {}
+        parents = True
         # make a child var which passes the filters
         line = ["1", "100", ".", "T", "A", "1000", "PASS", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertTrue(include_variant(line, child_keys, gender, mnvs, sum_x_l2r))
+        self.assertTrue(include_variant(line, child_keys, gender, mnvs, sum_x_l2r, parents))
         
         # make a child var that fails the filters, which should return False
         line = ["1", "100", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertFalse(include_variant(line, child_keys, gender, mnvs, sum_x_l2r))
+        self.assertFalse(include_variant(line, child_keys, gender, mnvs, sum_x_l2r, parents))
         
         # now check for parents variants
         # check a parents var, where we have a matching child var
         child_keys = set([("1", 100), ("X", 200)])
         line = ["1", "100", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertTrue(include_variant(line, child_keys, gender, mnvs, sum_x_l2r))
+        self.assertTrue(include_variant(line, child_keys, gender, mnvs, sum_x_l2r, parents))
         
         # check a parents var, where we don't have a matching child var
         line = ["1", "200", ".", "T", "A", "1000", "FAIL", "CQ=missense_variant;HGNC=ATRX", "GT", "0/1"]
-        self.assertFalse(include_variant(line, child_keys, gender, mnvs, sum_x_l2r))
+        self.assertFalse(include_variant(line, child_keys, gender, mnvs, sum_x_l2r, parents))
         
         # and check parental CNVs
         line = ["1", "100", ".", "T", "<DEL>", "1000", "PASS", "END=200", "GT", "0/1"]
@@ -134,13 +136,13 @@ class TestLoadVCFsPy(unittest.TestCase):
         
         # in this function we look for overlap in CNVs. Set up a child CNV
         # that the parents CNV must match.
-        self.assertTrue(include_variant(line, child_keys, gender, mnvs, sum_x_l2r))
+        self.assertTrue(include_variant(line, child_keys, gender, mnvs, sum_x_l2r, parents))
         
         # check that a parental CNV without any overlap to any childs CNVs,
         # fails to pass
         line = ["1", "300", ".", "T", "<DEL>", "1000", "PASS", "END=400", "GT", "0/1"]
         gender = "M"
-        self.assertFalse(include_variant(line, child_keys, gender, mnvs, sum_x_l2r))
+        self.assertFalse(include_variant(line, child_keys, gender, mnvs, sum_x_l2r, parents))
     
     def test_open_individual(self):
         ''' test that open_individual() works correctly

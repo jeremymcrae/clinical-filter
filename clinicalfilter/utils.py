@@ -118,7 +118,7 @@ def exclude_header(vcf):
     
     vcf.seek(current_pos)
 
-def construct_variant(line, gender, mnvs=None, sum_x_lr2=None):
+def construct_variant(line, gender, mnvs=None, sum_x_lr2=None, parents=None):
     """ constructs a Variant object for a VCF line, specific to the variant type
     
     Args:
@@ -129,6 +129,7 @@ def construct_variant(line, gender, mnvs=None, sum_x_lr2=None):
             (eg "1" or "M" for male, "2", or "F" for female).
         mnvs: dictionary
         sum_x_lr2: Sum of mean l2r on X chromosome for probands
+        parents: does the proband have parents?
     
     Returns:
         returns a Variant object
@@ -146,7 +147,7 @@ def construct_variant(line, gender, mnvs=None, sum_x_lr2=None):
         mnv_code = mnvs[(chrom, int(pos))]
     
     var = Var(chrom, pos, var_id, ref, alt, qual, filter_val, info, keys,
-        sample, gender, sum_x_lr2, mnv_code=mnv_code)
+        sample, gender, sum_x_lr2, parents, mnv_code=mnv_code)
     
     if var.is_cnv():
         var.fix_gene_IDs()

@@ -214,6 +214,20 @@ class TestExomeCnvPy(unittest.TestCase):
         self.var.cnv.info["CONVEXSCORE"] = "20"
         self.assertFalse(self.var.fails_additional_filters())
 
+    def test_fails_cifer_inh(self):
+        """test that CNVs in non-trios aren't filtered out on cifer false pos
+        but those in trios are filtered out
+        """
+        self.var.cnv.has_parents = True
+        self.var.cnv.format["CIFER_INHERITANCE"] = "false_positive"
+        self.assertTrue(self.var.fails_cifer_inh())
+
+        self.var.cnv.has_parents = False
+        self.var.cnv.format["CIFER_INHERITANCE"] = "false_positive"
+        self.assertFalse(self.var.fails_cifer_inh())
+
+
+
         
 
 if __name__ == '__main__':

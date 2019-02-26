@@ -122,6 +122,14 @@ class Person(object):
             raise ValueError(self.person_id + " is listed as gender " + \
                 self.get_gender() + ", which differs from the sex expected " + \
                 "as a parent)")
+
+    def has_parents(self):
+        """returns True/False for does the person have two parents
+        """
+        if self.mom_id == '0' or self.dad_id == '0':
+            return False
+        else:
+            return True
     
     def __gt__(self, other):
         """ implement greater than check, for sorting children in a Family

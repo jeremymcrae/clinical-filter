@@ -341,6 +341,12 @@ class Autosomal(Inheritance):
                     'Imprinted' in self.known_gene['inh']:
                 self.log_string = 'possible imprinted variant'
                 return "single_variant"
+            elif (self.dad.is_hom_ref() or self.mom.is_hom_ref()) and \
+                    self.child.is_lof() and self.known_gene is not None and \
+                    'Imprinted' in self.known_gene['inh']:
+#allow de novo variants in imprinted genes
+                self.log_string = 'possible imprinted de novo variant'
+                return "single_variant"
         
         if self.mom.is_hom_ref() and self.dad.is_hom_ref():
             self.log_string = "de novo as {0}".format(report)

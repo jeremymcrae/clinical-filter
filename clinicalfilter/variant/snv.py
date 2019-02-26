@@ -20,6 +20,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
 from clinicalfilter.variant.variant import Variant
+import re
 
 class SNV(Variant):
     """ a class to take a SNV genotype for an individual, and be able to perform
@@ -67,7 +68,12 @@ class SNV(Variant):
             raise ValueError("cannot find a genotype")
         
         self.set_reference_genotypes()
+#        print(self.__dict__)
+#        print("\n")
         self.convert_genotype_code_to_alleles()
+#        print(self.__dict__)
+#        print(self.alleles)
+#        exit(0)
     
     def convert_genotype(self, genotype):
         """Maps genotypes from two character format to single character.
@@ -185,7 +191,16 @@ class SNV(Variant):
             elif genotype == "2":
                 self.alleles = set([self.alt_alleles])
             elif genotype == "1":
-                raise ValueError("heterozygous X-chromomosome male")
+                gt = re.split(r'[/\|]', self.format['GT'])
+                ad = self.format['AD'].split(',')
+                ad = list(map(int, ad))
+                if sum(ad) > 0:#allow for those with 0 RD
+                    vaf = int(ad[int(gt[1])])/sum(ad)
+                    if vaf > 0.8 or 'PP_DNM' in self.format.keys():#we want to treat these as homs/allow these if VAF > 0.8 (must include ref) or if denovo
+                    #genotype = "2"#do I need this?
+                        self.alleles = set([self.alt_alleles])
+                    else:
+                        raise ValueError("heterozygous X-chromomosome male")
             else:
                 raise ValueError("unknown genotype '" + str(genotype))
         else:

@@ -50,6 +50,8 @@ def load_variants(family, pp_filter, pops, known_genes, last_base, sum_x_lr2,
     Returns:
         list of filtered variants for a trio, as TrioGenotypes objects
     """
+
+    parents = family.has_parents()
     
     # define several parameters of the variant classes, before initialisation
     for Var in [SNV, CNV]:
@@ -68,7 +70,7 @@ def load_variants(family, pp_filter, pops, known_genes, last_base, sum_x_lr2,
     
     return filter_de_novos(variants, pp_filter)
     
-def include_variant(line, child_variants, gender, mnvs, sum_x_lr2):
+def include_variant(line, child_variants, gender, mnvs, sum_x_lr2, parents):
     """ check if we want to include the variant or not
     
     Args:
@@ -80,6 +82,7 @@ def include_variant(line, child_variants, gender, mnvs, sum_x_lr2):
         mnvs: dictionary of (chrom, pos), MNV_code pairs for known
             multinucleotide variant sites  within the proband.
         sum_x_lr2: SUm of mean lr2 on x chromosome for proband.
+        parents: does trio have parents?
     
     Returns:
         True/False for whether to include the variant.
@@ -89,10 +92,10 @@ def include_variant(line, child_variants, gender, mnvs, sum_x_lr2):
         key = (line[0], int(line[1]))
         return key in child_variants
     
-    var = construct_variant(line, gender, mnvs, sum_x_lr2)
+    var = construct_variant(line, gender, mnvs, sum_x_lr2, parents)
     return var.passes_filters()
     
-def open_individual(individual, child_variants=None, mnvs=None, sum_x_lr2=None):
+def open_individual(individual, child_variants=None, mnvs=None, sum_x_lr2=None, parents=None):
     """ Convert VCF to TSV format. Use for single sample VCF file.
     
     Obtains the VCF data for a single sample. This function optionally
@@ -105,11 +108,14 @@ def open_individual(individual, child_variants=None, mnvs=None, sum_x_lr2=None):
             for the proband (if so, we can simply check the parent's
             variants for matches in the child's variants).
         mnvs: dictionary
-        sum_x_lr2: SUm of mean lr2 for proband X chromosome for filtering CNVs
+        sum_x_lr2: Sum of mean lr2 for proband X chromosome for filtering CNVs
+        parents: does the family have both parents?
     
     Returns:
         A list of variants for the individual.
     """
+
+#    parents = individual.has_parents()
 
     if individual is None:
         return []
@@ -129,8 +135,8 @@ def open_individual(individual, child_variants=None, mnvs=None, sum_x_lr2=None):
         
         try:
             # check if we want to include the variant or not
-            if include_variant(line, child_variants, gender, mnvs, sum_x_lr2):
-                var = construct_variant(line, gender, mnvs, sum_x_lr2)
+            if include_variant(line, child_variants, gender, mnvs, sum_x_lr2, parents):
+                var = construct_variant(line, gender, mnvs, sum_x_lr2, parents)
                 var.add_vcf_line(line)
                 variants.append(var)
         except ValueError:
@@ -158,7 +164,9 @@ def load_trio(family, sum_x_lr2_proband):
     
     # open the childs VCF file, and get the variant keys, to check if they
     # are in the parents VCF
-    child = open_individual(family.child, mnvs=mnvs, sum_x_lr2=sum_x_lr2_proband)
+    parents = family.has_parents()
+
+    child = open_individual(family.child, mnvs=mnvs, sum_x_lr2=sum_x_lr2_proband, parents=parents)
     keys = set([var.get_key() for var in child])
     
     mother = open_individual(family.mother, child_variants=keys)
