@@ -168,6 +168,28 @@ class TestVariantSnvPy(unittest.TestCase):
             self.var.format["GT"] = genotype
             self.var.set_genotype()
             self.assertEqual(self.var.get_genotype(), result)
+
+    def test_set_allosomal_male(self):
+        """test that convert_allosomal_genotype_code_to_alleles handles hets in
+        male correctly
+        """
+        self.var._set_gender("male")
+        self.var.chrom = 'X'
+        self.var.genotype = '1'
+        #treat as hom if VAF > 0.8
+        self.var.format["AD"] = '1,19'
+        self.var.format["GT"] = '1/1'
+        self.var.convert_allosomal_genotype_code_to_alleles()
+
+        self.assertEqual(self.var.alleles, set([self.var.alt_alleles]))
+        
+        #treat as hom if denovo
+        self.var.format["AD"] = '10,19'
+        self.var.format["PP_DNM"] = 0.0099
+        self.var.convert_allosomal_genotype_code_to_alleles()
+
+        self.assertEqual(self.var.alleles, set([self.var.alt_alleles]))       
+
     
     def test_is_het_autosomal(self):
         """ tests that is_het() operates correctly for automsal chromosomes

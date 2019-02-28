@@ -39,7 +39,7 @@ class Variant(object):
         cls_obj.known_genes = known_genes
     
     def __init__(self, chrom, position, id, ref, alts, qual, filter, info=None,
-            format=None, sample=None, gender=None, sum_x_lr2=None, mnv_code=None):
+            format=None, sample=None, gender=None, sum_x_lr2=None, parents=None, mnv_code=None):
         """ initialise the object with the definition values
         """
         
@@ -58,7 +58,9 @@ class Variant(object):
         self.filter = filter
 
         self.sum_x_lr2 = sum_x_lr2
-        
+
+        self.has_parents = parents
+         
         # intialise variables that will be set later
         self.inheritance_type = None
         
@@ -302,3 +304,9 @@ class Variant(object):
         """
 
         return self.sum_x_lr2
+
+    def get_has_parents(self):
+        """returns false for singletons, true for trios
+        """
+        
+        return self.has_parents

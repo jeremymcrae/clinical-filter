@@ -167,11 +167,12 @@ class CNV(Variant):
         Returns:
             inheritance state as string e.g 'maternal', 'paternal' etc
         '''
-        
+
         if self.format is None:
             return None
         
         inh = []
+
         for key in ['INHERITANCE', 'CIFER_INHERITANCE']:
             if key in self.format:
                 inh.append(self.format[key])

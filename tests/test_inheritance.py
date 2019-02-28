@@ -165,11 +165,13 @@ class TestInheritancePy(unittest.TestCase):
         self.assertEqual(self.inh.get_candidate_variants(),
             [(var, ['single_variant'], ['Imprinted'], ['TEST'])])
         
-        # de novos shouldn't pass the imprinted route
+        # de novos should now pass the imprinted route
         var = self.create_variant(position='150', cq='stop_gained',
             geno=['0/1', '0/0', '0/0'])
         self.inh = Autosomal([var], self.trio, inh, "TEST")
-        self.assertEqual(self.inh.get_candidate_variants(), [])
+        #self.assertEqual(self.inh.get_candidate_variants(), [])
+        self.assertEqual(self.inh.get_candidate_variants(),
+            [(var, ['single_variant'], ['Imprinted'], ['TEST'])])
         
         # check a variant that shouldn't pass the imprinted route due to there
         # not being a known gene.
