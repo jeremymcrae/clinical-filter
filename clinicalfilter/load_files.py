@@ -63,7 +63,6 @@ def parse_gene_line(line, header):
     
     gene = {}
     if re.search(r',', inheritance):
-        print(inheritance)
         inh_split = inheritance.split(',')
         gene['inh'] = {}
         for inher in inh_split:
