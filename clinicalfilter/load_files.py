@@ -62,7 +62,14 @@ def parse_gene_line(line, header):
     mechanism = line[header["mech"]]
     
     gene = {}
-    gene['inh'] = {inheritance: set([mechanism])}
+    if re.search(r',', inheritance):
+        print(inheritance)
+        inh_split = inheritance.split(',')
+        gene['inh'] = {}
+        for inher in inh_split:
+            gene['inh'][inher.title()] = set([mechanism])
+    else:
+        gene['inh'] = {inheritance: set([mechanism])}
     gene["symbol"] = symbol
     gene["status"] = set([status.lower()])
     gene["start"] = int(line[header["start"]])
@@ -76,7 +83,7 @@ def parse_gene_line(line, header):
     if inheritance == "Both":
         gene["inh"]["Monoallelic"] = set([mechanism])
         gene["inh"]["Biallelic"] = set([mechanism])
-    
+
     return hgnc_id, gene
 
 def open_known_genes(path):
@@ -127,7 +134,7 @@ def open_known_genes(path):
     
     if len(known) == 0:
         raise ValueError("No genes found in the file, check the line endings")
-    
+
     return known
 
 def open_cnv_regions(path):
