@@ -52,8 +52,8 @@ class PostInheritanceFilter(object):
         
         # if we have flagged CNVs on three different chroms, drop all CNVs,
         # since the sample is sufficiently anomalous
-        if self.count_cnv_chroms(variants) > 2:
-            variants = self.remove_cnvs(variants)
+#        if self.count_cnv_chroms(variants) > 2:
+#            variants = self.remove_cnvs(variants)
         
         # and filter by a lower MAF threshold
         variants = self.filter_by_maf(variants)

@@ -197,6 +197,8 @@ class SNV(Variant):
                         self.alleles = set([self.alt_alleles])
                     else:
                         raise ValueError("heterozygous X-chromomosome male")
+                else:
+                    raise ValueError("heterozygous X-chromomosome male")
             else:
                 raise ValueError("unknown genotype '" + str(genotype))
         else:
