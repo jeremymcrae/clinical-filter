@@ -273,7 +273,7 @@ class Inheritance(object):
         Returns:
             true/false for whather the pair of variants could be a compound het.
         """
-        
+
         # swap the variants around so the first variant has to be a CNV. Note
         # that the other variant might still be a CNV.
         if second.is_cnv():
@@ -284,7 +284,7 @@ class Inheritance(object):
             # set the parental genotypes for the SNV variant
             self.set_trio_genotypes(second)
             mom_2, dad_2 = self.mom, self.dad
-            
+
             inh = first.child.get_cnv_inheritance()
             # If the CNV is paternally inherited, then for the other variant, we
             # need it to be inherited from the mother, and not from the father.
