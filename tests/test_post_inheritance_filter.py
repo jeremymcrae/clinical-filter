@@ -227,24 +227,24 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         """
         
         var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
-            info='HGNC=ATRX|TEST;PolyPhen=probably_damaging(0.99)|benign(0.01)')
+            info='HGNC=ATRX|TEST;CQ=missense_variant|synonymous;PolyPhen=probably_damaging(0.99)|benign(0.01)')
         
         # pulling the prediction for a single gene gets the correct prediction
         self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["ATRX"]),
             ["probably_damaging"])
         # pulling the prediction for a different gene gets the correct prediction
         self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["TEST"]),
-            ["benign"])
+            [""])
         # pulling the prediction for multiple genes gets the correct predictions
         self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["TEST", "ATRX"]),
-            ["probably_damaging", "benign"])
+            ["probably_damaging", ""])
         # the genes order doesn't affect the polyphen prediction order
         self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["ATRX", "TEST"]),
-            ["probably_damaging", "benign"])
+            ["probably_damaging", ""])
         
         # check that only having one polyphen prediction works corectly
         var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
-            info='HGNC=ATRX;PolyPhen=probably_damaging(0.99)')
+            info='HGNC=ATRX;CQ=missense_variant|synonymous;PolyPhen=probably_damaging(0.99)')
         # extracting the polyphen works as expected
         self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["ATRX"]),
             ["probably_damaging"])
@@ -260,9 +260,21 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # gene symbols of None shouldn't break the code.
         var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
-            info='HGNC=.|TEST;PolyPhen=probably_damaging(0.99)|benign(0.01)')
+            info='HGNC=.|TEST;CQ=start_lost|missense_variant;PolyPhen=probably_damaging(0.99)|benign(0.01)')
         self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["TEST"]),
             ["benign"])
+
+        #test that polyphen predcition is returned for missense_variant but not others
+        var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
+            info='HGNC=ATRX;CQ=missense_variant;PolyPhen=probably_damaging(0.99)')
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["ATRX"]),
+            ["probably_damaging"])
+
+        var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
+            info='HGNC=ATRX;CQ=start_lost;PolyPhen=probably_damaging(0.99)')
+        self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["ATRX"]),
+            [""])
+        
     
     def test_get_polyphen_for_genes_with_mnv(self):
         ''' test that get_polyphen_for_genes() works when variants are MNVs
@@ -270,7 +282,7 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         
         # a non-MNV variant returns 'benign'
         var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
-            info='HGNC=TEST;PolyPhen=benign(0.01)')
+            info='HGNC=TEST;CQ=missense_variant;PolyPhen=benign(0.01)')
         self.assertEqual(self.post_filter.get_polyphen_for_genes(var, ["TEST"]),
             ["benign"])
         
@@ -281,14 +293,14 @@ class TestPostInheritanceFilterPy(unittest.TestCase):
         # variants with an altering MNV code returns a 'MNV' code
         for code in modified:
             var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
-                info='HGNC=TEST;PolyPhen=benign(0.01)', mnv_code=code)
+                info='HGNC=TEST;CQ=missense_variant;PolyPhen=benign(0.01)', mnv_code=code)
             self.assertEqual(self.post_filter.get_polyphen_for_genes(var,
                 ["TEST"]), ["mnv_candidate"])
         
         # a variant with a MNV code returns 'benign'
         for code in unmodified:
             var = self.create_var("1", snv=True, geno=["0/1", "0/0", "0/1"],
-                info='HGNC=TEST;PolyPhen=benign(0.01)', mnv_code=code)
+                info='HGNC=TEST;CQ=missense_variant;PolyPhen=benign(0.01)', mnv_code=code)
             self.assertEqual(self.post_filter.get_polyphen_for_genes(var,
                 ["TEST"]), ["benign"])
     

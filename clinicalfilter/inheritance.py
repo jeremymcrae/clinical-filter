@@ -194,7 +194,7 @@ class Inheritance(object):
         Returns:
             list of variants that are compatible with being compound heterozygotes
         """
-        
+
         if len(variants) < 2:
             return []
         
@@ -216,7 +216,6 @@ class Inheritance(object):
         Returns:
             true/false for whather the pair of variants could be a compound het.
         """
-        
         if first == second:
             return False
         
@@ -237,10 +236,10 @@ class Inheritance(object):
         
         # now we have two different variants in the same gene
         self.set_trio_genotypes(first)
-        mom_1, dad_1 = self.mom, self.dad
+        mom_1, dad_1, child_1 = self.mom, self.dad, self.child
         self.set_trio_genotypes(second)
-        mom_2, dad_2 = self.mom, self.dad
-        
+        mom_2, dad_2, child_2 = self.mom, self.dad, self.child
+
         # if either variant is a CNV, then we check the inheritance separately
         if first.is_cnv() or second.is_cnv():
             return self.check_pair_with_cnv(first, second)
@@ -260,6 +259,13 @@ class Inheritance(object):
             (mom_1.is_not_ref() and mom_2.is_hom_ref() \
             and dad_1.is_hom_ref() and dad_2.is_not_ref()):
             return True
+
+        #allow one to be a DNM and one inherited
+        if ("PP_DNM" in child_1.format.keys() and mom_2.is_not_ref() and dad_2.is_hom_ref()) or \
+           ("PP_DNM" in child_1.format.keys() and dad_2.is_not_ref() and mom_2.is_hom_ref()) or \
+           ("PP_DNM" in child_2.format.keys() and mom_1.is_not_ref() and dad_1.is_hom_ref()) or \
+           ("PP_DNM" in child_2.format.keys() and dad_1.is_not_ref() and mom_1.is_hom_ref()):
+            return True
         
         return False
     
@@ -278,21 +284,41 @@ class Inheritance(object):
         # that the other variant might still be a CNV.
         if second.is_cnv():
             first, second = second, first
-        
-        # if one of the variants is not a CNV, then check
+
+            # if one of the variants is not a CNV, then check
         if not second.is_cnv():
             # set the parental genotypes for the SNV variant
             self.set_trio_genotypes(second)
-            mom_2, dad_2 = self.mom, self.dad
-
+            mom_2, dad_2, child_2 = self.mom, self.dad, self.child
             inh = first.child.get_cnv_inheritance()
             # If the CNV is paternally inherited, then for the other variant, we
             # need it to be inherited from the mother, and not from the father.
             # This is vice-versa if the CNV is maternally inherited.
+            #alternatively we can have one CNV and a DNM
+#            if inh == 'paternal':
+#                return dad_2.is_hom_ref() and mom_2.is_not_ref()
+#            elif inh == 'maternal':
+#                return dad_2.is_not_ref() and mom_2.is_hom_ref()
             if inh == 'paternal':
-                return dad_2.is_hom_ref() and mom_2.is_not_ref()
-            elif inh == 'maternal':
-                return dad_2.is_not_ref() and mom_2.is_hom_ref()
+                if (dad_2.is_hom_ref() and mom_2.is_not_ref()) or \
+                   ("PP_DNM" in child_2.format.keys()):
+                    return True
+                else:
+                    return False
+            if inh == 'maternal':
+                if (mom_2.is_hom_ref() and dad_2.is_not_ref()) or \
+                   ("PP_DNM" in child_2.format.keys()):
+                    return True
+                else:
+                    return False
+            if inh == 'de_novo':
+                if (mom_2.is_hom_ref() and dad_2.is_not_ref()) or \
+                   (dad_2.is_hom_ref() and mom_2.is_not_ref()) :
+                    return True
+                else:
+                    return False
+                
+
         elif first.is_cnv() and second.is_cnv():
             return True
         

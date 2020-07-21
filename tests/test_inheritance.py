@@ -412,14 +412,21 @@ class TestInheritancePy(unittest.TestCase):
         # set some variants, so we can alter them later
         snv = self.create_variant(chrom="1", position="150", sex="F", cq="stop_gained")
         snv = self.set_compound_het_var(snv, "110")
+        snv.child.format.pop("PP_DNM")#make sure SNV not a DNM
         
         # check that these variants are compound hets, no matter which order
         # they are given as.
         self.assertTrue(self.inh.is_compound_pair(cnv, snv))
         self.assertTrue(self.inh.is_compound_pair(snv, cnv))
+
+        #check that it works with a paternal cnv and a de novo snv
+        snv = self.set_compound_het_var(snv, "100")
+        snv.child.format["PP_DNM"] = '1'
+        self.assertTrue(self.inh.is_compound_pair(cnv, snv))        
         
         # check that if the SNV is inherited from the same parent as the CNV,
         # then the pair isn't a compound het.
+        snv.child.format.pop("PP_DNM")
         snv = self.set_compound_het_var(snv, "101")
         self.assertFalse(self.inh.is_compound_pair(cnv, snv))
     
@@ -440,15 +447,51 @@ class TestInheritancePy(unittest.TestCase):
         # set some variants, so we can alter them later
         snv = self.create_variant(chrom="1", position="150", sex="F", cq="stop_gained")
         snv = self.set_compound_het_var(snv, "101")
+        snv.child.format.pop("PP_DNM")#make sure SNV not a DNM
         
         # check that these variants are compound hets, no matter which order
         # they are given as.
+        self.assertTrue(self.inh.is_compound_pair(cnv, snv))
+        self.assertTrue(self.inh.is_compound_pair(snv, cnv))
+
+        #check that it works with a paternal cnv and a de novo snv
+        snv = self.set_compound_het_var(snv, "100")
+        snv.child.format["PP_DNM"] = '1'
         self.assertTrue(self.inh.is_compound_pair(cnv, snv))
         
         # check that if the SNV is inherited from the same parent as the CNV,
         # then the pair isn't a compound het.
         snv = self.set_compound_het_var(snv, "110")
+        snv.child.format.pop("PP_DNM")
         self.assertFalse(self.inh.is_compound_pair(cnv, snv))
+
+    def test_is_compound_pair_cnv_de_novo(self):
+        """ check that is_compound_pair() includes pairs with CNVs
+        """
+        chrom = "1"
+        position = "60000"
+        extra = [('CIFER_INHERITANCE', 'not_inherited')]
+        child = create_cnv("F", "maternal", chrom=chrom, pos=position, format=extra)
+        mom = create_cnv("F", "unknown", chrom=chrom, pos=position)
+        dad = create_cnv("M", "unknown", chrom=chrom, pos=position)
+        
+        cnv = TrioGenotypes(chrom, position, child, mom, dad)
+
+        # set some variants, so we can alter them later
+        snv = self.create_variant(chrom="1", position="150", sex="F", cq="stop_gained")
+        snv = self.set_compound_het_var(snv, "101")
+        snv.child.format.pop("PP_DNM")
+
+        # check that these variants are compound hets, no matter which order
+        # they are given as.
+        self.assertTrue(self.inh.is_compound_pair(cnv, snv))
+        self.assertTrue(self.inh.is_compound_pair(snv, cnv))
+
+        #check the snv can also be maternal
+        snv = self.set_compound_het_var(snv, "110")
+        snv.child.format.pop("PP_DNM")
+        self.assertTrue(self.inh.is_compound_pair(snv, cnv))
+        
     
     def test_is_compound_pair_proband_only(self):
         """ check that is_compound_pair() includes proband-only pairs
@@ -503,17 +546,36 @@ class TestInheritancePy(unittest.TestCase):
         # check that the expected scenario passes
         self.assertTrue(self.inh.is_compound_pair(var1, var2))
         
-        # check that compound hets with de novos fail
+        # check that compound hets with one de novo passes
+        var1.child.format["PP_DNM"] = '1'
+        var2.child.format.pop("PP_DNM")
         var1 = self.set_compound_het_var(var1, "100")
         var2 = self.set_compound_het_var(var2, "101")
-        self.assertFalse(self.inh.is_compound_pair(var1, var2))
+        self.assertTrue(self.inh.is_compound_pair(var1, var2))
+
+        var1.child.format["PP_DNM"] = '1'
+        var2.child.format.pop("PP_DNM")
+        var1 = self.set_compound_het_var(var1, "100")
+        var2 = self.set_compound_het_var(var2, "110")
+        self.assertTrue(self.inh.is_compound_pair(var1, var2))
+
+        # check compound het with two de novos fails
+        var1.child.format["PP_DNM"] = '1'
+        var2.child.format["PP_DNM"] = '1'
+        var1 = self.set_compound_het_var(var1, "100")
+        var2 = self.set_compound_het_var(var2, "100")
+        self.assertFalse(self.inh.is_compound_pair(var1, var2))        
         
         # check that compound hets have to be transmitted from both parents
+        var1.child.format.pop("PP_DNM")#make sure SNVs are not  DNMs
+        var2.child.format.pop("PP_DNM")
         var1 = self.set_compound_het_var(var1, "101")
         var2 = self.set_compound_het_var(var2, "101")
         self.assertFalse(self.inh.is_compound_pair(var1, var2))
         
         # check that compound hets have to be transmitted from both parents
+        var1.child.format.pop("PP_DNM")#make sure SNVs are not  DNMs
+        var2.child.format.pop("PP_DNM")
         var1 = self.set_compound_het_var(var1, "110")
         var2 = self.set_compound_het_var(var2, "110")
         self.assertFalse(self.inh.is_compound_pair(var1, var2))

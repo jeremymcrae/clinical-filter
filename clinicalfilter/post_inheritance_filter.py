@@ -56,6 +56,7 @@ class PostInheritanceFilter(object):
 #            variants = self.remove_cnvs(variants)
         
         # and filter by a lower MAF threshold
+
         variants = self.filter_by_maf(variants)
         variants = self.filter_polyphen(variants)
         variants = self.filter_exac(variants)
@@ -166,6 +167,7 @@ class PostInheritanceFilter(object):
         pos = [ x for x in range(len(genes)) if genes[x] is not None and genes[x] in hgnc ]
         
         polyphen = []
+        cons = []
         if "PolyPhen" in var.child.info:
             # get the polyphen predictions for the genes matching the required
             # gene symbols. NOTE: This does not account for multi-allelic sites,
@@ -175,7 +177,12 @@ class PostInheritanceFilter(object):
             
             # remove the numeric scores from the annotations
             polyphen = [ x.split("(")[0] for x in polyphen ]
-        
+            cons = [ var.child.info["CQ"].split("|")[n] for n in pos ]
+            for i in range(len(polyphen)):
+                #remove non-missense variants
+                if cons[i] != 'missense_variant':
+                    polyphen[i] = ""
+
         return polyphen
     
     def filter_polyphen(self, variants):
@@ -193,14 +200,14 @@ class PostInheritanceFilter(object):
         """
         
         passed_vars = []
-        
+
         for (var, check, inh, hgnc) in variants:
             
             try:
                 polyphen = self.get_polyphen_for_genes(var, hgnc)
             except IndexError:
                 continue
-            
+
             # check if the variant on it's own would pass
             passes = "benign" not in polyphen or \
                 var.get_trio_genotype() == var.get_de_novo_genotype()
