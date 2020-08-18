@@ -105,7 +105,7 @@ def open_known_genes(path):
         return None
     
     # only include genes with sufficient DDG2P status
-    allowed = set(["confirmed dd gene", "probable dd gene", "both dd and if"])
+    allowed = set(["confirmed dd gene", "probable dd gene", "both rd and if"])
     
     known = {}
     with io.open(path, "r", encoding="latin_1") as handle:

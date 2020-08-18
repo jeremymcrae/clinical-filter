@@ -211,7 +211,7 @@ class PostInheritanceFilter(object):
             # check if the variant on it's own would pass
             passes = "benign" not in polyphen or \
                 var.get_trio_genotype() == var.get_de_novo_genotype()
-            
+
             # check all of the other variants to see if any are in the same
             # gene, compound_het, and polyphen benign
             benign_matches = [ self.has_compound_match(var, x, variants) for x in hgnc ]
@@ -224,6 +224,8 @@ class PostInheritanceFilter(object):
             benign_match = not(any([ not x for x in benign_matches ]))
             
             if passes and not benign_match:
+                passed_vars.append((var, check, inh, hgnc))
+            elif "Monoallelic" in inh and var.get_trio_genotype() == var.get_de_novo_genotype():#needed for genes that can be mono/biallelic to allow DNMs through
                 passed_vars.append((var, check, inh, hgnc))
             else:
                 log_str = "{}\t{} dropped from polyphen prediction".format(self.family.child.get_id(), var)
@@ -250,7 +252,7 @@ class PostInheritanceFilter(object):
         
         # get a list of the variants in the gene
         compound_vars = [ x[0] for x in variants if hgnc in x[3] and "compound_het" in x[1] ]
-        
+
         if len(compound_vars) < 2:
             return False
         
